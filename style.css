@@ -112,3 +112,19 @@ body{isolation:isolate}
 @keyframes cross-glint{0%,100%{opacity:.5;transform:scale(.9) rotate(0)}50%{opacity:1;transform:scale(1.15) rotate(25deg)}}
 @media(prefers-reduced-motion:reduce){.star-layer,.nebula,.planet,.planet-halo,.orbit,.moon-one,.art-cross{animation:none!important}.video-play,.nav-link:after{transition:none}}
 @media(max-width:640px){.nebula{filter:blur(65px);opacity:.09}.star-layer-one{opacity:.28}.star-layer-two{opacity:.16}}
+
+
+/* V7 — cinematic video category explorer */
+.video-category-panel{margin-top:42px;padding:22px 24px;border:1px solid #ffffff1c;background:linear-gradient(110deg,#17132b99,#0d102099);position:relative;overflow:hidden}
+.video-category-panel:before{content:"";position:absolute;inset:0 auto 0 0;width:2px;background:linear-gradient(180deg,#b49aff,#526fe8,transparent)}
+.video-category-label{font:9px 'DM Mono',monospace;letter-spacing:2px;color:#8f83b6;margin-bottom:16px}
+.video-category-filters{display:flex;gap:10px;flex-wrap:wrap}
+.video-category-filter{display:flex;align-items:center;gap:17px;min-height:43px;padding:0 16px;border:1px solid #ffffff20;background:#ffffff05;color:#aaa4bd;font:9px 'DM Mono',monospace;letter-spacing:1px;cursor:pointer;transition:background .25s,border-color .25s,color .25s,transform .25s}
+.video-category-filter span{color:#8176a4;font-size:8px}
+.video-category-filter:hover{border-color:#9b83e8;color:#fff;transform:translateY(-2px)}
+.video-category-filter.active{background:linear-gradient(110deg,#7653c9,#465bc0);border-color:#a58cf1;color:#fff;box-shadow:0 8px 28px #6d54d533}
+.video-category-filter.active span{color:#e1d8ff}
+.video-filter-status{margin:18px 0 -27px;color:#827a9b;font:9px 'DM Mono',monospace;letter-spacing:1.5px}
+.video-card[hidden]{display:none!important}
+@media(max-width:640px){.video-category-panel{padding:18px 15px;margin-top:30px}.video-category-filters{display:grid;grid-template-columns:1fr 1fr;gap:8px}.video-category-filter{justify-content:space-between;gap:8px;padding:0 10px;font-size:8px;letter-spacing:.5px}.video-filter-status{margin-bottom:-28px}}
+@media(prefers-reduced-motion:reduce){.video-category-filter{transition:none}}
