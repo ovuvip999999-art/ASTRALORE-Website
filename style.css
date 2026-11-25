@@ -4,3 +4,36 @@
 
 /* Fix: ensure the closed modal is actually hidden. */
 .modal-backdrop[hidden]{display:none!important}
+
+
+/* V4 — cosmic cursor trail and scroll reveals */
+@media (hover:hover) and (pointer:fine) {
+  body.astralore-cursor-active { cursor: none; }
+  body.astralore-cursor-active a, body.astralore-cursor-active button,
+  body.astralore-cursor-active input { cursor: none; }
+}
+#astralore-cursor-glow {
+  position: fixed; left: 0; top: 0; width: 280px; height: 280px;
+  border-radius: 50%; pointer-events: none; z-index: 4;
+  background: radial-gradient(circle, rgba(132,101,255,.13) 0%, rgba(94,111,255,.055) 35%, transparent 70%);
+  transform: translate3d(-50%,-50%,0); opacity: 0; transition: opacity .25s ease;
+  mix-blend-mode: screen;
+}
+body.astralore-cursor-active #astralore-cursor-glow { opacity: 1; }
+.astralore-cursor-dot {
+  position: fixed; left: 0; top: 0; width: 5px; height: 5px;
+  border-radius: 50%; pointer-events: none; z-index: 40;
+  background: #cbbaff; box-shadow: 0 0 10px 2px rgba(166,137,255,.75), 0 0 22px rgba(110,92,255,.45);
+  opacity: 0; transform: translate3d(-50%,-50%,0) scale(.3);
+  will-change: transform, opacity;
+}
+body.astralore-cursor-active .astralore-cursor-dot { opacity: var(--dot-opacity, .5); }
+@media (hover:none), (pointer:coarse), (prefers-reduced-motion:reduce) {
+  #astralore-cursor-glow, .astralore-cursor-dot { display:none !important; }
+}
+.js-reveal { opacity: 0; transform: translateY(22px); transition: opacity .75s ease, transform .75s cubic-bezier(.2,.7,.2,1); }
+.js-reveal.is-visible { opacity: 1; transform: translateY(0); }
+@media (prefers-reduced-motion:reduce) {
+  .js-reveal { opacity:1; transform:none; transition:none; }
+  html { scroll-behavior:auto; }
+}
