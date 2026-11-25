@@ -157,7 +157,7 @@ updateArchive();
   if(!ctx) return;
   let width=0,height=0,dpr=1,raf=0,last=0;
   const comets=[];
-  const count=9;
+  const count=12;
   const rand=(a,b)=>a+Math.random()*(b-a);
   function resize(){
     const rect=backdrop.getBoundingClientRect();
@@ -170,8 +170,8 @@ updateArchive();
   function reset(c,initial=false){
     c.x=rand(-width*.15,width*1.05);
     c.y=initial?rand(-height*.1,height):rand(-height*.35,-20);
-    c.length=rand(24,66);c.speed=rand(35,85);
-    c.size=rand(.7,1.45);c.alpha=rand(.38,.82);
+    c.length=rand(38,88);c.speed=rand(38,88);
+    c.size=rand(1.05,1.8);c.alpha=rand(.62,.95);
     c.phase=rand(0,Math.PI*2);
   }
   function init(){resize();comets.length=0;for(let i=0;i<count;i++){const c={};reset(c,true);comets.push(c);}}
@@ -187,11 +187,11 @@ updateArchive();
       grad.addColorStop(.65,'rgba(170,185,255,'+(c.alpha*.35*shimmer)+')');
       grad.addColorStop(1,'rgba(255,255,255,'+(c.alpha*shimmer)+')');
       ctx.save();ctx.lineCap='round';ctx.strokeStyle=grad;
-      ctx.shadowBlur=12;ctx.shadowColor='rgba(151,133,255,.9)';
-      ctx.lineWidth=c.size;ctx.beginPath();
+      ctx.shadowBlur=19;ctx.shadowColor='rgba(151,133,255,1)';
+      ctx.lineWidth=c.size*1.2;ctx.beginPath();
       ctx.moveTo(c.x-c.length,c.y-c.length*.48);ctx.lineTo(c.x,c.y);ctx.stroke();
       ctx.fillStyle='rgba(255,255,255,'+(c.alpha*shimmer)+')';
-      ctx.shadowBlur=9;ctx.beginPath();ctx.arc(c.x,c.y,c.size*1.15,0,Math.PI*2);ctx.fill();
+      ctx.shadowBlur=15;ctx.beginPath();ctx.arc(c.x,c.y,c.size*1.15,0,Math.PI*2);ctx.fill();
       ctx.restore();
       if(c.x>width+90||c.y>height+90) reset(c);
     }
