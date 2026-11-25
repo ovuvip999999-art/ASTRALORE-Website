@@ -128,3 +128,323 @@ body{isolation:isolate}
 .video-card[hidden]{display:none!important}
 @media(max-width:640px){.video-category-panel{padding:18px 15px;margin-top:30px}.video-category-filters{display:grid;grid-template-columns:1fr 1fr;gap:8px}.video-category-filter{justify-content:space-between;gap:8px;padding:0 10px;font-size:8px;letter-spacing:.5px}.video-filter-status{margin-bottom:-28px}}
 @media(prefers-reduced-motion:reduce){.video-category-filter{transition:none}}
+
+/* ==========================================
+   ASTRALORE V8 — THE COSMIC EXPERIENCE
+   Homepage visual enhancement
+========================================== */
+
+/* Global atmosphere */
+body {
+  background:
+    radial-gradient(ellipse at 50% 0%, #17102f 0%, transparent 42%),
+    #080914;
+}
+
+::selection {
+  background: #9271ef;
+  color: white;
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible {
+  outline: 2px solid #bba5ff;
+  outline-offset: 4px;
+}
+
+/* Premium header */
+.site-header {
+  position: sticky;
+  top: 0;
+  border-bottom-color: #a88bff20;
+  box-shadow: 0 10px 40px #0003;
+}
+
+.brand {
+  transition: letter-spacing .3s, text-shadow .3s;
+}
+
+.brand:hover {
+  letter-spacing: 3px;
+  text-shadow: 0 0 25px #a98bff88;
+}
+
+/* Cinematic hero */
+.hero {
+  min-height: 790px;
+}
+
+.hero:after {
+  content: "";
+  position: absolute;
+  width: 650px;
+  height: 650px;
+  right: -10%;
+  top: 5%;
+  background: radial-gradient(circle, #7951e522, transparent 70%);
+  pointer-events: none;
+}
+
+.hero h1 {
+  text-shadow: 0 5px 45px #9271ef18;
+}
+
+.hero h1 span {
+  background: linear-gradient(100deg, #d0c0ff, #9271ef 55%, #6d91ff);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+.eyebrow {
+  text-shadow: 0 0 20px #a98bff33;
+}
+
+.button {
+  position: relative;
+  overflow: hidden;
+}
+
+.button-primary {
+  background: linear-gradient(115deg, #9b72f5, #655ce8, #477de9);
+  background-size: 200% 200%;
+  transition: background-position .4s, transform .3s, box-shadow .3s;
+}
+
+.button-primary:hover {
+  background-position: 100% 50%;
+  box-shadow: 0 12px 40px #7858ed66;
+}
+
+/* Hero artwork */
+.planet {
+  box-shadow:
+    inset -30px -20px 45px #050611,
+    0 0 70px #8b6aff77,
+    0 0 160px #6844e477;
+}
+
+.orbit {
+  box-shadow: 0 0 18px #9271ef12;
+}
+
+/* Section headings */
+.section h2 {
+  text-shadow: 0 5px 35px #9271ef15;
+}
+
+.section h2 span {
+  background: linear-gradient(100deg, #c8b6ff, #8068e8);
+  background-clip: text;
+  -webkit-background-clip: text;
+  color: transparent;
+}
+
+/* Search panel */
+.search-box {
+  border-radius: 5px;
+  transition: border-color .3s, box-shadow .3s, background .3s;
+}
+
+.search-box:focus-within {
+  border-color: #9878ed;
+  background: #17122b99;
+  box-shadow: 0 0 35px #7956d522;
+}
+
+.filter {
+  border-radius: 3px;
+}
+
+.filter.active {
+  box-shadow: 0 5px 22px #7656d544;
+}
+
+/* Discovery cards */
+.fact-card {
+  position: relative;
+  border-radius: 8px;
+  background: linear-gradient(145deg, #19162d, #0b0c18 75%);
+  transition:
+    transform .4s cubic-bezier(.2,.7,.2,1),
+    border-color .35s,
+    box-shadow .35s;
+}
+
+.fact-card:after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  background: linear-gradient(135deg, #a78aff12, transparent 55%);
+  transition: opacity .35s;
+}
+
+.fact-card:hover {
+  transform: translateY(-9px) scale(1.012);
+  border-color: #a58af4;
+  box-shadow:
+    0 22px 55px #0008,
+    0 0 30px #8663e51c;
+}
+
+.fact-card:hover:after {
+  opacity: 1;
+}
+
+.card-art {
+  background-color: #15132a;
+}
+
+.mini-planet {
+  transition: transform .6s cubic-bezier(.2,.7,.2,1);
+}
+
+.fact-card:hover .mini-planet {
+  transform: scale(1.13) rotate(12deg);
+}
+
+.art-caption {
+  text-shadow: 0 3px 18px #000b;
+}
+
+.read-link {
+  transition: letter-spacing .25s, color .25s;
+}
+
+.read-link:hover {
+  color: white;
+  letter-spacing: 2px;
+}
+
+/* Video archive */
+.video-card {
+  border-radius: 8px;
+  background: linear-gradient(135deg, #1a1630, #0b0c18);
+}
+
+.video-thumbnail {
+  background-color: #15112a;
+}
+
+.video-thumbnail img {
+  filter: saturate(1.12);
+}
+
+.video-card:hover .video-thumbnail img {
+  filter: saturate(1.3) contrast(1.04);
+}
+
+.video-play {
+  border-color: #d4c6ffbb;
+}
+
+/* Featured transmission */
+.video-card-featured {
+  border-color: #a58af455;
+  box-shadow: 0 15px 55px #5e42b510;
+}
+
+.video-card-featured .video-card-copy {
+  background:
+    radial-gradient(ellipse at 100% 0%, #7652ce22, transparent 65%);
+}
+
+/* Episode section */
+.episode-visual {
+  overflow: hidden;
+}
+
+.episode-core {
+  animation: episode-core-pulse 5s ease-in-out infinite;
+}
+
+@keyframes episode-core-pulse {
+  0%, 100% {
+    box-shadow: 0 0 55px #9c74ff66;
+  }
+  50% {
+    box-shadow: 0 0 100px #9c74ffaa;
+  }
+}
+
+/* About section */
+.about-section {
+  position: relative;
+}
+
+.about-section:before {
+  content: "";
+  position: absolute;
+  width: min(700px, 100%);
+  height: 250px;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(ellipse, #7551d51a, transparent 70%);
+  pointer-events: none;
+}
+
+.about-section > * {
+  position: relative;
+}
+
+/* Footer */
+.footer {
+  border-top-color: #9c83ed30;
+}
+
+.footer a {
+  transition: color .25s;
+}
+
+.footer a:hover {
+  color: #c6b6ff;
+}
+
+/* Modal */
+.fact-modal {
+  border-radius: 10px;
+  background:
+    radial-gradient(ellipse at 100% 0%, #7652ce25, transparent 55%),
+    linear-gradient(145deg, #19152f, #0b0c18);
+}
+
+/* Smooth responsive adjustments */
+@media (max-width: 640px) {
+  .hero {
+    min-height: 730px;
+  }
+
+  .fact-card:hover {
+    transform: translateY(-4px);
+  }
+
+  .hero:after {
+    width: 400px;
+    height: 400px;
+    right: -45%;
+  }
+
+  .section h2 {
+    text-shadow: none;
+  }
+}
+
+/* Accessibility */
+@media (prefers-reduced-motion: reduce) {
+  .fact-card,
+  .mini-planet,
+  .button,
+  .brand,
+  .read-link {
+    transition: none !important;
+  }
+
+  .episode-core {
+    animation: none !important;
+  }
+}
+
