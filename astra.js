@@ -1,4 +1,4 @@
-/* V9 — ASTRA assistant. Uses a secure backend when configured; preview fallback otherwise. */
+/* V11 — ASTRA assistant. Safe formatted responses, session context and live backend support. */
 (() => {
   const launcher = document.getElementById("astraLauncher");
   const panel = document.getElementById("astraWidget");
@@ -33,6 +33,58 @@
     if (event.key === "Escape" && panel.classList.contains("is-open")) closePanel();
   });
 
+  function appendInline(parent, text) {
+    const parts = String(text).split(/(\*\*[^*]+\*\*)/g);
+    parts.forEach(part => {
+      if (part.startsWith("**") && part.endsWith("**") && part.length > 4) {
+        const strong = document.createElement("strong");
+        strong.textContent = part.slice(2, -2);
+        parent.appendChild(strong);
+      } else {
+        parent.appendChild(document.createTextNode(part));
+      }
+    });
+  }
+
+  function renderAnswer(container, text) {
+    const lines = String(text).split(/\r?\n/);
+    let list = null;
+
+    lines.forEach(line => {
+      const trimmed = line.trim();
+      if (!trimmed) {
+        list = null;
+        return;
+      }
+
+      const heading = trimmed.match(/^#{1,4}\s+(.+)$/);
+      if (heading) {
+        list = null;
+        const h = document.createElement("h4");
+        appendInline(h, heading[1]);
+        container.appendChild(h);
+        return;
+      }
+
+      const bullet = trimmed.match(/^(?:[-*])\s+(.+)$/);
+      if (bullet) {
+        if (!list) {
+          list = document.createElement("ul");
+          container.appendChild(list);
+        }
+        const item = document.createElement("li");
+        appendInline(item, bullet[1]);
+        list.appendChild(item);
+        return;
+      }
+
+      list = null;
+      const paragraph = document.createElement("p");
+      appendInline(paragraph, trimmed);
+      container.appendChild(paragraph);
+    });
+  }
+
   function addMessage(text, who) {
     const bubble = document.createElement("div");
     bubble.className = "astra-message astra-message-" + who;
@@ -40,26 +92,26 @@
     label.className = "astra-message-label";
     label.textContent = who === "user" ? "YOU" : "ASTRA";
     bubble.appendChild(label);
-    bubble.appendChild(document.createTextNode(text));
+
+    if (who === "bot") {
+      const content = document.createElement("div");
+      content.className = "astra-message-content";
+      renderAnswer(content, text);
+      bubble.appendChild(content);
+    } else {
+      const content = document.createElement("div");
+      content.className = "astra-message-content";
+      content.textContent = text;
+      bubble.appendChild(content);
+    }
+
     chat.appendChild(bubble);
     chat.scrollTop = chat.scrollHeight;
     return bubble;
   }
 
-  function previewReply(question) {
-    const q = question.toLowerCase();
-    if (q.includes("venus")) return "Venus is extremely hot because its thick atmosphere traps heat through an intense greenhouse effect. Its surface is hot enough to melt lead. This is a sample response from ASTRA's preview knowledge.";
-    if (q.includes("black hole")) return "A black hole is a region where gravity is so strong that nothing—not even light—can escape from within its event horizon. It can form when a massive star's core collapses. This is a sample response from ASTRA's preview knowledge.";
-    if (q.includes("myth") || q.includes("hindu")) return "Mythology is filled with layered stories, symbols and philosophical ideas. ASTRA is planned to explore these respectfully, distinguish traditional accounts from historical evidence, and point you toward ASTRALORE videos.";
-    if (q.includes("mystery") || q.includes("cosmic")) return "One fascinating cosmic mystery is dark matter: observations suggest it contributes to the gravity holding galaxies together, yet it does not emit or reflect light in the usual way. Its nature remains unknown.";
-    return "Signal received. ASTRA's live AI backend is not configured yet. This is still the V9 connection-ready preview.";
-  }
-
   async function askAstra(question) {
-    if (!API_URL) {
-      await new Promise(resolve => window.setTimeout(resolve, 280));
-      return previewReply(question);
-    }
+    if (!API_URL) throw new Error("ASTRA's live connection is not configured yet.");
     const response = await fetch(API_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -68,12 +120,14 @@
         history: history.slice(-8)
       })
     });
+
+    const data = await response.json().catch(() => ({}));
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}));
-      throw new Error(errorData.error || "ASTRA couldn't connect right now. Please try again.");
+      throw new Error(data.error || "ASTRA couldn't connect right now. Please try again.");
     }
-    const data = await response.json();
-    if (!data.reply || typeof data.reply !== "string") throw new Error("ASTRA returned an empty signal. Please try again.");
+    if (!data.reply || typeof data.reply !== "string") {
+      throw new Error("ASTRA returned an empty signal. Please try again.");
+    }
     return data.reply;
   }
 
@@ -88,6 +142,7 @@
     input.value = "";
     const typing = addMessage("Receiving signal…", "bot");
     typing.classList.add("astra-message-loading");
+
     try {
       const reply = await askAstra(message);
       typing.remove();
@@ -115,11 +170,12 @@
       if (button) send(button.dataset.prompt);
     });
   }
+
   if (API_URL) {
     if (status) status.innerHTML = "<i></i> LIVE CONNECTION";
-    if (disclaimer) disclaimer.textContent = "ASTRALORE AI · RESPONSES GENERATED LIVE";
+    if (disclaimer) disclaimer.textContent = "ASTRALORE AI · SESSION CONTEXT ACTIVE";
   } else {
-    if (status) status.innerHTML = "<i></i> PREVIEW MODE";
-    if (disclaimer) disclaimer.textContent = "CONNECTION READY · BACKEND URL NOT SET";
+    if (status) status.innerHTML = "<i></i> OFFLINE";
+    if (disclaimer) disclaimer.textContent = "ASTRA LIVE CONNECTION NOT CONFIGURED";
   }
 })();
