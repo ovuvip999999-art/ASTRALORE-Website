@@ -15,7 +15,7 @@ API usage may cost money. A parent/guardian should review the provider account, 
 2. Install Wrangler on a trusted computer and sign in to the Cloudflare account.
 3. From this `backend` folder, deploy with `npx wrangler deploy`.
 4. Add the secret interactively: `npx wrangler secret put OPENAI_API_KEY`. Paste the key only into the secure terminal prompt. Never put it in a command line, source file, or chat.
-5. Optional model override: `npx wrangler secret? ` is not needed. Set a Worker variable named `ASTRA_MODEL` in Cloudflare if you want a different model; default is `gpt-5.5`.
+5. Optional model override: set a Worker variable named `ASTRA_MODEL` in Cloudflare if you want a different model; the default is `gpt-5.5`.
 6. Copy the deployed Worker HTTPS URL.
 7. Put that URL into `astra-config.js` as the value of `window.ASTRA_API_URL`, commit the change, and publish the GitHub Pages update.
 
