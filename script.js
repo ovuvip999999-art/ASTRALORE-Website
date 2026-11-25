@@ -57,6 +57,31 @@ if("IntersectionObserver" in window){
 }
 updateArchive();
 
+/* V7 — instant category filtering for the video archive */
+(() => {
+  const filterBar = document.getElementById("videoCategoryFilters");
+  const videoCards = [...document.querySelectorAll(".video-card[data-video-category]")];
+  const status = document.getElementById("videoFilterStatus");
+  if (!filterBar || !status || !videoCards.length) return;
+  const buttons = [...filterBar.querySelectorAll("[data-video-filter]")];
+  function applyVideoFilter(category) {
+    let visible = 0;
+    videoCards.forEach(card => {
+      const show = category === "all" || card.dataset.videoCategory === category;
+      card.hidden = !show;
+      if (show) visible++;
+    });
+    buttons.forEach(button => {
+      const active = button.dataset.videoFilter === category;
+      button.classList.toggle("active", active);
+      button.setAttribute("aria-pressed", String(active));
+    });
+    const label = category === "all" ? "ALL" : category.toUpperCase();
+    status.textContent = "SHOWING " + label + " — " + visible + " VIDEO" + (visible === 1 ? "" : "S");
+  }
+  buttons.forEach(button => button.addEventListener("click", () => applyVideoFilter(button.dataset.videoFilter)));
+  applyVideoFilter("all");
+})();
 
 /* V4 — lightweight pointer particles and scroll reveal */
 (() => {
