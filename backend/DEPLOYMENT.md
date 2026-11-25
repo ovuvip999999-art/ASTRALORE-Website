@@ -1,30 +1,29 @@
-# ASTRA V9 — Live AI backend
+# ASTRA V10 — Free AI backend
 
-This repository contains the ASTRALORE website frontend and a Cloudflare Worker backend.
+ASTRA uses Cloudflare Workers AI through the Worker AI binding. It does not require an OpenAI API key or a paid OpenAI API account.
 
-## Current state
-- The website is connection-ready.
-- The frontend uses local sample replies until `window.ASTRA_API_URL` is set in `astra-config.js`.
-- The Worker calls the OpenAI Responses API. The API key belongs only in the Worker secret store, never in GitHub or browser JavaScript.
+## Free-plan limits
+Cloudflare currently documents a free allocation of 10,000 Neurons per day for Workers AI on the Workers Free plan. The allowance is shared across AI usage on the account and resets daily at 00:00 UTC. When the free allowance is exhausted, AI requests stop working until it resets. Do not upgrade to a paid Workers plan if the goal is to keep this project at zero cost. Check the current Cloudflare pricing page before deployment because provider limits can change.
 
-## Before activating live AI
-API usage may cost money. A parent/guardian should review the provider account, billing, usage limits, and deployment before any paid API is enabled. Do not paste API keys into chat, GitHub files, screenshots, or the website.
+Official pricing: https://developers.cloudflare.com/workers-ai/platform/pricing/
 
-## Deploy the Worker
-1. A parent/guardian should create/review the Cloudflare account and Worker.
-2. Install Wrangler on a trusted computer and sign in to the Cloudflare account.
-3. From this `backend` folder, deploy with `npx wrangler deploy`.
-4. Add the secret interactively: `npx wrangler secret put OPENAI_API_KEY`. Paste the key only into the secure terminal prompt. Never put it in a command line, source file, or chat.
-5. Optional model override: set a Worker variable named `ASTRA_MODEL` in Cloudflare if you want a different model; the default is `gpt-5.5`.
-6. Copy the deployed Worker HTTPS URL.
-7. Put that URL into `astra-config.js` as the value of `window.ASTRA_API_URL`, commit the change, and publish the GitHub Pages update.
+## Deploy
+1. Have a parent/guardian review and oversee creation or use of the Cloudflare account and its settings.
+2. Install Node.js on the computer if it is not already installed.
+3. Open a terminal in this `backend` folder.
+4. Run `npx wrangler login` and complete Cloudflare authorization with the account owner.
+5. Run `npx wrangler deploy`.
+6. Copy the deployed Worker URL (it will look like `https://astralore-astra-api.<your-subdomain>.workers.dev`).
+7. Put that URL in the `window.ASTRA_API_URL` value in the website's `astra-config.js`, commit the change, and publish the GitHub Pages update.
 
-## Security notes
-- CORS allows only the ASTRALORE GitHub Pages origin and common local development origins.
-- Requests are size-limited, message lengths are capped, and output length is limited.
-- The API key is read from the Worker secret binding `OPENAI_API_KEY`.
-- This is a starter backend, not a complete abuse-prevention system. Before public launch, add Cloudflare rate limiting / abuse controls and set provider spending limits.
-- The Worker does not enable web search or external tools. ASTRA answers from model knowledge and the conversation only; ASTRALORE video recommendations/verified channel knowledge need a separate curated content catalogue.
-- Requests use `store: false`; do not send personal or sensitive information to the assistant.
+No API key or payment secret is required by this Worker. Keep the Cloudflare account on its Free plan. Do not add a payment method or upgrade just to increase usage.
 
-Official API reference: https://developers.openai.com/api/reference/resources/responses/methods/create
+## Security and limitations
+- The Worker accepts requests only from the ASTRALORE GitHub Pages origin and common local development origins.
+- Request size and message lengths are capped; response length is limited.
+- No third-party API key is stored in the repository or browser.
+- This is a starter backend, not a complete abuse-prevention system. Public launch should include rate limiting and monitoring.
+- The model answers from its model knowledge and conversation context. It does not yet search the web or have a curated, verified ASTRALORE video catalogue.
+- Do not send personal or sensitive information to ASTRA.
+
+Official setup guide: https://developers.cloudflare.com/workers-ai/get-started/workers-wrangler/
