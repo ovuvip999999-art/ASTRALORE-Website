@@ -26,18 +26,6 @@ function json(data, status, origin) {
   });
 }
 
-function getOutputText(data) {
-  if (typeof data.output_text === "string") return data.output_text.trim();
-  const parts = [];
-  for (const item of data.output || []) {
-    if (item.type !== "message") continue;
-    for (const part of item.content || []) {
-      if (part.type === "output_text" && typeof part.text === "string") parts.push(part.text);
-    }
-  }
-  return parts.join("\n").trim();
-}
-
 export default {
   async fetch(request, env) {
     const origin = request.headers.get("Origin") || "";
@@ -58,7 +46,7 @@ export default {
       });
     }
     if (request.method !== "POST") return json({ error: "Method not allowed." }, 405, origin);
-    if (!env.OPENAI_API_KEY) return json({ error: "ASTRA's AI key is not configured on the secure backend yet." }, 503, origin);
+    if (!env.AI) return json({ error: "ASTRA's free AI service is not enabled on this Worker yet." }, 503, origin);
 
     let body;
     try {
@@ -73,39 +61,29 @@ export default {
     if (!message) return json({ error: "Please enter a message first." }, 400, origin);
 
     const history = Array.isArray(body.history) ? body.history.slice(-8) : [];
-    const safeHistory = history
-      .filter(item => item && ["user", "assistant"].includes(item.role) && typeof item.content === "string")
-      .map(item => ({ role: item.role, content: item.content.slice(0, 800) }));
+    const messages = [
+      { role: "system", content: ASTRA_INSTRUCTIONS },
+      ...history
+        .filter(item => item && ["user", "assistant"].includes(item.role) && typeof item.content === "string")
+        .map(item => ({ role: item.role, content: item.content.slice(0, 800) })),
+      { role: "user", content: message }
+    ];
 
-    const model = env.ASTRA_MODEL || "gpt-5.5";
     try {
-      const upstream = await fetch("https://api.openai.com/v1/responses", {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${env.OPENAI_API_KEY}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-          model,
-          instructions: ASTRA_INSTRUCTIONS,
-          input: [
-            ...safeHistory,
-            { role: "user", content: message }
-          ],
-          max_output_tokens: 500,
-          store: false
-        })
+      const result = await env.AI.run("@cf/google/gemma-4-26b-a4b-it", {
+        messages,
+        max_tokens: 500,
+        temperature: 0.6
       });
-
-      const data = await upstream.json().catch(() => ({}));
-      if (!upstream.ok) {
-        return json({ error: "ASTRA's AI service is temporarily unavailable. Please try again later." }, 502, origin);
-      }
-      const reply = getOutputText(data);
+      const reply = typeof result?.response === "string"
+        ? result.response.trim()
+        : typeof result?.choices?.[0]?.message?.content === "string"
+          ? result.choices[0].message.content.trim()
+          : "";
       if (!reply) return json({ error: "ASTRA received an empty response. Please try again." }, 502, origin);
       return json({ reply }, 200, origin);
     } catch {
-      return json({ error: "Connection interrupted. Please try again." }, 502, origin);
+      return json({ error: "ASTRA's free AI service is busy or its daily free allowance may be used up. Please try again later." }, 503, origin);
     }
   }
 };
