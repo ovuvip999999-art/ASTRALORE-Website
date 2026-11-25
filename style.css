@@ -911,3 +911,6 @@ input:focus-visible {
 @media(prefers-reduced-motion:reduce){
  .v11-site *{scroll-behavior:auto!important;animation-duration:.01ms!important;transition-duration:.01ms!important}
 }
+
+/* Preserve JS-driven filtering after V11 layout changes */
+.v11-site [hidden]{display:none!important}
