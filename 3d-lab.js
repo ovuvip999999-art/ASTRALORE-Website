@@ -14,7 +14,7 @@ function resize(){const w=host.clientWidth,h=host.clientHeight;camera.aspect=w/h
 new ResizeObserver(resize).observe(host);resize();
 new GLTFLoader().load('assets/models/animal-cell.glb',gltf=>{
  const model=gltf.scene;const box=new THREE.Box3().setFromObject(model);const size=box.getSize(new THREE.Vector3());const center=box.getCenter(new THREE.Vector3());model.position.sub(center);
- const max=Math.max(size.x,size.y,size.z)||1;model.scale.setScalar(3.2/max);scene.add(model);controls.target.set(0,0,0);camera.position.set(0,max*.95,Math.max(4,max*2.3));camera.near=.01;camera.far=1000;camera.updateProjectionMatrix();controls.update();
+ const max=Math.max(size.x,size.y,size.z)||1;model.scale.setScalar(3.2/max);scene.add(model);controls.target.set(0,0,0);camera.position.set(0,1.2,5);camera.near=.01;camera.far=1000;camera.updateProjectionMatrix();controls.update();
  document.querySelector('.loading')?.remove();status.textContent='MODEL LOADED';window.cellModel=model;
 },xhr=>{if(xhr.total)status.textContent=Math.round(xhr.loaded/xhr.total*100)+'%'},err=>{console.error(err);status.textContent='LOAD FAILED';const l=document.querySelector('.loading');if(l)l.innerHTML='<strong>MODEL COULD NOT LOAD</strong><span>Check the model file path and refresh.</span>'});
 document.getElementById('resetView').addEventListener('click',()=>{camera.position.set(0,1.2,5);controls.target.set(0,0,0);controls.update()});
