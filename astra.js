@@ -1,4 +1,4 @@
-/* V8 — ASTRA local interface preview. No messages leave this browser. */
+/* V9 — ASTRA assistant. Uses a secure backend when configured; preview fallback otherwise. */
 (() => {
   const launcher = document.getElementById("astraLauncher");
   const panel = document.getElementById("astraWidget");
@@ -7,7 +7,13 @@
   const input = document.getElementById("astraInput");
   const chat = document.getElementById("astraChat");
   const suggestions = document.getElementById("astraSuggestions");
+  const status = document.querySelector(".astra-status");
+  const disclaimer = document.querySelector(".astra-disclaimer");
+  const API_URL = typeof window.ASTRA_API_URL === "string" ? window.ASTRA_API_URL.trim() : "";
   if (!launcher || !panel || !form || !input || !chat) return;
+
+  const history = [];
+  let busy = false;
 
   function openPanel() {
     panel.classList.add("is-open");
@@ -32,11 +38,12 @@
     bubble.className = "astra-message astra-message-" + who;
     const label = document.createElement("span");
     label.className = "astra-message-label";
-    label.textContent = who === "user" ? "YOU" : "ASTRA // PREVIEW";
+    label.textContent = who === "user" ? "YOU" : "ASTRA";
     bubble.appendChild(label);
     bubble.appendChild(document.createTextNode(text));
     chat.appendChild(bubble);
     chat.scrollTop = chat.scrollHeight;
+    return bubble;
   }
 
   function previewReply(question) {
@@ -45,17 +52,59 @@
     if (q.includes("black hole")) return "A black hole is a region where gravity is so strong that nothing—not even light—can escape from within its event horizon. It can form when a massive star's core collapses. This is a sample response from ASTRA's preview knowledge.";
     if (q.includes("myth") || q.includes("hindu")) return "Mythology is filled with layered stories, symbols and philosophical ideas. ASTRA is planned to explore these respectfully, distinguish traditional accounts from historical evidence, and point you toward ASTRALORE videos.";
     if (q.includes("mystery") || q.includes("cosmic")) return "One fascinating cosmic mystery is dark matter: observations suggest it contributes to the gravity holding galaxies together, yet it does not emit or reflect light in the usual way. Its nature remains unknown.";
-    return "Signal received. The full ASTRA intelligence system is not connected yet. This V8 build is an interface preview; real AI answers, broader knowledge and ASTRALORE video recommendations will arrive in a later release.";
+    return "Signal received. ASTRA's live AI backend is not configured yet. This is still the V9 connection-ready preview.";
   }
 
-  function send(text) {
+  async function askAstra(question) {
+    if (!API_URL) {
+      await new Promise(resolve => window.setTimeout(resolve, 280));
+      return previewReply(question);
+    }
+    const response = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        message: question,
+        history: history.slice(-8)
+      })
+    });
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(errorData.error || "ASTRA couldn't connect right now. Please try again.");
+    }
+    const data = await response.json();
+    if (!data.reply || typeof data.reply !== "string") throw new Error("ASTRA returned an empty signal. Please try again.");
+    return data.reply;
+  }
+
+  async function send(text) {
     const message = text.trim();
-    if (!message) return;
+    if (!message || busy) return;
+    busy = true;
+    input.disabled = true;
+    form.querySelector("button[type='submit']").disabled = true;
     addMessage(message, "user");
     if (suggestions) suggestions.hidden = true;
     input.value = "";
-    window.setTimeout(() => addMessage(previewReply(message), "bot"), 280);
+    const typing = addMessage("Receiving signal…", "bot");
+    typing.classList.add("astra-message-loading");
+    try {
+      const reply = await askAstra(message);
+      typing.remove();
+      addMessage(reply, "bot");
+      history.push({ role: "user", content: message }, { role: "assistant", content: reply });
+      if (history.length > 16) history.splice(0, history.length - 16);
+    } catch (error) {
+      typing.remove();
+      addMessage(error.message || "Connection interrupted. Please try again.", "bot");
+    } finally {
+      busy = false;
+      input.disabled = false;
+      form.querySelector("button[type='submit']").disabled = false;
+      input.focus();
+    }
   }
+
   form.addEventListener("submit", event => {
     event.preventDefault();
     send(input.value);
@@ -65,5 +114,12 @@
       const button = event.target.closest("button[data-prompt]");
       if (button) send(button.dataset.prompt);
     });
+  }
+  if (API_URL) {
+    if (status) status.innerHTML = "<i></i> LIVE CONNECTION";
+    if (disclaimer) disclaimer.textContent = "ASTRALORE AI · RESPONSES GENERATED LIVE";
+  } else {
+    if (status) status.innerHTML = "<i></i> PREVIEW MODE";
+    if (disclaimer) disclaimer.textContent = "CONNECTION READY · BACKEND URL NOT SET";
   }
 })();
