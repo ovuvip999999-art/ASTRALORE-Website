@@ -64,7 +64,15 @@ renderer.domElement.addEventListener('pointerdown',event=>{
  else if(/golgi/.test(name))key='golgi';
  else if(/endoplasmic|reticulum|rough_er|smooth_er/.test(name))key='er';
  else if(/membrane/.test(name))key='membrane';
- choose(key,true,hit.userData.originalName);
+ if(/nucleus|nucleolus|mitochond|mito|golgi|endoplasmic|reticulum|rough_er|smooth_er|membrane/.test(name)){
+  choose(key,true,hit.userData.originalName);
+ }else{
+  restoreHighlight();const original=hit.material;originalMaterials.set(hit,original);
+  const mats=Array.isArray(original)?original:[original];
+  const clones=mats.map(mat=>{const clone=mat.clone();if(clone.emissive){clone.emissive=new THREE.Color(0x8e6bff);clone.emissiveIntensity=.85;}return clone;});
+  hit.material=Array.isArray(original)?clones:clones[0];selectedMeshes=[hit];
+  document.getElementById('selectionHint').textContent='Selected model mesh: '+hit.userData.originalName+'. This model file does not label this surface as a specific organelle, so we will not guess its identity.';
+ }
 });
 document.getElementById('resetView').addEventListener('click',()=>{camera.position.set(0,1.2,5);controls.target.set(0,0,0);controls.update();});
 const toggle=document.getElementById('autoRotate');toggle.addEventListener('click',()=>{controls.autoRotate=!controls.autoRotate;toggle.classList.toggle('selected',controls.autoRotate);toggle.textContent='AUTO ROTATE: '+(controls.autoRotate?'ON':'OFF')});
