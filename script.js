@@ -56,3 +56,55 @@ if("IntersectionObserver" in window){
   sections.forEach(section=>observer.observe(section));
 }
 updateArchive();
+
+
+/* V4 — lightweight pointer particles and scroll reveal */
+(() => {
+  const finePointer = window.matchMedia && window.matchMedia("(hover: hover) and (pointer: fine)").matches;
+  const reducedMotion = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  if (finePointer && !reducedMotion) {
+    const glow = document.createElement("div");
+    glow.id = "astralore-cursor-glow";
+    document.body.appendChild(glow);
+    const dots = [];
+    for (let i = 0; i < 12; i++) {
+      const dot = document.createElement("span");
+      dot.className = "astralore-cursor-dot";
+      dot.style.setProperty("--dot-opacity", String(0.55 - i * 0.032));
+      document.body.appendChild(dot);
+      dots.push({ el: dot, x: innerWidth / 2, y: innerHeight / 2, ease: 0.22 + i * 0.045 });
+    }
+    let pointerX = innerWidth / 2, pointerY = innerHeight / 2, raf = 0;
+    const move = event => {
+      pointerX = event.clientX; pointerY = event.clientY;
+      document.body.classList.add("astralore-cursor-active");
+      glow.style.transform = `translate3d(${pointerX}px,${pointerY}px,0) translate(-50%,-50%)`;
+      if (!raf) raf = requestAnimationFrame(animate);
+    };
+    function animate() {
+      raf = 0;
+      let x = pointerX, y = pointerY;
+      dots.forEach((dot, index) => {
+        dot.x += (x - dot.x) * dot.ease;
+        dot.y += (y - dot.y) * dot.ease;
+        dot.el.style.transform = `translate3d(${dot.x}px,${dot.y}px,0) translate(-50%,-50%) scale(${1 - index * 0.045})`;
+        x = dot.x; y = dot.y;
+      });
+      if (Math.abs(pointerX - dots[0].x) > 0.5 || Math.abs(pointerY - dots[0].y) > 0.5) raf = requestAnimationFrame(animate);
+    }
+    window.addEventListener("pointermove", move, { passive: true });
+    window.addEventListener("blur", () => document.body.classList.remove("astralore-cursor-active"));
+    document.addEventListener("visibilitychange", () => { if (document.hidden) document.body.classList.remove("astralore-cursor-active"); });
+  }
+  const targets = [...document.querySelectorAll(".section-top, .search-panel, .results-line, .fact-card, .episode-visual, .episode-copy, .about-section > *, .footer > *")];
+  targets.forEach((el, i) => {
+    el.classList.add("js-reveal");
+    if (el.classList.contains("fact-card")) el.style.transitionDelay = (i % 4) * 75 + "ms";
+  });
+  if ("IntersectionObserver" in window && !reducedMotion) {
+    const observer = new IntersectionObserver(entries => entries.forEach(entry => {
+      if (entry.isIntersecting) { entry.target.classList.add("is-visible"); observer.unobserve(entry.target); }
+    }), { threshold: 0.12, rootMargin: "0px 0px -35px 0px" });
+    targets.forEach(el => observer.observe(el));
+  } else targets.forEach(el => el.classList.add("is-visible"));
+})();
