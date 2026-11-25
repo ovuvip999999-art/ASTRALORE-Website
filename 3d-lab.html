@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#080914"><meta name="description" content="Explore interactive 3D science models inside ASTRALORE.">
+<title>3D Lab | ASTRALORE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="3d-lab.css">
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
+</head>
+<body>
+<header class="lab-header"><a class="lab-brand" href="index.html">✦ ASTRALORE</a><nav><a href="index.html">HOME</a><a class="active" href="3d-lab.html">3D LAB</a><a href="quiz.html">QUIZ ARENA</a></nav></header>
+<main class="lab-main">
+<section class="lab-intro"><div class="eyebrow">ASTRALORE / INTERACTIVE SCIENCE</div><h1>THE 3D <span>LABORATORY.</span></h1><p>Explore scientific structures in three dimensions. Drag to rotate, scroll to zoom, and inspect the model from every angle.</p></section>
+<section class="lab-layout">
+<div class="viewer-card"><div class="viewer-top"><span><i></i> LIVE MODEL VIEWER</span><span id="modelStatus">INITIALIZING…</span></div><div id="viewer"><div class="loading"><div class="loader"></div><span>Loading animal cell model…</span></div></div>
+<div class="viewer-controls"><button id="resetView">↺ RESET VIEW</button><button id="autoRotate" class="selected">AUTO ROTATE: ON</button><span>DRAG TO ROTATE · SCROLL TO ZOOM</span></div></div>
+<aside class="model-info"><div class="model-tag">BIOLOGY / CELL STRUCTURE</div><h2>Animal Cell</h2><p class="model-lead">A three-dimensional view of a eukaryotic animal cell and its internal structures.</p><div class="info-rule"></div><h3>Explore the structures</h3>
+<div class="organelle"><b>01</b><div><strong>Cell membrane</strong><p>Controls what enters and leaves the cell.</p></div></div>
+<div class="organelle"><b>02</b><div><strong>Nucleus</strong><p>Contains genetic material and helps coordinate cell activities.</p></div></div>
+<div class="organelle"><b>03</b><div><strong>Mitochondria</strong><p>Carry out aerobic respiration and produce ATP.</p></div></div>
+<div class="organelle"><b>04</b><div><strong>Endoplasmic reticulum</strong><p>Helps synthesize and transport proteins and lipids.</p></div></div>
+<div class="organelle"><b>05</b><div><strong>Golgi apparatus</strong><p>Modifies, sorts and packages cell products.</p></div></div>
+<div class="model-note">MODEL FILE · assets/models/animal-cell.glb</div></aside>
+</section>
+<section class="lab-footer"><span>MORE MODELS ARE IN DEVELOPMENT</span><a href="index.html">← RETURN TO ASTRALORE</a></section>
+</main><script type="module" src="3d-lab.js"></script></body></html>
