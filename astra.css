@@ -35,3 +35,66 @@
 .astra-message-content li{margin:0 0 5px;padding-left:2px}
 .astra-message-content strong{color:#fff;font-weight:800}
 .astra-message-user .astra-message-content{white-space:pre-wrap}
+
+/* ASTRA V12 - Rich response styling */
+
+.astra-message-content a {
+  color: #c5a8ff;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  overflow-wrap: anywhere;
+}
+
+.astra-message-content a:hover {
+  color: #ffffff;
+}
+
+.astra-message-content em {
+  color: #e1d5ff;
+  font-style: italic;
+}
+
+.astra-message-content code {
+  padding: 2px 5px;
+  border-radius: 4px;
+  background: #ffffff12;
+  color: #d7c3ff;
+  font-family: monospace;
+}
+
+.astra-message-content ol {
+  margin: 5px 0 9px;
+  padding-left: 20px;
+}
+
+.astra-message-content table {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 10px;
+}
+
+.astra-message-content td {
+  padding: 8px;
+  border: 1px solid #ffffff25;
+  text-align: left;
+  vertical-align: top;
+}
+
+.astra-message-content tr:first-child td {
+  background: #7555a52b;
+  color: #ffffff;
+  font-weight: bold;
+}
+
+.astra-message-content li {
+  overflow-wrap: anywhere;
+}
+
+.astra-message-content {
+  overflow-wrap: anywhere;
+}
+
