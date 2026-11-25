@@ -90,7 +90,7 @@ updateArchive();
         dot.el.style.transform = `translate3d(${dot.x}px,${dot.y}px,0) translate(-50%,-50%) scale(${1 - index * 0.045})`;
         x = dot.x; y = dot.y;
       });
-      if (Math.abs(pointerX - dots[0].x) > 0.5 || Math.abs(pointerY - dots[0].y) > 0.5) raf = requestAnimationFrame(animate);
+      if (dots.some(dot => Math.abs(pointerX - dot.x) > 0.5 || Math.abs(pointerY - dot.y) > 0.5)) raf = requestAnimationFrame(animate);
     }
     window.addEventListener("pointermove", move, { passive: true });
     window.addEventListener("blur", () => document.body.classList.remove("astralore-cursor-active"));
