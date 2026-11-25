@@ -21,7 +21,7 @@ const questionBank=[
 {category:"space",q:"Which object is at the centre of our Milky Way?",a:["A giant star","A supermassive black hole","A neutron star","A nebula"],correct:1,why:"The Milky Way's centre contains the supermassive black hole Sagittarius A*."},
 {category:"space",q:"What is the main source of the Sun's energy?",a:["Chemical burning","Nuclear fission","Nuclear fusion","Gravitational friction"],correct:2,why:"The Sun releases energy by fusing hydrogen into helium in its core."},
 {category:"space",q:"Which planet is the hottest on average?",a:["Mercury","Venus","Mars","Jupiter"],correct:1,why:"Venus is hottest because its dense carbon-dioxide atmosphere creates an intense greenhouse effect."},
-{category:"biology",q:"Which organelle is the main site of protein synthesis?",a:["Lysosome","Ribosome","Vacuole","Cent centriole"],correct:1,why:"Ribosomes translate messenger RNA to build proteins."},
+{category:"biology",q:"Which organelle is the main site of protein synthesis?",a:["Lysosome","Ribosome","Vacuole","Centriole"],correct:1,why:"Ribosomes translate messenger RNA to build proteins."},
 {category:"biology",q:"What is the basic structural and functional unit of life?",a:["Tissue","Organ","Cell","Molecule"],correct:2,why:"The cell is the basic structural and functional unit of living organisms."},
 {category:"biology",q:"Which blood cells help defend the body against pathogens?",a:["Red blood cells","Platelets","White blood cells","Plasma cells only"],correct:2,why:"White blood cells are key components of the immune system."},
 {category:"biology",q:"Which pigment captures light for photosynthesis in plants?",a:["Haemoglobin","Chlorophyll","Melanin","Keratin"],correct:1,why:"Chlorophyll absorbs light energy used in photosynthesis."},
@@ -56,8 +56,8 @@ function startQuiz(){
  let seen=[];
  try{seen=JSON.parse(localStorage.getItem(storageKey)||"[]");}catch(e){seen=[];}
  let fresh=pool.filter((q,i)=>!seen.includes(i));
- if(fresh.length<10){seen=[];fresh=pool.slice();}
- questions=shuffle(fresh).slice(0,10);
+ if(fresh.length===0){seen=[];fresh=pool.slice();}
+ questions=shuffle(fresh).slice(0,Math.min(10,fresh.length));
  const selectedIndices=questions.map(q=>pool.indexOf(q));
  seen=[...seen,...selectedIndices];
  if(seen.length>=pool.length){seen=[];}
