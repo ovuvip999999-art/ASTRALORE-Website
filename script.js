@@ -143,3 +143,64 @@ updateArchive();
     targets.forEach(el => observer.observe(el));
   } else targets.forEach(el => el.classList.add("is-visible"));
 })();
+
+
+/* ASTRALORE ambient comet field — lightweight canvas effect */
+(()=>{
+  const backdrop=document.querySelector('.cosmic-backdrop');
+  if(!backdrop || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const canvas=document.createElement('canvas');
+  canvas.className='comet-canvas';
+  canvas.setAttribute('aria-hidden','true');
+  backdrop.appendChild(canvas);
+  const ctx=canvas.getContext('2d',{alpha:true});
+  if(!ctx) return;
+  let width=0,height=0,dpr=1,raf=0,last=0;
+  const comets=[];
+  const count=9;
+  const rand=(a,b)=>a+Math.random()*(b-a);
+  function resize(){
+    const rect=backdrop.getBoundingClientRect();
+    width=Math.max(1,rect.width);height=Math.max(1,rect.height);
+    dpr=Math.min(window.devicePixelRatio||1,1.5);
+    canvas.width=Math.round(width*dpr);canvas.height=Math.round(height*dpr);
+    canvas.style.width=width+'px';canvas.style.height=height+'px';
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+  }
+  function reset(c,initial=false){
+    c.x=rand(-width*.15,width*1.05);
+    c.y=initial?rand(-height*.1,height):rand(-height*.35,-20);
+    c.length=rand(24,66);c.speed=rand(35,85);
+    c.size=rand(.7,1.45);c.alpha=rand(.38,.82);
+    c.phase=rand(0,Math.PI*2);
+  }
+  function init(){resize();comets.length=0;for(let i=0;i<count;i++){const c={};reset(c,true);comets.push(c);}}
+  function draw(now){
+    raf=requestAnimationFrame(draw);
+    const dt=Math.min(.04,(now-last)/1000||0);last=now;
+    ctx.clearRect(0,0,width,height);
+    for(const c of comets){
+      c.x+=c.speed*dt;c.y+=c.speed*.48*dt;c.phase+=dt*2;
+      const shimmer=.72+.28*Math.sin(c.phase);
+      const grad=ctx.createLinearGradient(c.x-c.length,c.y-c.length*.48,c.x,c.y);
+      grad.addColorStop(0,'rgba(154,135,255,0)');
+      grad.addColorStop(.65,'rgba(170,185,255,'+(c.alpha*.35*shimmer)+')');
+      grad.addColorStop(1,'rgba(255,255,255,'+(c.alpha*shimmer)+')');
+      ctx.save();ctx.lineCap='round';ctx.strokeStyle=grad;
+      ctx.shadowBlur=12;ctx.shadowColor='rgba(151,133,255,.9)';
+      ctx.lineWidth=c.size;ctx.beginPath();
+      ctx.moveTo(c.x-c.length,c.y-c.length*.48);ctx.lineTo(c.x,c.y);ctx.stroke();
+      ctx.fillStyle='rgba(255,255,255,'+(c.alpha*shimmer)+')';
+      ctx.shadowBlur=9;ctx.beginPath();ctx.arc(c.x,c.y,c.size*1.15,0,Math.PI*2);ctx.fill();
+      ctx.restore();
+      if(c.x>width+90||c.y>height+90) reset(c);
+    }
+  }
+  init();
+  const observer=new ResizeObserver(resize);observer.observe(backdrop);
+  document.addEventListener('visibilitychange',()=>{
+    if(document.hidden){cancelAnimationFrame(raf);raf=0;}
+    else if(!raf){last=0;raf=requestAnimationFrame(draw);}
+  });
+  raf=requestAnimationFrame(draw);
+})();
