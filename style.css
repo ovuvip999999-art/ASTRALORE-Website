@@ -914,3 +914,47 @@ input:focus-visible {
 
 /* Preserve JS-driven filtering after V11 layout changes */
 .v11-site [hidden]{display:none!important}
+
+
+/* ==========================================
+   ASTRALORE V12 — EXPANDED KNOWLEDGE UNIVERSE
+========================================== */
+.v12-worlds{
+  max-width:none;padding:clamp(82px,9vw,132px) clamp(24px,8vw,130px);
+  background:radial-gradient(ellipse at 82% 20%,rgba(91,69,175,.16),transparent 36%),#060713;
+  border-top:1px solid rgba(183,154,255,.13);
+  border-bottom:1px solid rgba(183,154,255,.13);
+}
+.v12-worlds-heading{display:grid;grid-template-columns:1.15fr .85fr;gap:8vw;align-items:end;margin-bottom:48px}
+.v12-worlds-heading h2{font-size:clamp(48px,7vw,92px);line-height:.92;letter-spacing:-.075em;margin:18px 0 0}
+.v12-worlds-heading h2 span{color:#b9a5ff}
+.v12-worlds-heading>p{max-width:420px;color:#aaa6c0;font-size:14px;line-height:2;margin:0 0 5px}
+.v12-world-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+.v12-world-card{
+  min-height:210px;padding:24px;text-align:left;color:#f4f1ff;cursor:pointer;
+  display:flex;flex-direction:column;align-items:flex-start;justify-content:space-between;
+  border:1px solid rgba(183,154,255,.18);border-radius:5px;
+  background:linear-gradient(145deg,rgba(28,25,53,.95),rgba(9,12,29,.98));
+  transition:transform .25s,border-color .25s,background .25s;
+}
+.v12-world-card:hover{transform:translateY(-5px);border-color:rgba(151,210,255,.55);background:linear-gradient(145deg,rgba(43,37,77,.96),rgba(11,18,39,.98))}
+.v12-world-card>span{font:10px "DM Mono",monospace;letter-spacing:2px;color:#a9a1c7}
+.v12-world-card strong{font:700 clamp(25px,3vw,38px) "Space Grotesk",sans-serif;letter-spacing:-1.5px}
+.v12-world-card small{font-size:12px;line-height:1.7;color:#aaa6c0;margin:10px 0 20px}
+.v12-world-card>b{font:10px "DM Mono",monospace;letter-spacing:1.5px;color:#c5b7ff}
+.v12-world-space{background-image:radial-gradient(ellipse at 80% 15%,rgba(76,123,219,.25),transparent 55%),linear-gradient(145deg,rgba(28,25,53,.95),rgba(9,12,29,.98))}
+.v12-world-science{background-image:radial-gradient(ellipse at 80% 15%,rgba(74,173,191,.2),transparent 55%),linear-gradient(145deg,rgba(28,25,53,.95),rgba(9,12,29,.98))}
+.v12-world-biology{background-image:radial-gradient(ellipse at 80% 15%,rgba(72,171,126,.2),transparent 55%),linear-gradient(145deg,rgba(28,25,53,.95),rgba(9,12,29,.98))}
+.v12-world-physics{background-image:radial-gradient(ellipse at 80% 15%,rgba(153,106,226,.24),transparent 55%),linear-gradient(145deg,rgba(28,25,53,.95),rgba(9,12,29,.98))}
+.v12-world-earth{background-image:radial-gradient(ellipse at 80% 15%,rgba(78,155,170,.2),transparent 55%),linear-gradient(145deg,rgba(28,25,53,.95),rgba(9,12,29,.98))}
+.v12-world-mystery{background-image:radial-gradient(ellipse at 80% 15%,rgba(86,91,163,.25),transparent 55%),linear-gradient(145deg,rgba(28,25,53,.95),rgba(9,12,29,.98))}
+@media(max-width:900px){
+  .v12-worlds-heading{grid-template-columns:1fr;gap:22px}
+  .v12-world-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+@media(max-width:560px){
+  .v12-worlds{padding:78px 6%}
+  .v12-worlds-heading h2{font-size:clamp(43px,11vw,64px)}
+  .v12-world-grid{grid-template-columns:1fr}
+  .v12-world-card{min-height:180px}
+}
