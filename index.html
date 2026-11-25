@@ -1,105 +1,118 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#080914">
-  <meta name="description" content="ASTRALORE — facts that feel unreal, mysteries worth exploring.">
-  <title>ASTRALORE — Enter the Unknown</title>
+  <meta name="theme-color" content="#070711">
+  <meta name="description" content="ASTRALORE — enter a universe of science, space, mysteries and extraordinary stories.">
+  <title>ASTRALORE — Explore Beyond</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="style.css?v=8">
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css?v=9">
   <link rel="stylesheet" href="astra.css?v=14.0">
 </head>
-<body>
+<body class="v9-site">
   <div class="cosmic-backdrop" aria-hidden="true"><div class="star-layer star-layer-one"></div><div class="star-layer star-layer-two"></div><div class="nebula nebula-violet"></div><div class="nebula nebula-blue"></div></div>
-  <div class="noise"></div>
+  <div class="noise" aria-hidden="true"></div>
   <div class="ambient ambient-one"></div><div class="ambient ambient-two"></div>
-  <header class="site-header">
+
+  <header class="site-header" id="top">
     <a class="brand" href="#home" aria-label="ASTRALORE home"><span class="brand-star">✦</span> ASTRA<span>LORE</span></a>
     <button class="menu-toggle" id="menuToggle" aria-label="Open menu" aria-expanded="false">☰</button>
-    <nav class="nav" id="nav">
-      <a class="nav-link active" href="#home">Home</a>
-      <a class="nav-link" href="#explore">Explore</a>
-      <a class="nav-link" href="#videos">Videos</a>
-      <a class="nav-link" href="#about">About</a>
-      <a class="nav-cta" href="https://youtube.com/@astralore-d6k" target="_blank" rel="noopener">YouTube <span>↗</span></a>
+    <nav class="nav" id="nav" aria-label="Main navigation">
+      <a class="nav-link active" href="#home">HOME</a>
+      <a class="nav-link" href="#explore">DISCOVER</a>
+      <a class="nav-link" href="#videos">TRANSMISSIONS</a>
+      <a class="nav-link" href="#about">OUR STORY</a>
+      <a class="nav-cta" href="https://youtube.com/@astralore-d6k" target="_blank" rel="noopener">YOUTUBE <span>↗</span></a>
     </nav>
   </header>
 
   <main>
-    <section class="hero" id="home">
+    <section class="hero v9-hero" id="home">
       <div class="hero-copy">
-        <div class="eyebrow"><span class="pulse"></span> THE GATEWAY TO THE UNKNOWN</div>
-        <h1>THE UNIVERSE<br>IS MORE <em>THAN</em><br><span>YOU IMAGINE.</span></h1>
-        <p class="hero-description">Facts that feel unreal. Mysteries worth exploring.<br>Knowledge reimagined through anime-inspired storytelling.</p>
+        <div class="eyebrow"><span class="pulse"></span> AN ATLAS OF THE UNEXPLAINED</div>
+        <div class="hero-kicker">SCIENCE · SPACE · MYSTERIES · IMAGINATION</div>
+        <h1>THERE IS<br>MORE <em>OUT</em><br><span>THERE.</span></h1>
+        <p class="hero-description">Step beyond the familiar. Explore strange truths, distant worlds and ideas that make reality feel extraordinary.</p>
         <div class="hero-actions">
-          <a class="button button-primary" href="#explore">START EXPLORING <span>↗</span></a>
-          <a class="button button-ghost" href="https://youtube.com/@astralore-d6k" target="_blank" rel="noopener"><span class="play">▶</span> WATCH ON YOUTUBE</a>
+          <a class="button button-primary" href="#explore">EXPLORE THE ARCHIVE <span>↗</span></a>
+          <a class="button button-ghost" href="https://youtube.com/@astralore-d6k" target="_blank" rel="noopener"><span class="play">▶</span> WATCH THE STORIES</a>
         </div>
-        <div class="hero-meta"><span><b>01</b> ONE UNIVERSE</span><span><b>∞</b> THINGS TO DISCOVER</span></div>
+        <div class="hero-meta"><span><b>01</b> / THE KNOWN</span><span><b>∞</b> / THE POSSIBLE</span></div>
       </div>
-      <div class="hero-art" aria-label="Abstract glowing cosmic planet illustration">
-        <div class="art-label label-top">ASTRALORE // 001</div>
-        <div class="orbit orbit-a"></div><div class="orbit orbit-b"></div><div class="orbit orbit-c"></div>
-        <div class="planet-halo"></div><div class="planet"><div class="planet-shine"></div></div>
+      <div class="hero-art v9-orbit-art" aria-label="A glowing illustrated planet surrounded by orbital paths">
+        <div class="v9-art-grid"></div>
+        <div class="v9-orbit v9-orbit-one"></div><div class="v9-orbit v9-orbit-two"></div><div class="v9-orbit v9-orbit-three"></div>
+        <div class="v9-sunflare"></div><div class="planet-halo"></div><div class="planet"><div class="planet-shine"></div></div>
         <i class="moon moon-one"></i><i class="moon moon-two"></i><i class="moon moon-three"></i>
-        <div class="art-cross">✧</div><div class="art-label label-bottom">BEYOND THE KNOWN</div>
+        <span class="v9-coordinate v9-coordinate-a">26° 12' N<br>THE UNKNOWN</span>
+        <span class="v9-coordinate v9-coordinate-b">SECTOR 001<br>NO LIMITS</span>
+        <span class="v9-art-index">A / 001</span>
       </div>
-      <div class="scroll-note"><span></span> SCROLL TO EXPLORE</div>
-      <div class="hero-index">A / 001</div>
+      <div class="v9-scroll-cue"><span></span> SCROLL TO BEGIN</div>
+      <div class="hero-index">ASTRALORE® / FIELD NOTES</div>
     </section>
 
-    <section class="archive section" id="explore">
-      <div class="section-top">
-        <div><div class="eyebrow"><span class="section-number">01</span> — THE KNOWLEDGE ARCHIVE</div>
-          <h2>WHAT ARE YOU<br><span>CURIOUS ABOUT?</span></h2></div>
-        <p class="section-intro">Choose a dimension. Follow your curiosity.<br>There is always something beyond the known.</p>
-      </div>
-      <div class="search-panel">
-        <label class="search-box"><span class="search-icon">⌕</span><input id="searchInput" type="search" placeholder="Search space, science, mysteries..." autocomplete="off"><kbd>ENTER</kbd><button id="clearSearch" aria-label="Clear search">×</button></label>
-        <div class="filter-row" id="filters" aria-label="Filter discoveries">
-          <button class="filter active" data-filter="all">ALL DISCOVERIES</button>
-          <button class="filter" data-filter="space">SPACE</button>
-          <button class="filter" data-filter="science">SCIENCE</button>
-          <button class="filter" data-filter="mysteries">MYSTERIES</button>
-          <button class="filter" data-filter="anime">ANIME WORLD</button>
-        </div>
-      </div>
-      <div class="results-line"><span id="resultCount">04 DISCOVERIES</span><span>SELECT A FILE TO OPEN ↘</span></div>
-      <div class="fact-grid" id="factGrid">
-        <article class="fact-card" data-category="space" data-search="venus planet day longer year rotation orbit">
-          <div class="card-art venus-art"><span class="card-code">FILE 001 / SPACE</span><div class="mini-planet venus"></div><span class="art-caption">THE STRANGE<br>WORLD</span></div>
-          <div class="card-body"><div class="card-meta"><span>SPACE</span><span>01 / 04</span></div><h3>A Day Longer Than a Year</h3><p>On Venus, one rotation takes longer than one trip around the Sun.</p><button class="read-link" data-open="venus">OPEN FILE <span>↗</span></button></div>
-        </article>
-        <article class="fact-card" data-category="science" data-search="octopus three hearts blood blue biology ocean">
-          <div class="card-art ocean-art"><span class="card-code">FILE 002 / SCIENCE</span><div class="tentacle-shape">〰</div><span class="art-caption">LIFE<br>BELOW</span></div>
-          <div class="card-body"><div class="card-meta"><span>SCIENCE</span><span>02 / 04</span></div><h3>Three Hearts, Blue Blood</h3><p>Octopuses have three hearts, and their blood uses a copper-based protein.</p><button class="read-link" data-open="octopus">OPEN FILE <span>↗</span></button></div>
-        </article>
-        <article class="fact-card" data-category="mysteries" data-search="deep ocean unexplored ocean mystery">
-          <div class="card-art deep-art"><span class="card-code">FILE 003 / MYSTERIES</span><div class="deep-light"></div><span class="art-caption">THE<br>ABYSS</span></div>
-          <div class="card-body"><div class="card-meta"><span>MYSTERIES</span><span>03 / 04</span></div><h3>Worlds Beneath the Waves</h3><p>The deep ocean remains difficult to explore, with much still to learn about it.</p><button class="read-link" data-open="ocean">OPEN FILE <span>↗</span></button></div>
-        </article>
-        <article class="fact-card" data-category="anime" data-search="anime storytelling imagination worlds characters">
-          <div class="card-art anime-art"><span class="card-code">FILE 004 / ANIME WORLD</span><div class="anime-sigil">✦</div><span class="art-caption">BEYOND<br>REALITY</span></div>
-          <div class="card-body"><div class="card-meta"><span>ANIME WORLD</span><span>04 / 04</span></div><h3>Worlds Beyond Reality</h3><p>Explore the ideas, science and inspiration behind extraordinary fictional worlds.</p><button class="read-link" data-open="anime">OPEN FILE <span>↗</span></button></div>
-        </article>
-      </div>
-      <div class="empty-state" id="emptyState" hidden><span>✧</span><h3>NO SIGNAL FOUND</h3><p>Try another search or choose a different dimension.</p><button class="filter reset-button" id="resetFilters">RESET ARCHIVE</button></div>
+    <section class="v9-manifesto" aria-label="ASTRALORE motto">
+      <span>LOOK CLOSER</span><i>✦</i><span>QUESTION EVERYTHING</span><i>✦</i><span>STAY CURIOUS</span><i>✦</i><span>LOOK CLOSER</span>
     </section>
 
-    <section class="videos-section section" id="videos">
-      <div class="videos-heading">
-        <div>
-          <div class="eyebrow"><span class="section-number">02</span> — THE VIDEO ARCHIVE</div>
-          <h2>WATCH THE<br><span>UNKNOWN UNFOLD.</span></h2>
+    <section class="archive section v9-archive" id="explore">
+      <div class="section-top v9-section-top">
+        <div><div class="eyebrow"><span class="section-number">01</span> / THE KNOWLEDGE INDEX</div>
+          <h2>CHOOSE YOUR<br><span>RABBIT HOLE.</span></h2></div>
+        <p class="section-intro">A growing collection of things worth knowing. Pick a subject, open a file, and follow the question wherever it leads.</p>
+      </div>
+      <div class="v9-archive-layout">
+        <aside class="v9-archive-aside">
+          <span class="v9-aside-number">INDEX<br>001—004</span>
+          <p>Curiosity is the only entry requirement.</p>
+          <span class="v9-aside-mark">✳</span>
+        </aside>
+        <div class="v9-archive-main">
+          <div class="search-panel v9-search-panel">
+            <label class="search-box"><span class="search-icon">⌕</span><input id="searchInput" type="search" placeholder="Search the archive..." autocomplete="off"><kbd>ENTER</kbd><button id="clearSearch" aria-label="Clear search">×</button></label>
+            <div class="filter-row" id="filters" aria-label="Filter discoveries">
+              <button class="filter active" data-filter="all">ALL FILES</button>
+              <button class="filter" data-filter="space">SPACE</button>
+              <button class="filter" data-filter="science">SCIENCE</button>
+              <button class="filter" data-filter="mysteries">MYSTERIES</button>
+              <button class="filter" data-filter="anime">ANIME WORLD</button>
+            </div>
+          </div>
+          <div class="results-line"><span id="resultCount">04 DISCOVERIES</span><span>SELECT A FILE TO DECLASSIFY ↘</span></div>
+          <div class="fact-grid v9-fact-grid" id="factGrid">
+            <article class="fact-card v9-fact-card" data-category="space" data-search="venus planet day longer year rotation orbit">
+              <div class="card-art venus-art"><span class="card-code">FIELD NOTE / 001</span><div class="mini-planet venus"></div><span class="art-caption">THE STRANGE<br>WORLD</span><span class="v9-card-symbol">01</span></div>
+              <div class="card-body"><div class="card-meta"><span>SPACE / PLANETS</span><span>001</span></div><h3>A Day Longer Than a Year</h3><p>On Venus, one rotation takes longer than one trip around the Sun.</p><button class="read-link" data-open="venus">READ FIELD NOTE <span>↗</span></button></div>
+            </article>
+            <article class="fact-card v9-fact-card" data-category="science" data-search="octopus three hearts blood blue biology ocean">
+              <div class="card-art ocean-art"><span class="card-code">FIELD NOTE / 002</span><div class="tentacle-shape">〰</div><span class="art-caption">LIFE<br>BELOW</span><span class="v9-card-symbol">02</span></div>
+              <div class="card-body"><div class="card-meta"><span>SCIENCE / BIOLOGY</span><span>002</span></div><h3>Three Hearts, Blue Blood</h3><p>Octopuses have three hearts, and their blood uses a copper-based protein.</p><button class="read-link" data-open="octopus">READ FIELD NOTE <span>↗</span></button></div>
+            </article>
+            <article class="fact-card v9-fact-card" data-category="mysteries" data-search="deep ocean unexplored ocean mystery">
+              <div class="card-art deep-art"><span class="card-code">FIELD NOTE / 003</span><div class="deep-light"></div><span class="art-caption">THE<br>ABYSS</span><span class="v9-card-symbol">03</span></div>
+              <div class="card-body"><div class="card-meta"><span>MYSTERIES / OCEAN</span><span>003</span></div><h3>Worlds Beneath the Waves</h3><p>The deep ocean remains difficult to explore, with much still to learn about it.</p><button class="read-link" data-open="ocean">READ FIELD NOTE <span>↗</span></button></div>
+            </article>
+            <article class="fact-card v9-fact-card" data-category="anime" data-search="anime storytelling imagination worlds characters">
+              <div class="card-art anime-art"><span class="card-code">FIELD NOTE / 004</span><div class="anime-sigil">✦</div><span class="art-caption">BEYOND<br>REALITY</span><span class="v9-card-symbol">04</span></div>
+              <div class="card-body"><div class="card-meta"><span>ANIME / WORLDBUILDING</span><span>004</span></div><h3>Worlds Beyond Reality</h3><p>Explore the ideas, science and inspiration behind extraordinary fictional worlds.</p><button class="read-link" data-open="anime">READ FIELD NOTE <span>↗</span></button></div>
+            </article>
+          </div>
+          <div class="empty-state" id="emptyState" hidden><span>✧</span><h3>NO SIGNAL FOUND</h3><p>Try another search or choose a different dimension.</p><button class="filter reset-button" id="resetFilters">RESET ARCHIVE</button></div>
         </div>
-        <p class="videos-intro">Explore ASTRALORE's latest cinematic Shorts. Every transmission opens a new door to the extraordinary.</p>
+      </div>
+    </section>
+
+    <section class="videos-section section v9-transmissions" id="videos">
+      <div class="v9-video-heading">
+        <div><div class="eyebrow"><span class="section-number">02</span> / MOVING PICTURES</div><h2>TRANSMISSIONS<br><span>FROM THE EDGE.</span></h2></div>
+        <div class="v9-video-note"><span class="v9-live-dot"></span> BROADCASTING FROM ASTRALORE<br><small>Short stories. Big questions. New perspectives.</small></div>
       </div>
       <div class="video-category-panel">
-        <div class="video-category-label">CHOOSE YOUR DIMENSION</div>
+        <div class="video-category-label">FILTER TRANSMISSIONS</div>
         <div class="video-category-filters" id="videoCategoryFilters" role="group" aria-label="Filter videos by category">
           <button class="video-category-filter active" type="button" data-video-filter="all" aria-pressed="true">ALL VIDEOS <span>05</span></button>
           <button class="video-category-filter" type="button" data-video-filter="space" aria-pressed="false">SPACE &amp; UNIVERSE <span>01</span></button>
@@ -108,112 +121,50 @@
         </div>
       </div>
       <div class="video-filter-status" id="videoFilterStatus" aria-live="polite">SHOWING ALL 5 VIDEOS</div>
-      <div class="video-grid">
+      <div class="video-grid v9-video-grid">
         <article class="video-card video-card-featured" data-video-category="space">
-          <a class="video-thumbnail" href="https://youtube.com/shorts/x1vVXVKu3aE" target="_blank" rel="noopener" aria-label="Watch A Planet Where One Day Is Longer Than One Year on YouTube">
-            <img src="https://img.youtube.com/vi/x1vVXVKu3aE/hqdefault.jpg" alt="Thumbnail for A Planet Where One Day Is Longer Than One Year" loading="lazy">
-            <span class="video-play" aria-hidden="true">▶</span>
-            <span class="video-duration">ASTRALORE SHORTS</span>
-          </a>
-          <div class="video-card-copy">
-            <div class="video-meta"><span>SPACE / LATEST TRANSMISSION</span><span>01 / 05</span></div>
-            <h3>A Planet Where One Day Is Longer Than One Year</h3>
-            <p>Discover the strange reality of Venus in this cinematic ASTRALORE Short.</p>
-            <a class="button button-primary video-watch" href="https://youtube.com/shorts/x1vVXVKu3aE" target="_blank" rel="noopener">WATCH NOW <span>↗</span></a>
-          </div>
+          <a class="video-thumbnail" href="https://youtube.com/shorts/x1vVXVKu3aE" target="_blank" rel="noopener" aria-label="Watch A Planet Where One Day Is Longer Than One Year on YouTube"><img src="https://img.youtube.com/vi/x1vVXVKu3aE/hqdefault.jpg" alt="Thumbnail for A Planet Where One Day Is Longer Than One Year" loading="lazy"><span class="video-play" aria-hidden="true">▶</span><span class="video-duration">ASTRALORE / 001</span></a>
+          <div class="video-card-copy"><div class="video-meta"><span>SPACE / LATEST TRANSMISSION</span><span>01 / 05</span></div><h3>A Planet Where One Day Is Longer Than One Year</h3><p>Discover the strange reality of Venus in this cinematic ASTRALORE Short.</p><a class="button button-primary video-watch" href="https://youtube.com/shorts/x1vVXVKu3aE" target="_blank" rel="noopener">WATCH TRANSMISSION <span>↗</span></a></div>
         </article>
         <article class="video-card" data-video-category="mythology">
-          <a class="video-thumbnail" href="https://youtube.com/shorts/os-6mDNoY-4" target="_blank" rel="noopener" aria-label="Watch ASTRALORE Short 02 on YouTube">
-            <img src="https://img.youtube.com/vi/os-6mDNoY-4/hqdefault.jpg" alt="Thumbnail for ASTRALORE Short 02" loading="lazy">
-            <span class="video-play" aria-hidden="true">▶</span>
-            <span class="video-duration">ASTRALORE SHORTS</span>
-          </a>
-          <div class="video-card-copy">
-            <div class="video-meta"><span>MYTHOLOGY / TRANSMISSION 02</span><span>02 / 05</span></div>
-            <h3>ASTRALORE Short 02</h3>
-            <p>Watch another cinematic discovery from the ASTRALORE universe.</p>
-            <a class="button button-primary video-watch" href="https://youtube.com/shorts/os-6mDNoY-4" target="_blank" rel="noopener">WATCH NOW <span>↗</span></a>
-          </div>
+          <a class="video-thumbnail" href="https://youtube.com/shorts/os-6mDNoY-4" target="_blank" rel="noopener" aria-label="Watch ASTRALORE Short 02 on YouTube"><img src="https://img.youtube.com/vi/os-6mDNoY-4/hqdefault.jpg" alt="Thumbnail for ASTRALORE Short 02" loading="lazy"><span class="video-play" aria-hidden="true">▶</span><span class="video-duration">ASTRALORE / 002</span></a>
+          <div class="video-card-copy"><div class="video-meta"><span>MYTHOLOGY / 002</span><span>02 / 05</span></div><h3>ASTRALORE Short 02</h3><p>Watch another cinematic discovery from the ASTRALORE universe.</p><a class="button button-primary video-watch" href="https://youtube.com/shorts/os-6mDNoY-4" target="_blank" rel="noopener">WATCH NOW <span>↗</span></a></div>
         </article>
         <article class="video-card" data-video-category="mythology">
-          <a class="video-thumbnail" href="https://youtube.com/shorts/1pJyuRVdsNA" target="_blank" rel="noopener" aria-label="Watch ASTRALORE Short 03 on YouTube">
-            <img src="https://img.youtube.com/vi/1pJyuRVdsNA/hqdefault.jpg" alt="Thumbnail for ASTRALORE Short 03" loading="lazy">
-            <span class="video-play" aria-hidden="true">▶</span>
-            <span class="video-duration">ASTRALORE SHORTS</span>
-          </a>
-          <div class="video-card-copy">
-            <div class="video-meta"><span>MYTHOLOGY / TRANSMISSION 03</span><span>03 / 05</span></div>
-            <h3>ASTRALORE Short 03</h3>
-            <p>Explore another fascinating fact with ASTRALORE.</p>
-            <a class="button button-primary video-watch" href="https://youtube.com/shorts/1pJyuRVdsNA" target="_blank" rel="noopener">WATCH NOW <span>↗</span></a>
-          </div>
+          <a class="video-thumbnail" href="https://youtube.com/shorts/1pJyuRVdsNA" target="_blank" rel="noopener" aria-label="Watch ASTRALORE Short 03 on YouTube"><img src="https://img.youtube.com/vi/1pJyuRVdsNA/hqdefault.jpg" alt="Thumbnail for ASTRALORE Short 03" loading="lazy"><span class="video-play" aria-hidden="true">▶</span><span class="video-duration">ASTRALORE / 003</span></a>
+          <div class="video-card-copy"><div class="video-meta"><span>MYTHOLOGY / 003</span><span>03 / 05</span></div><h3>ASTRALORE Short 03</h3><p>Explore another fascinating fact with ASTRALORE.</p><a class="button button-primary video-watch" href="https://youtube.com/shorts/1pJyuRVdsNA" target="_blank" rel="noopener">WATCH NOW <span>↗</span></a></div>
         </article>
         <article class="video-card" data-video-category="mythology">
-          <a class="video-thumbnail" href="https://youtube.com/shorts/B0doTvsFiGk" target="_blank" rel="noopener" aria-label="Watch ASTRALORE Short 04 on YouTube">
-            <img src="https://img.youtube.com/vi/B0doTvsFiGk/hqdefault.jpg" alt="Thumbnail for ASTRALORE Short 04" loading="lazy">
-            <span class="video-play" aria-hidden="true">▶</span>
-            <span class="video-duration">ASTRALORE SHORTS</span>
-          </a>
-          <div class="video-card-copy">
-            <div class="video-meta"><span>MYTHOLOGY / TRANSMISSION 04</span><span>04 / 05</span></div>
-            <h3>ASTRALORE Short 04</h3>
-            <p>Another short journey into the unknown.</p>
-            <a class="button button-primary video-watch" href="https://youtube.com/shorts/B0doTvsFiGk" target="_blank" rel="noopener">WATCH NOW <span>↗</span></a>
-          </div>
+          <a class="video-thumbnail" href="https://youtube.com/shorts/B0doTvsFiGk" target="_blank" rel="noopener" aria-label="Watch ASTRALORE Short 04 on YouTube"><img src="https://img.youtube.com/vi/B0doTvsFiGk/hqdefault.jpg" alt="Thumbnail for ASTRALORE Short 04" loading="lazy"><span class="video-play" aria-hidden="true">▶</span><span class="video-duration">ASTRALORE / 004</span></a>
+          <div class="video-card-copy"><div class="video-meta"><span>MYTHOLOGY / 004</span><span>04 / 05</span></div><h3>ASTRALORE Short 04</h3><p>Another short journey into the unknown.</p><a class="button button-primary video-watch" href="https://youtube.com/shorts/B0doTvsFiGk" target="_blank" rel="noopener">WATCH NOW <span>↗</span></a></div>
         </article>
         <article class="video-card" data-video-category="other">
-          <a class="video-thumbnail" href="https://youtube.com/shorts/dZE05-KrsXk" target="_blank" rel="noopener" aria-label="Watch ASTRALORE Short 05 on YouTube">
-            <img src="https://img.youtube.com/vi/dZE05-KrsXk/hqdefault.jpg" alt="Thumbnail for ASTRALORE Short 05" loading="lazy">
-            <span class="video-play" aria-hidden="true">▶</span>
-            <span class="video-duration">ASTRALORE SHORTS</span>
-          </a>
-          <div class="video-card-copy">
-            <div class="video-meta"><span>UNCATEGORIZED / TRANSMISSION 05</span><span>05 / 05</span></div>
-            <h3>ASTRALORE Short 05</h3>
-            <p>Continue exploring the ASTRALORE video archive.</p>
-            <a class="button button-primary video-watch" href="https://youtube.com/shorts/dZE05-KrsXk" target="_blank" rel="noopener">WATCH NOW <span>↗</span></a>
-          </div>
+          <a class="video-thumbnail" href="https://youtube.com/shorts/dZE05-KrsXk" target="_blank" rel="noopener" aria-label="Watch ASTRALORE Short 05 on YouTube"><img src="https://img.youtube.com/vi/dZE05-KrsXk/hqdefault.jpg" alt="Thumbnail for ASTRALORE Short 05" loading="lazy"><span class="video-play" aria-hidden="true">▶</span><span class="video-duration">ASTRALORE / 005</span></a>
+          <div class="video-card-copy"><div class="video-meta"><span>OTHER / 005</span><span>05 / 05</span></div><h3>ASTRALORE Short 05</h3><p>Continue exploring the ASTRALORE video archive.</p><a class="button button-primary video-watch" href="https://youtube.com/shorts/dZE05-KrsXk" target="_blank" rel="noopener">WATCH NOW <span>↗</span></a></div>
         </article>
       </div>
-      <div class="video-archive-foot"><span>ASTRALORE VIDEO ARCHIVE</span><span>MORE TRANSMISSIONS WILL APPEAR HERE</span></div>
+      <div class="video-archive-foot"><span>END OF CURRENT TRANSMISSIONS</span><span>MORE WILL ARRIVE</span></div>
     </section>
 
-    <section class="episode-section section" id="episodes">
-      <div class="episode-visual"><div class="episode-ring"></div><div class="episode-core">A<span>01</span></div><div class="episode-stamp">TRANSMISSION<br>INCOMING</div></div>
-      <div class="episode-copy"><div class="eyebrow"><span class="section-number">02</span> — TRANSMISSIONS</div><h2>THE UNKNOWN<br>IS ONLY THE <span>BEGINNING.</span></h2><p>Discover the universe through short, cinematic stories. New transmissions are released on the ASTRALORE channel.</p><a class="button button-primary" href="https://youtube.com/shorts/x1vVXVKu3aE" target="_blank" rel="noopener">WATCH LATEST SHORT <span>↗</span></a>
-      <a class="button button-secondary" href="https://youtube.com/@astralore-d6k" target="_blank" rel="noopener">ENTER THE CHANNEL <span>↗</span></a><div class="episode-foot">ASTRALORE ORIGINALS / YOUTUBE</div></div>
+    <section class="episode-section section v9-episode" id="episodes">
+      <div class="episode-visual"><div class="episode-ring"></div><div class="episode-core">A<span>01</span></div><div class="episode-stamp">NEXT<br>TRANSMISSION</div></div>
+      <div class="episode-copy"><div class="eyebrow"><span class="section-number">03</span> / THE NEXT CHAPTER</div><h2>THE NEXT<br>DISCOVERY IS <span>YOURS.</span></h2><p>New worlds, forgotten stories and impossible-sounding truths are waiting. Follow the channel and be there when the next transmission arrives.</p><a class="button button-primary" href="https://youtube.com/shorts/x1vVXVKu3aE" target="_blank" rel="noopener">WATCH THE LATEST <span>↗</span></a> <a class="button button-secondary" href="https://youtube.com/@astralore-d6k" target="_blank" rel="noopener">FOLLOW ASTRALORE <span>↗</span></a><div class="episode-foot">INDEPENDENT CURIOSITY TRANSMISSION / YOUTUBE</div></div>
     </section>
 
-    <section class="about-section section" id="about">
-      <div class="eyebrow"><span class="section-number">03</span> — OUR PURPOSE</div>
-      <h2>KNOWLEDGE, WITH A<br><span>SENSE OF WONDER.</span></h2>
-      <p>ASTRALORE turns fascinating facts, science and mysteries into journeys worth remembering — told with the energy and imagination of anime.</p>
+    <section class="about-section section v9-about" id="about">
+      <div class="v9-about-mark">✳</div>
+      <div class="eyebrow"><span class="section-number">04</span> / WHY WE EXPLORE</div>
+      <h2>REALITY IS<br><span>WORTH QUESTIONING.</span></h2>
+      <p>ASTRALORE turns fascinating facts, science and mysteries into journeys worth remembering — told with the energy and imagination of anime. This is a place for curious minds and impossible questions.</p>
       <a class="text-link" href="https://youtube.com/@astralore-d6k" target="_blank" rel="noopener">FOLLOW THE JOURNEY <span>↗</span></a>
     </section>
   </main>
 
-  <footer class="footer"><a class="brand" href="#home"><span class="brand-star">✦</span> ASTRA<span>LORE</span></a><span>© 2026 ASTRALORE — ENTER THE UNKNOWN</span><a href="#home">BACK TO TOP ↑</a></footer>
+  <footer class="footer v9-footer"><a class="brand" href="#home"><span class="brand-star">✦</span> ASTRA<span>LORE</span></a><span>© 2026 ASTRALORE / EXPLORE BEYOND</span><a href="#top">BACK TO ORIGIN ↑</a></footer>
 
-  <div class="modal-backdrop" id="modal" hidden>
-    <section class="fact-modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
-      <button class="modal-close" id="modalClose" aria-label="Close">×</button>
-      <div class="eyebrow" id="modalCategory">ARCHIVE FILE</div>
-      <div class="modal-index" id="modalIndex">FILE // 001</div>
-      <h2 id="modalTitle">A discovery</h2>
-      <p id="modalText"></p>
-      <div class="modal-note">ASTRALORE ARCHIVE <span>•</span> STAY CURIOUS</div>
-    </section>
-  </div>
+  <div class="modal-backdrop" id="modal" hidden><section class="fact-modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle"><button class="modal-close" id="modalClose" aria-label="Close">×</button><div class="eyebrow" id="modalCategory">ARCHIVE FILE</div><div class="modal-index" id="modalIndex">FILE // 001</div><h2 id="modalTitle">A discovery</h2><p id="modalText"></p><div class="modal-note">ASTRALORE ARCHIVE <span>•</span> STAY CURIOUS</div></section></div>
 
-  <!-- ASTRA dedicated page launcher -->
-  <a class="astra-launcher-wrap" href="astra.html" aria-label="Open dedicated ASTRA AI page">
-    <span class="astra-launcher-label">ASK ASTRA</span>
-    <span class="astra-launcher" aria-hidden="true">
-      <span class="astra-launcher-orbit"></span>
-      <span class="astra-launcher-core">✦</span>
-    </span>
-  </a>
-
+  <a class="astra-launcher-wrap" href="astra.html" aria-label="Open dedicated ASTRA AI page"><span class="astra-launcher-label">ASK ASTRA</span><span class="astra-launcher" aria-hidden="true"><span class="astra-launcher-orbit"></span><span class="astra-launcher-core">✦</span></span></a>
   <script src="script.js"></script>
 </body>
 </html>
