@@ -1,0 +1,137 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#080914">
+  <meta name="description" content="ASTRA — ASTRALORE's AI intelligence assistant.">
+  <title>ASTRA AI — ASTRALORE</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="astra-page.css">
+</head>
+<body>
+  <div class="astra-background" aria-hidden="true">
+    <div class="astra-glow"></div>
+    <div class="astra-stars"></div>
+  </div>
+
+  <div class="astra-app">
+
+    <aside class="astra-sidebar">
+      <a class="astra-logo" href="index.html">
+        <span>✦</span> ASTRA<span class="logo-muted">LORE</span>
+      </a>
+
+      <a class="back-home" href="index.html">
+        <span>←</span> BACK TO ASTRALORE
+      </a>
+
+      <button class="new-chat-button" id="newChat" type="button">
+        <span>＋</span> New conversation
+      </button>
+
+      <div class="sidebar-section-label">YOUR WORKSPACE</div>
+
+      <div class="sidebar-item active">
+        <span>✧</span> ASTRA AI
+      </div>
+
+      <div class="sidebar-bottom">
+        <div class="sidebar-orb">✦</div>
+        <div>
+          <strong>ASTRALORE INTELLIGENCE</strong>
+          <span>Curiosity has no limits.</span>
+        </div>
+      </div>
+    </aside>
+
+    <main class="astra-main">
+
+      <header class="topbar">
+        <div>
+          <div class="topbar-kicker">ASTRALORE INTELLIGENCE</div>
+          <h1>ASTRA <span>AI</span></h1>
+        </div>
+
+        <div class="connection-status">
+          <i></i>
+          <span id="astraStatus">CONNECTING</span>
+        </div>
+      </header>
+
+      <section class="conversation" id="astraChat" aria-live="polite">
+
+        <div class="welcome-screen" id="astraWelcome">
+          <div class="welcome-symbol">✦</div>
+          <div class="welcome-kicker">A NEW SIGNAL HAS ARRIVED</div>
+
+          <h2>Where curiosity<br><span>meets intelligence.</span></h2>
+
+          <p>
+            I'm ASTRA, the ASTRALORE intelligence assistant.
+            Explore the cosmos, science, mythology, history
+            and the mysteries in between.
+          </p>
+
+          <div class="suggestion-grid" id="astraSuggestions">
+            <button type="button" data-prompt="Why is Venus so hot?">
+              <span>01 / SPACE</span>
+              Why is Venus so hot?
+              <b>↗</b>
+            </button>
+
+            <button type="button" data-prompt="How do black holes work?">
+              <span>02 / COSMOS</span>
+              How do black holes work?
+              <b>↗</b>
+            </button>
+
+            <button type="button" data-prompt="Tell me a cosmic mystery.">
+              <span>03 / MYSTERIES</span>
+              A cosmic mystery
+              <b>↗</b>
+            </button>
+
+            <button type="button" data-prompt="Explore Hindu mythology.">
+              <span>04 / MYTHOLOGY</span>
+              Explore mythology
+              <b>↗</b>
+            </button>
+          </div>
+        </div>
+
+      </section>
+
+      <footer class="composer-area">
+        <form class="astra-composer" id="astraForm">
+          <label class="sr-only" for="astraInput">Message ASTRA</label>
+
+          <input
+            id="astraInput"
+            type="text"
+            maxlength="800"
+            placeholder="Ask ASTRA anything..."
+            autocomplete="off"
+            required
+          >
+
+          <button type="submit" aria-label="Send message">↑</button>
+        </form>
+
+        <p class="composer-note">
+          ASTRA AI CAN MAKE MISTAKES. VERIFY IMPORTANT INFORMATION.
+        </p>
+      </footer>
+
+    </main>
+  </div>
+
+  <script src="astra-config.js"></script>
+  <script src="astra-page.js"></script>
+</body>
+</html>
