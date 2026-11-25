@@ -78,3 +78,37 @@ body.astralore-cursor-active .astralore-cursor-dot { opacity: var(--dot-opacity,
  .video-thumbnail,.video-thumbnail img{min-height:215px}
  .video-card-featured .video-thumbnail,.video-card-featured .video-thumbnail img{min-height:230px}
 }
+
+
+/* V6 — Cosmic Ascension: cinematic space atmosphere */
+body{isolation:isolate}
+.cosmic-backdrop{position:fixed;inset:0;z-index:-1;overflow:hidden;pointer-events:none;background:radial-gradient(ellipse at 78% 12%,rgba(83,55,155,.16),transparent 42%),radial-gradient(ellipse at 12% 58%,rgba(31,75,143,.12),transparent 46%),#080914}
+.star-layer{position:absolute;inset:-35%;background-repeat:repeat;will-change:transform}
+.star-layer-one{opacity:.42;background-image:radial-gradient(1px 1px at 35px 45px,#fff 99%,transparent),radial-gradient(1px 1px at 115px 155px,#bbaaff 99%,transparent),radial-gradient(1.5px 1.5px at 205px 85px,#d9e4ff 99%,transparent);background-size:260px 220px;animation:star-drift-one 115s linear infinite}
+.star-layer-two{opacity:.22;background-image:radial-gradient(1px 1px at 65px 95px,#c7b5ff 99%,transparent),radial-gradient(1px 1px at 185px 35px,#fff 99%,transparent);background-size:310px 270px;animation:star-drift-two 165s linear infinite}
+.nebula{position:absolute;width:min(65vw,850px);height:min(65vw,850px);border-radius:50%;filter:blur(95px);opacity:.12;will-change:transform}
+.nebula-violet{top:5%;right:-28%;background:radial-gradient(circle,#7550d9,transparent 68%);animation:nebula-breathe 24s ease-in-out infinite alternate}
+.nebula-blue{top:42%;left:-34%;background:radial-gradient(circle,#315fc5,transparent 68%);animation:nebula-breathe 30s ease-in-out infinite alternate-reverse}
+.planet{animation:planet-float 9s ease-in-out infinite}
+.planet-halo{animation:halo-pulse 7s ease-in-out infinite}
+.orbit-a{animation:orbit-turn 32s linear infinite}
+.orbit-b{animation:orbit-turn-reverse 46s linear infinite}
+.orbit-c{animation:orbit-turn 58s linear infinite}
+.moon-one{animation:moon-glint 4s ease-in-out infinite}
+.art-cross{animation:cross-glint 5s ease-in-out infinite}
+.video-play{transition:transform .35s,box-shadow .35s,background .35s}
+.video-thumbnail:hover .video-play{transform:translate(-50%,-50%) scale(1.12);box-shadow:0 0 65px #a68affaa;background:#9272f0dd}
+.nav-link{position:relative}
+.nav-link:after{content:"";position:absolute;left:0;right:100%;bottom:-9px;height:1px;background:#b6a0ff;transition:right .25s}
+.nav-link:hover:after,.nav-link.active:after{right:0}
+@keyframes star-drift-one{from{transform:translate3d(0,0,0)}to{transform:translate3d(-90px,70px,0)}}
+@keyframes star-drift-two{from{transform:translate3d(0,0,0)}to{transform:translate3d(70px,-100px,0)}}
+@keyframes nebula-breathe{from{transform:translate3d(0,0,0) scale(.92);opacity:.08}to{transform:translate3d(5vw,-3vh,0) scale(1.12);opacity:.17}}
+@keyframes planet-float{0%,100%{translate:0 0;rotate:0deg}50%{translate:0 -13px;rotate:2deg}}
+@keyframes halo-pulse{0%,100%{opacity:.65;scale:1}50%{opacity:1;scale:1.045}}
+@keyframes orbit-turn{from{rotate:0deg}to{rotate:360deg}}
+@keyframes orbit-turn-reverse{from{rotate:0deg}to{rotate:-360deg}}
+@keyframes moon-glint{0%,100%{opacity:.55;box-shadow:0 0 12px 3px #a58aff}50%{opacity:1;box-shadow:0 0 25px 7px #c8baff}}
+@keyframes cross-glint{0%,100%{opacity:.5;transform:scale(.9) rotate(0)}50%{opacity:1;transform:scale(1.15) rotate(25deg)}}
+@media(prefers-reduced-motion:reduce){.star-layer,.nebula,.planet,.planet-halo,.orbit,.moon-one,.art-cross{animation:none!important}.video-play,.nav-link:after{transition:none}}
+@media(max-width:640px){.nebula{filter:blur(65px);opacity:.09}.star-layer-one{opacity:.28}.star-layer-two{opacity:.16}}
