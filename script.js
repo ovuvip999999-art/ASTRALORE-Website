@@ -2,7 +2,11 @@ const facts = {
   venus: {category:"SPACE / PLANETARY SCIENCE", index:"FILE // 001", title:"A Day Longer Than a Year", text:"Venus rotates very slowly. One rotation takes about 243 Earth days, while one orbit around the Sun takes about 225 Earth days. That means a Venusian sidereal day is longer than its year."},
   octopus: {category:"SCIENCE / OCEAN LIFE", index:"FILE // 002", title:"Three Hearts, Blue Blood", text:"An octopus has three hearts. Two move blood through the gills, while the third pumps it to the rest of the body. Its blood appears blue because it uses a copper-containing oxygen-carrying protein called hemocyanin."},
   ocean: {category:"MYSTERIES / DEEP OCEAN", index:"FILE // 003", title:"Worlds Beneath the Waves", text:"The deep ocean is challenging to study because of darkness, pressure and distance. Scientists continue to discover unfamiliar species and ecosystems, so the seafloor still holds many open questions."},
-  anime: {category:"ANIME WORLD / STORYTELLING", index:"FILE // 004", title:"Worlds Beyond Reality", text:"Great fictional worlds often begin with a question: what if gravity worked differently, memories could be stored, or a civilisation lived among the stars? ASTRALORE explores the real ideas that can inspire extraordinary stories."}
+  anime: {category:"ANIME WORLD / STORYTELLING", index:"FILE // 004", title:"Worlds Beyond Reality", text:"Great fictional worlds often begin with a question: what if gravity worked differently, memories could be stored, or a civilisation lived among the stars? ASTRALORE explores the real ideas that can inspire extraordinary stories."},
+  blackhole: {category:"SPACE / COSMOLOGY", index:"FILE // 005", title:"Where Light Cannot Escape", text:"A black hole is a region of spacetime whose gravity is so strong that nothing can escape from inside its event horizon—not even light. The event horizon is a boundary, not a solid surface."},
+  dna: {category:"BIOLOGY / GENETICS", index:"FILE // 006", title:"The Code Inside Cells", text:"DNA stores hereditary information in living organisms. Its familiar double-helix structure is built from two strands, with specific base pairs connecting them. Cells use genetic information to help make the molecules needed for life."},
+  lightning: {category:"PHYSICS / ELECTRICITY", index:"FILE // 007", title:"A Spark Across the Sky", text:"Lightning is an electrical discharge caused by the separation and buildup of electric charges, commonly inside storm clouds or between clouds and the ground. The bright flash heats nearby air very rapidly, producing the sound we hear as thunder."},
+  bluesky: {category:"EARTH / ATMOSPHERE", index:"FILE // 008", title:"Why the Sky Looks Blue", text:"Sunlight contains many colours. Molecules in Earth's atmosphere scatter shorter blue wavelengths more strongly than longer red wavelengths. This process is called Rayleigh scattering."}
 };
 const search = document.getElementById("searchInput");
 const cards = [...document.querySelectorAll(".fact-card")];
@@ -28,6 +32,12 @@ filters.forEach(btn=>btn.addEventListener("click",()=>{
   activeFilter=btn.dataset.filter;
   filters.forEach(b=>b.classList.toggle("active",b===btn));
   updateArchive();
+}));
+document.querySelectorAll("[data-v12-filter]").forEach(button=>button.addEventListener("click",()=>{
+  activeFilter=button.dataset.v12Filter;
+  filters.forEach(b=>b.classList.toggle("active",b.dataset.filter===activeFilter));
+  updateArchive();
+  document.getElementById("explore").scrollIntoView({behavior:"smooth",block:"start"});
 }));
 search.addEventListener("input",updateArchive);
 search.addEventListener("keydown",e=>{if(e.key==="Enter") document.getElementById("factGrid").scrollIntoView({behavior:"smooth",block:"start"});});
