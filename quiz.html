@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#070711">
+<meta name="description" content="Test your knowledge in the ASTRALORE Quiz Arena.">
+<title>Quiz Arena — ASTRALORE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="quiz.css">
+</head>
+<body>
+<div class="quiz-stars" aria-hidden="true"></div>
+<header class="quiz-header"><a class="quiz-brand" href="index.html">✦ ASTRALORE</a><nav><a href="index.html">HOME</a><a href="3d-lab.html">3D LAB</a><a class="active" href="quiz.html">QUIZ ARENA</a></nav></header>
+<main class="quiz-shell">
+<section class="quiz-intro"><div class="eyebrow">ASTRALORE / INTERACTIVE LEARNING</div><h1>THE <span>QUIZ ARENA.</span></h1><p>Ten questions. One curious mind. Explore science, space, biology and the mysteries of our universe.</p></section>
+<section class="quiz-panel" aria-live="polite">
+<div class="quiz-topline"><span id="quizCategory">GENERAL KNOWLEDGE</span><span id="questionCounter">READY WHEN YOU ARE</span></div>
+<div class="progress-track"><div id="progressBar"></div></div>
+<div id="startScreen" class="start-screen"><div class="start-orbit">✦</div><h2>READY TO TEST YOURSELF?</h2><p>Choose a knowledge zone and see how far your curiosity takes you.</p><div class="category-picker" id="categoryPicker">
+<button class="category-choice selected" data-category="all">ALL ZONES</button><button class="category-choice" data-category="space">SPACE</button><button class="category-choice" data-category="biology">BIOLOGY</button><button class="category-choice" data-category="physics">PHYSICS</button><button class="category-choice" data-category="earth">EARTH</button>
+</div><button class="primary-btn" id="startButton">BEGIN CHALLENGE <span>↗</span></button></div>
+<div id="questionScreen" class="question-screen" hidden><div class="question-number" id="questionNumber">QUESTION 01</div><h2 id="questionText"></h2><div class="answer-list" id="answerList"></div><div class="feedback" id="feedback" hidden></div><div class="question-actions"><button class="primary-btn" id="nextButton" disabled>NEXT QUESTION ↗</button></div></div>
+<div id="resultScreen" class="result-screen" hidden><div class="result-symbol" id="resultSymbol">✦</div><div class="eyebrow">CHALLENGE COMPLETE</div><h2 id="resultTitle">WELL EXPLORED.</h2><div class="score-display"><strong id="finalScore">0/10</strong><span id="scorePercent">0%</span></div><p id="resultMessage"></p><div class="result-actions"><button class="primary-btn" id="retryButton">PLAY AGAIN ↻</button><a class="secondary-btn" href="index.html">BACK TO ASTRALORE</a></div></div>
+</section>
+<p class="quiz-footnote">LEARN SOMETHING NEW WITH EVERY ANSWER · ASTRALORE</p>
+</main>
+<script src="quiz.js"></script>
+</body></html>
