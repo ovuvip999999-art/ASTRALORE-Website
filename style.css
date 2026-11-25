@@ -448,3 +448,166 @@ input:focus-visible {
   }
 }
 
+
+
+/* ==========================================
+   ASTRALORE V9 — EXPLORER REDESIGN
+   Structural visual system; legacy behavior preserved
+========================================== */
+.v9-site{--v9-ink:#070711;--v9-panel:#10101d;--v9-line:rgba(193,174,255,.18);--v9-lilac:#c4aaff;--v9-blue:#7797ff;font-family:"Space Grotesk",Manrope,sans-serif;background:radial-gradient(ellipse at 50% -10%,#241744 0%,transparent 44%),#070711}
+.v9-site .site-header{max-width:none;height:82px;padding:0 max(6%,calc((100vw - 1320px)/2));border-bottom:1px solid var(--v9-line);background:rgba(7,7,17,.82)}
+.v9-site .brand{font-family:"Space Grotesk",sans-serif;font-size:19px;letter-spacing:2.5px}
+.v9-site .nav{gap:34px}
+.v9-site .nav-link{font-size:10px;letter-spacing:1.7px}
+.v9-site .nav-cta{border:1px solid #a98cff66;background:linear-gradient(120deg,#a78aff22,#688aff12);padding:13px 20px}
+.v9-site .hero.v9-hero{min-height:760px;max-width:1440px;padding:105px 8% 100px;display:grid;grid-template-columns:1.02fr .98fr;align-items:center;overflow:visible}
+.v9-site .hero:before{inset:0 0 0 4%;background-image:linear-gradient(90deg,rgba(7,7,17,.96),rgba(7,7,17,.12)),radial-gradient(#c7b8ff55 .8px,transparent 1.3px);background-size:auto,75px 75px;opacity:.38;mask-image:linear-gradient(90deg,black,transparent 100%)}
+.v9-site .hero:after{content:"";position:absolute;width:600px;height:600px;right:12%;top:8%;background:radial-gradient(circle,#8260ed20,transparent 70%);pointer-events:none}
+.v9-site .hero-copy{width:auto;max-width:620px;padding:28px 0;z-index:3}
+.v9-site .hero-kicker{margin-top:26px;color:#8f88a9;font:9px "DM Mono",monospace;letter-spacing:2.1px}
+.v9-site .hero h1{font:700 clamp(64px,8.1vw,116px)/.91 "Space Grotesk",sans-serif;letter-spacing:-7px;margin:24px 0 25px}
+.v9-site .hero h1 em{color:#d7c7ff;font-style:normal}
+.v9-site .hero h1 span{background:linear-gradient(100deg,#d8ccff,#8e75f2 55%,#7ca4ff);background-clip:text;-webkit-background-clip:text;color:transparent}
+.v9-site .hero-description{max-width:480px;font-size:15px;line-height:1.85;color:#b4b0c7}
+.v9-site .hero-actions{gap:12px;margin-top:30px}
+.v9-site .button{min-height:54px;padding:0 22px;font:700 9px "DM Mono",monospace;letter-spacing:1.15px}
+.v9-site .button-primary{background:linear-gradient(110deg,#a17cf5,#5b69dc);box-shadow:0 14px 45px #7858ed35}
+.v9-site .button-ghost{border:1px solid #bba8ff42;background:#ffffff08}
+.v9-site .hero-meta{margin-top:48px;gap:30px;font-size:9px}
+.v9-site .hero-art.v9-orbit-art{position:relative;inset:auto;transform:none;width:100%;height:560px;display:grid;place-items:center;overflow:visible}
+.v9-site .v9-art-grid{position:absolute;inset:12%;border:1px solid #bba8ff12;border-radius:50%;background:radial-gradient(circle at 50% 50%,#9a7aff0b,transparent 62%),repeating-radial-gradient(circle at center,transparent 0 54px,#bba8ff0a 55px 56px);mask-image:radial-gradient(circle,black 42%,transparent 75%)}
+.v9-site .v9-orbit{position:absolute;border:1px solid #bca9ff35;border-radius:50%;width:78%;height:38%;transform:rotate(-28deg);box-shadow:0 0 25px #9b7aff0b}
+.v9-site .v9-orbit-two{width:92%;height:48%;transform:rotate(48deg);border-color:#7d9cff2c}
+.v9-site .v9-orbit-three{width:66%;height:66%;transform:rotate(68deg);border-style:dashed;border-color:#bba8ff20}
+.v9-site .v9-sunflare{position:absolute;width:74%;aspect-ratio:1;border-radius:50%;background:radial-gradient(circle,#a17aff18,transparent 66%);filter:blur(10px)}
+.v9-site .hero-art .planet{position:relative;width:clamp(190px,23vw,310px);height:clamp(205px,25vw,330px);z-index:2;box-shadow:inset -34px -26px 55px #050611,0 0 85px #8b6aff88,0 0 190px #6844e455}
+.v9-site .hero-art .planet-halo{width:62%;height:62%;border:1px solid #c7b6ff24;box-shadow:0 0 80px #a68aff26}
+.v9-site .v9-coordinate{position:absolute;z-index:3;color:#9388b5;font:8px/1.8 "DM Mono",monospace;letter-spacing:1.5px}
+.v9-site .v9-coordinate-a{top:15%;left:2%}.v9-site .v9-coordinate-b{right:0;bottom:17%;text-align:right}
+.v9-site .v9-art-index{position:absolute;right:6%;top:7%;font:9px "DM Mono",monospace;color:#c3b2f2;letter-spacing:2px}
+.v9-site .v9-scroll-cue{position:absolute;left:8%;bottom:32px;display:flex;align-items:center;gap:13px;color:#77728e;font:8px "DM Mono",monospace;letter-spacing:2px}
+.v9-site .v9-scroll-cue span{width:35px;height:1px;background:#a58aff}
+.v9-site .hero-index{right:8%;bottom:32px;font:8px "DM Mono",monospace;letter-spacing:2px;color:#6d6883}
+.v9-site .v9-manifesto{height:66px;display:flex;align-items:center;justify-content:center;gap:clamp(16px,4vw,58px);overflow:hidden;white-space:nowrap;border-top:1px solid var(--v9-line);border-bottom:1px solid var(--v9-line);background:linear-gradient(90deg,#141023,#0b0b17,#141023);color:#c4b6e8;font:9px "DM Mono",monospace;letter-spacing:2.2px}
+.v9-site .v9-manifesto i{font-style:normal;color:#9072e8;font-size:13px}
+.v9-site .section{max-width:1320px;margin:0 auto}
+.v9-site .archive.v9-archive{padding:145px 6% 135px}
+.v9-site .v9-section-top{align-items:end;margin-bottom:58px}
+.v9-site .section h2,.v9-site .videos-section h2{font:700 clamp(42px,5.7vw,76px)/.98 "Space Grotesk",sans-serif;letter-spacing:-3.5px;margin:25px 0 0}
+.v9-site .section h2 span,.v9-site .videos-section h2 span{color:transparent;background:linear-gradient(100deg,#cdbaff,#8b75ef 60%,#7898ff);background-clip:text;-webkit-background-clip:text}
+.v9-site .section-intro{max-width:330px;font-size:13px;line-height:1.9}
+.v9-site .v9-archive-layout{display:grid;grid-template-columns:145px minmax(0,1fr);gap:34px}
+.v9-site .v9-archive-aside{min-height:100%;border-right:1px solid var(--v9-line);display:flex;flex-direction:column;align-items:flex-start;padding:15px 25px 0 0;position:relative}
+.v9-site .v9-aside-number{font:9px/1.8 "DM Mono",monospace;letter-spacing:2px;color:#b4a2ed}
+.v9-site .v9-archive-aside p{margin-top:28px;color:#77728f;font-size:11px;line-height:1.8}
+.v9-site .v9-aside-mark{margin-top:auto;font-size:38px;color:#8466db;padding-bottom:16px}
+.v9-site .v9-search-panel{margin:0 0 22px;padding:20px;background:linear-gradient(130deg,#151326d9,#0b0b17d9);border:1px solid var(--v9-line)}
+.v9-site .search-box{background:#080812;border:1px solid #ffffff16;border-radius:2px;min-height:58px}
+.v9-site .search-box input{font-family:"Space Grotesk",sans-serif}
+.v9-site .filter-row{gap:7px;margin-top:17px}
+.v9-site .filter{border:1px solid #ffffff1a;background:#ffffff04;padding:11px 14px;font:8px "DM Mono",monospace;letter-spacing:1px}
+.v9-site .filter.active{background:#8b70df27;border-color:#a78bff88;color:#e6dcff}
+.v9-site .results-line{margin:24px 0 14px;font:8px "DM Mono",monospace;letter-spacing:1.6px;color:#837b9c}
+.v9-site .fact-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}
+.v9-site .fact-card{border:1px solid #bba8ff1c;border-radius:3px;overflow:hidden;background:linear-gradient(145deg,#151426,#0b0b16);min-width:0}
+.v9-site .card-art{height:215px;position:relative;overflow:hidden}
+.v9-site .card-code{font:8px "DM Mono",monospace;letter-spacing:1.6px}
+.v9-site .art-caption{font:700 24px/1 "Space Grotesk",sans-serif;letter-spacing:-.8px}
+.v9-site .v9-card-symbol{position:absolute;right:18px;bottom:15px;color:#ffffff55;font:10px "DM Mono",monospace}
+.v9-site .card-body{padding:23px 23px 25px}
+.v9-site .card-meta{font:8px "DM Mono",monospace;letter-spacing:1px}
+.v9-site .card-body h3{font:600 21px/1.2 "Space Grotesk",sans-serif;letter-spacing:-.5px}
+.v9-site .card-body p{font-size:11px;line-height:1.8;color:#9690a9}
+.v9-site .read-link{font:8px "DM Mono",monospace;letter-spacing:1.2px}
+.v9-site .videos-section.v9-transmissions{max-width:none;padding:125px max(6%,calc((100vw - 1320px)/2)) 125px;background:linear-gradient(180deg,#0b0a17,#101020 48%,#090914);border-top:1px solid var(--v9-line);border-bottom:1px solid var(--v9-line);position:relative}
+.v9-site .videos-section.v9-transmissions:before{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 85% 10%,#7955d51a,transparent 45%);pointer-events:none}
+.v9-site .v9-video-heading{max-width:1320px;margin:0 auto 45px;display:flex;align-items:end;justify-content:space-between;gap:30px;position:relative}
+.v9-site .v9-video-heading h2{margin-top:25px}
+.v9-site .v9-video-note{color:#c2b4e8;font:9px/2 "DM Mono",monospace;letter-spacing:1px;text-align:right}
+.v9-site .v9-video-note small{color:#77728f;font:10px Manrope,sans-serif;letter-spacing:0}
+.v9-site .v9-live-dot{display:inline-block;width:7px;height:7px;border-radius:50%;background:#9f83ff;box-shadow:0 0 14px #9f83ff;margin-right:9px}
+.v9-site .video-category-panel{max-width:1320px;margin:0 auto 18px;border:1px solid var(--v9-line);background:#0c0b19;padding:19px 22px}
+.v9-site .video-category-filter{font:8px "DM Mono",monospace;letter-spacing:1px}
+.v9-site .video-filter-status{max-width:1320px;margin:18px auto 12px;font:8px "DM Mono",monospace;letter-spacing:1.5px}
+.v9-site .video-grid{max-width:1320px;margin:0 auto;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px;position:relative}
+.v9-site .video-card{display:grid;grid-template-columns:1fr;grid-template-rows:auto 1fr;border:1px solid #bba8ff20;border-radius:3px;overflow:hidden;background:#0b0b17}
+.v9-site .video-card-featured{grid-column:1/-1;grid-template-columns:1.25fr .75fr;grid-template-rows:1fr;min-height:340px}
+.v9-site .video-thumbnail,.v9-site .video-thumbnail img{min-height:220px}
+.v9-site .video-card-featured .video-thumbnail,.v9-site .video-card-featured .video-thumbnail img{height:100%;min-height:340px}
+.v9-site .video-card-copy{padding:25px}
+.v9-site .video-card-copy h3{font:600 20px/1.2 "Space Grotesk",sans-serif}
+.v9-site .video-card-copy p{font-size:11px;line-height:1.8;color:#9992ad}
+.v9-site .video-meta{font:8px "DM Mono",monospace;letter-spacing:1px}
+.v9-site .video-watch{font-size:8px;min-height:43px}
+.v9-site .video-archive-foot{max-width:1320px;margin:30px auto 0;padding-top:17px;border-top:1px solid var(--v9-line);display:flex;justify-content:space-between;color:#77728f;font:8px "DM Mono",monospace;letter-spacing:1.4px}
+.v9-site .episode-section.v9-episode{padding:135px 8%;max-width:1320px;gap:8%;border-bottom:1px solid var(--v9-line)}
+.v9-site .episode-visual{min-height:410px}
+.v9-site .episode-core{width:190px;height:190px;font:700 52px "Space Grotesk",sans-serif}
+.v9-site .episode-core span{font-size:14px}
+.v9-site .episode-copy h2{font:700 clamp(40px,5vw,65px)/1 "Space Grotesk",sans-serif;letter-spacing:-3px}
+.v9-site .episode-copy p{max-width:470px;color:#a5a0b8;line-height:1.9;font-size:13px}
+.v9-site .episode-copy .button{margin:8px 8px 0 0}
+.v9-site .v9-about{max-width:1320px;padding:145px 8%;text-align:center;position:relative;overflow:hidden}
+.v9-site .v9-about-mark{font-size:42px;color:#8d70e9;margin-bottom:25px;text-shadow:0 0 40px #8d70e988}
+.v9-site .v9-about h2{font-size:clamp(44px,6vw,78px)}
+.v9-site .v9-about p{max-width:650px;margin:30px auto;color:#a8a2ba;font-size:14px;line-height:2}
+.v9-site .v9-about .text-link{font:9px "DM Mono",monospace;letter-spacing:1.5px;color:#d2c4ff}
+.v9-site .v9-footer{max-width:none;padding:34px max(6%,calc((100vw - 1320px)/2));border-top:1px solid var(--v9-line);background:#080811}
+.v9-site .v9-footer>span,.v9-site .v9-footer>a:last-child{font:8px "DM Mono",monospace;letter-spacing:1.4px;color:#77728f}
+.v9-site .fact-card[hidden],.v9-site .video-card[hidden]{display:none!important}
+@media(max-width:900px){
+ .v9-site .hero.v9-hero{padding-left:6%;padding-right:6%;grid-template-columns:1fr .9fr}
+ .v9-site .hero h1{font-size:clamp(58px,8vw,86px);letter-spacing:-5px}
+ .v9-site .hero-art.v9-orbit-art{height:450px}
+ .v9-site .v9-archive-layout{grid-template-columns:105px minmax(0,1fr);gap:22px}
+ .v9-site .card-art{height:180px}
+ .v9-site .video-card-featured{grid-template-columns:1fr 1fr}
+}
+@media(max-width:640px){
+ .v9-site .site-header{height:72px;padding:0 5%}
+ .v9-site .nav{gap:0}
+ .v9-site .hero.v9-hero{min-height:auto;padding:85px 6% 78px;display:flex;flex-direction:column;align-items:stretch}
+ .v9-site .hero-copy{width:100%;padding:0}
+ .v9-site .hero h1{font-size:clamp(58px,15vw,86px);letter-spacing:-4px;margin:20px 0}
+ .v9-site .hero-description{font-size:13px;max-width:390px}
+ .v9-site .hero-art.v9-orbit-art{width:100%;height:360px;margin:25px auto 0}
+ .v9-site .hero-art .planet{width:190px;height:205px}
+ .v9-site .v9-orbit{width:90%;height:43%}
+ .v9-site .v9-coordinate-a{left:0;top:8%}.v9-site .v9-coordinate-b{right:0;bottom:8%}
+ .v9-site .v9-scroll-cue{left:6%;bottom:20px}
+ .v9-site .hero-index{display:none}
+ .v9-site .v9-manifesto{height:55px;gap:17px;font-size:8px;letter-spacing:1.3px;justify-content:flex-start;padding:0 18px}
+ .v9-site .archive.v9-archive{padding:90px 6%}
+ .v9-site .v9-section-top{display:block;margin-bottom:35px}
+ .v9-site .section h2,.v9-site .videos-section h2{font-size:clamp(42px,11vw,62px);letter-spacing:-2px}
+ .v9-site .section-intro{margin-top:22px;max-width:420px}
+ .v9-site .v9-archive-layout{display:block}
+ .v9-site .v9-archive-aside{display:none}
+ .v9-site .v9-search-panel{padding:14px}
+ .v9-site .search-box{min-height:52px}
+ .v9-site .search-box kbd{display:none}
+ .v9-site .filter-row{gap:6px}
+ .v9-site .filter{padding:10px 9px;font-size:7px}
+ .v9-site .fact-grid{grid-template-columns:1fr;gap:13px}
+ .v9-site .card-art{height:210px}
+ .v9-site .card-body{padding:20px}
+ .v9-site .videos-section.v9-transmissions{padding:90px 6%}
+ .v9-site .v9-video-heading{display:block;margin-bottom:32px}
+ .v9-site .v9-video-note{text-align:left;margin-top:24px}
+ .v9-site .video-category-panel{padding:15px}
+ .v9-site .video-grid{grid-template-columns:1fr}
+ .v9-site .video-card-featured{grid-column:auto;grid-template-columns:1fr}
+ .v9-site .video-card-featured .video-thumbnail,.v9-site .video-card-featured .video-thumbnail img{min-height:230px;height:auto}
+ .v9-site .video-archive-foot{font-size:7px;gap:15px}
+ .v9-site .episode-section.v9-episode{padding:85px 7%;display:block}
+ .v9-site .episode-visual{min-height:300px;margin-bottom:35px}
+ .v9-site .episode-core{width:150px;height:150px;font-size:42px}
+ .v9-site .episode-copy h2{font-size:clamp(40px,10vw,58px)}
+ .v9-site .v9-about{padding:95px 7%}
+ .v9-site .v9-about h2{font-size:clamp(42px,10vw,60px)}
+ .v9-site .v9-footer{padding:28px 6%;display:flex;flex-wrap:wrap;gap:15px}
+ .v9-site .v9-footer>span{order:3;width:100%}
+}
+@media(prefers-reduced-motion:reduce){
+ .v9-site .v9-orbit,.v9-site .v9-sunflare{animation:none!important}
+}
