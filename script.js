@@ -96,7 +96,7 @@ updateArchive();
     window.addEventListener("blur", () => document.body.classList.remove("astralore-cursor-active"));
     document.addEventListener("visibilitychange", () => { if (document.hidden) document.body.classList.remove("astralore-cursor-active"); });
   }
-  const targets = [...document.querySelectorAll(".section-top, .search-panel, .results-line, .fact-card, .episode-visual, .episode-copy, .about-section > *, .footer > *")];
+  const targets = [...document.querySelectorAll(".section-top, .search-panel, .results-line, .fact-card, .videos-heading, .video-card, .video-archive-foot, .episode-visual, .episode-copy, .about-section > *, .footer > *")];
   targets.forEach((el, i) => {
     el.classList.add("js-reveal");
     if (el.classList.contains("fact-card")) el.style.transitionDelay = (i % 4) * 75 + "ms";
