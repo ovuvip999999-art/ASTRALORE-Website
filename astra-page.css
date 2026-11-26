@@ -579,9 +579,9 @@ button, a {
     width: 100%;
     min-height: auto;
     padding: 12px 16px;
-    flex-direction: row;
+    display: grid;
+    grid-template-columns: 1fr auto;
     align-items: center;
-    justify-content: space-between;
     gap: 10px;
     border-right: 0;
     border-bottom: 1px solid #ffffff15;
@@ -601,12 +601,15 @@ button, a {
     font-size: 8px;
   }
 
-  .new-chat-button,
-  .sidebar-section-label,
-  .sidebar-item,
-  .sidebar-bottom {
-    display: none;
+  .new-chat-button {
+    margin: 0;
+    padding: 9px 11px;
+    font-size: 11px;
   }
+  .sidebar-section-label, .sidebar-item, .sidebar-bottom { display: none; }
+  .archive-heading, .archive-search, .archive-list { display: block; grid-column: 1 / -1; }
+  .archive-heading { margin: 5px 0 0; }
+  .archive-list { max-height: 130px; }
 
   .astra-main {
     min-height: calc(100dvh - 58px);
