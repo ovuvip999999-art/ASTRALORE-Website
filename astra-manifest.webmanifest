@@ -5,7 +5,7 @@
   "description": "Your online AI assistant from ASTRALORE.",
   "lang": "en",
   "start_url": "/astra.html?app=1",
-  "scope": "/",
+  "scope": "/astra.html",
   "display": "standalone",
   "display_override": ["standalone", "minimal-ui"],
   "orientation": "any",
