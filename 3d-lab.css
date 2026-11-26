@@ -33,6 +33,7 @@
 .model-item-copy{display:flex;min-width:0;flex-direction:column;gap:5px}
 .model-item-copy strong{font:600 11px Manrope;line-height:1.4}
 .model-item-copy small{font:9px Manrope;color:#89839f;line-height:1.4}
+.model-item-description{display:block;margin-top:5px;font:10px/1.55 Manrope;color:#aaa6c0;white-space:normal;max-width:100%;}
 .empty-state{padding:25px;color:#aaa6c0;font-size:12px;text-align:center}
 .viewer-column{min-width:0;display:grid;gap:15px}
 .model-detail{border:1px solid #b79aff30;border-radius:8px;padding:22px 24px;background:linear-gradient(145deg,#17162bdf,#0b0e1fef)}
