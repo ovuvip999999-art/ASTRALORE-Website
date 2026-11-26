@@ -357,7 +357,7 @@ function renderAnswer(container, text) {
       );
 
       if (history.length > 500) {
-        history.splice(0, history.length - 16);
+        history.splice(0, history.length - 500);
       }
       if (window.ASTRAMemory) {
         window.ASTRAMemory.saveCurrentMessages(history);
