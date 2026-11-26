@@ -82,10 +82,17 @@ jobs:
         run: |
           set -euo pipefail
           KEYSTORE_PATH="$RUNNER_TEMP/astra-release.jks"
+          trap 'rm -f "$KEYSTORE_PATH"' EXIT
           printf '%s' "$ASTRA_KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE_PATH"
           chmod 600 "$KEYSTORE_PATH"
+
+          # Fail early with a clear diagnostic if the store password or alias is wrong.
+          if ! keytool -list -keystore "$KEYSTORE_PATH" -storepass:env ASTRA_KEYSTORE_PASSWORD -alias "$ASTRA_KEY_ALIAS" >/dev/null 2>&1; then
+            echo "::error::The release keystore could not be opened with the configured store password and alias. Re-enter ASTRA_KEYSTORE_PASSWORD and ASTRA_KEY_ALIAS in GitHub Actions secrets; do not share them in chat."
+            exit 1
+          fi
+
           ASTRA_KEYSTORE_PATH="$KEYSTORE_PATH" gradle --no-daemon :app:assembleRelease
-          rm -f "$KEYSTORE_PATH"
 
       - name: Upload signed release APK
         if: steps.signing-check.outputs.available == 'true'
