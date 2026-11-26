@@ -1,6 +1,6 @@
 // ASTRALORE Class 12 Interactive 3D Model Library
 // All scenes are generated from Three.js geometry at runtime; no placeholder thumbnails.
-export const MODEL_DATA = String.raw\`
+export const MODEL_DATA = String.raw`
 P01~Electric charge and conservation~Electric Charges and Fields~field~Visualise positive and negative charges and the electric field around them.
 P02~Electric field lines~Electric Charges and Fields~field~Explore the direction and spacing of electric field lines around point charges.
 P03~Electric dipole~Electric Charges and Fields~field~A pair of equal and opposite charges separated by a small distance.
@@ -101,7 +101,7 @@ B31~Recombinant DNA plasmid~Biotechnology: Principles and Processes~dna~A plasmi
 B32~PCR amplification cycle~Biotechnology: Principles and Processes~apparatus~Repeated denaturation, annealing and extension amplify a DNA segment.
 B33~Biotechnology insulin production~Biotechnology and its Applications~apparatus~Recombinant microbes can produce human insulin for medical use.
 B34~Ecosystem energy flow and food web~Organisms and Populations / Ecosystem~ecosystem~Energy moves through trophic levels while nutrients are recycled in ecosystems.
-\`.trim().split("\n").map(line=>{const [id,title,chapter,kind,description]=line.split("~");return {id,subject:id[0]==="P"?"Physics":id[0]==="C"?"Chemistry":"Biology",title,chapter,kind,description};});
+`.trim().split("\n").map(line=>{const [id,title,chapter,kind,description]=line.split("~");return {id,subject:id[0]==="P"?"Physics":id[0]==="C"?"Chemistry":"Biology",title,chapter,kind,description};});
 
 const COLORS={Physics:0x75baff,Chemistry:0xffb66e,Biology:0x76dfb0};
 const mat=(T,c,metalness=.18,roughness=.38)=>new T.MeshStandardMaterial({color:c,metalness,roughness});
