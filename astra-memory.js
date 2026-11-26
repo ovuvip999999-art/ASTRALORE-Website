@@ -5,9 +5,9 @@
 (() => {
   "use strict";
   const KEY = "astralore.astra.memory.v1";
-  const MAX_MEMORIES = 30;
+  const MAX_MEMORIES = 12;
   const MAX_HISTORY = 16;
-  const MAX_TEXT = 500;
+  const MAX_TEXT = 240;
 
   function read() {
     try {
