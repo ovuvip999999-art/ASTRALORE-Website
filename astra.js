@@ -1,6 +1,8 @@
 
-/* V14 — ASTRA assistant. Robust Markdown code blocks, safe rendering, copy buttons and session context. */
+/* V15 — ASTRA assistant. Robust Markdown parsing, escaped code fences, safe code rendering and session context. */
 (() => {
+  "use strict";
+
   const launcher = document.getElementById("astraLauncher");
   const panel = document.getElementById("astraWidget");
   const close = document.getElementById("astraClose");
@@ -34,9 +36,9 @@
     launcher.focus();
   }
 
-  launcher.addEventListener("click", () =>
-    panel.classList.contains("is-open") ? closePanel() : openPanel()
-  );
+  launcher.addEventListener("click", () => {
+    panel.classList.contains("is-open") ? closePanel() : openPanel();
+  });
 
   if (close) close.addEventListener("click", closePanel);
 
@@ -98,8 +100,7 @@
     );
   }
 
-  // Remove only common Markdown-escaping artifacts from generated code.
-  // Legitimate JavaScript strings, regexes and file paths are preserved.
+  // Clean common escaping artifacts without stripping normal code backslashes.
   function cleanEscapedCode(code) {
     return String(code)
       .replace(/\\(?=<\/?[A-Za-z!])/g, "")
@@ -132,7 +133,7 @@
 
     const cleanCode = cleanEscapedCode(code);
 
-    // textContent prevents generated HTML from executing.
+    // Never interpret generated code as live HTML.
     codeElement.textContent = cleanCode;
 
     copyButton.addEventListener("click", async () => {
@@ -156,29 +157,43 @@
     container.appendChild(wrapper);
   }
 
-  // Recognize normal fences and individually escaped backticks.
+  // Recognize normal, escaped and partially escaped Markdown fences.
   function getCodeFence(line) {
     const trimmed = line.trim();
 
-    const normal = trimmed.match(
+    // Standard fences: ```html or ~~~html
+    let match = trimmed.match(
       /^(`{3,}|~~~)\s*([a-zA-Z0-9_+#.-]*)\s*$/
     );
 
-    if (normal) {
+    if (match) {
       return {
-        language: normal[2] || "",
-        marker: normal[1]
+        language: match[2] || "",
+        marker: match[1]
       };
     }
 
-    const escaped = trimmed.match(
+    // Individually escaped backticks: \`\`\`html
+    match = trimmed.match(
       /^(?:\\`){3,}\s*([a-zA-Z0-9_+#.-]*)\s*$/
     );
 
-    if (escaped) {
+    if (match) {
       return {
-        language: escaped[1] || "",
+        language: match[1] || "",
         marker: "escaped"
+      };
+    }
+
+    // One backslash before the complete fence: \```
+    match = trimmed.match(
+      /^\\(`{3,})\s*([a-zA-Z0-9_+#.-]*)\s*$/
+    );
+
+    if (match) {
+      return {
+        language: match[2] || "",
+        marker: match[1]
       };
     }
 
@@ -188,13 +203,13 @@
   function renderAnswer(container, text) {
     const lines = String(text)
       .replace(/\r\n/g, "\n")
+      .replace(/\r/g, "\n")
       .split("\n");
 
     let list = null;
     let table = null;
     let codeLines = null;
     let codeLanguage = "";
-    let activeFence = null;
 
     function resetBlocks() {
       list = null;
@@ -211,12 +226,10 @@
         if (codeLines === null) {
           codeLines = [];
           codeLanguage = fence.language;
-          activeFence = fence.marker;
         } else {
           addCodeBlock(container, codeLines.join("\n"), codeLanguage);
           codeLines = null;
           codeLanguage = "";
-          activeFence = null;
         }
 
         return;
@@ -243,6 +256,7 @@
         return;
       }
 
+      // Markdown table handling.
       if (trimmed.includes("|")) {
         const cells = trimmed.split("|")
           .slice(1, -1)
@@ -298,7 +312,7 @@
       container.appendChild(paragraph);
     });
 
-    // Safely display unfinished code blocks too.
+    // Preserve unfinished code blocks safely.
     if (codeLines !== null) {
       addCodeBlock(container, codeLines.join("\n"), codeLanguage);
     }
@@ -336,7 +350,9 @@
 
     const response = await fetch(API_URL, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json"
+      },
       body: JSON.stringify({
         message: question,
         history: history.slice(-8)
@@ -380,7 +396,7 @@
 
     input.value = "";
 
-    const typing = addMessage("Receiving signal…", "bot");
+    const typing = addMessage("Receiving signal...", "bot");
     typing.classList.add("astra-message-loading");
 
     try {
@@ -437,7 +453,7 @@
     }
 
     if (disclaimer) {
-      disclaimer.textContent = "ASTRALORE AI · SESSION CONTEXT ACTIVE";
+      disclaimer.textContent = "ASTRALORE AI - SESSION CONTEXT ACTIVE";
     }
   } else {
     if (status) {
