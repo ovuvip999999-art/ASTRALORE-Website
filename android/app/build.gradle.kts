@@ -39,7 +39,14 @@ android {
 
     buildTypes {
         getByName("release") {
-            isMinifyEnabled = false
+            // Obfuscates/minifies the native Android wrapper. This is not a substitute
+            // for keeping credentials and private data on the server.
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
             if (hasReleaseSigning) {
                 signingConfig = signingConfigs.getByName("release")
             }
