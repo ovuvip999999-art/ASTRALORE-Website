@@ -76,6 +76,7 @@
           <span id="astraStatus">CONNECTING</span>
         </div>
         <button class="install-app-button" id="installAstra" type="button" hidden>↓ INSTALL APP</button>
+        <button class="memory-open-button" id="astraMemoryButton" type="button">✦ MEMORY</button>
       </header>
 
       <section class="conversation" id="astraChat" aria-live="polite">
@@ -145,7 +146,24 @@
     </main>
   </div>
 
+  <dialog class="astra-memory-dialog" id="astraMemoryDialog" aria-labelledby="astraMemoryTitle">
+    <form method="dialog" class="memory-dialog-head">
+      <div><span class="memory-dialog-kicker">YOUR DEVICE · PRIVATE TO THIS BROWSER</span><h2 id="astraMemoryTitle">ASTRA MEMORY</h2></div>
+      <button class="memory-dialog-close" aria-label="Close memory">×</button>
+    </form>
+    <p class="memory-privacy-note">Only facts you add here are saved. Memories stay on this device and are sent to ASTRA with your messages so it can use them. Do not save passwords, financial details, or other sensitive information.</p>
+    <form id="astraMemoryForm" class="memory-add-form">
+      <label for="astraMemoryInput">What should ASTRA remember?</label>
+      <input id="astraMemoryInput" maxlength="500" autocomplete="off" placeholder="Example: I am learning Python." required>
+      <button type="submit">SAVE MEMORY</button>
+    </form>
+    <p id="astraMemoryNotice" class="memory-notice" aria-live="polite"></p>
+    <div id="astraMemoryList" class="astra-memory-list"></div>
+    <button type="button" id="astraClearMemories" class="memory-clear-button">DELETE ALL MEMORIES</button>
+  </dialog>
+
   <script src="astra-config.js"></script>
+  <script src="astra-memory.js"></script>
   <script src="astra-page.js"></script>
   <script src="astra-pwa.js"></script>
 </body>
