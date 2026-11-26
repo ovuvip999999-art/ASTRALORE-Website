@@ -685,3 +685,23 @@ button, a {
     transition-duration: .01ms !important;
   }
 }
+
+
+/* INSTALLABLE ASTRA APP */
+.install-app-button {
+  padding: 10px 14px;
+  border: 1px solid #a88bea77;
+  border-radius: 7px;
+  background: #8060c526;
+  color: #e6dcff;
+  font: 10px 'DM Mono', monospace;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: .2s;
+}
+.install-app-button:hover { border-color: #c3aaff; background: #8060c544; }
+.install-app-button[hidden] { display: none; }
+@media (max-width: 560px) {
+  .topbar { flex-wrap: wrap; gap: 9px; }
+  .install-app-button { padding: 8px 10px; font-size: 9px; }
+}

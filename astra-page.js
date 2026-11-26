@@ -337,6 +337,7 @@ function renderAnswer(container, text) {
 
     try {
       const reply = await askAstra(message);
+      if (status) status.textContent = "ONLINE";
 
       typing.remove();
       addMessage(reply, "bot");
@@ -350,6 +351,7 @@ function renderAnswer(container, text) {
         history.splice(0, history.length - 16);
       }
     } catch (error) {
+      if (status) status.textContent = "CONNECTION ISSUE";
       typing.remove();
       addMessage(
         error.message || "Connection interrupted. Please try again.",
@@ -395,7 +397,7 @@ function renderAnswer(container, text) {
   }
 
   if (API_URL) {
-    if (status) status.textContent = "LIVE CONNECTION";
+    if (status) status.textContent = "READY TO CONNECT";
   } else {
     if (status) status.textContent = "OFFLINE";
   }
