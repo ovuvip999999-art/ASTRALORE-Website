@@ -1,5 +1,5 @@
 
-/* V15 — ASTRA assistant. Robust Markdown parsing, escaped code fences, safe code rendering and session context. */
+/* V16 — ASTRA assistant. Improved escaped Markdown parsing and safe code rendering. */
 (() => {
   "use strict";
 
@@ -100,12 +100,14 @@
     );
   }
 
-  // Clean common escaping artifacts without stripping normal code backslashes.
+  // Clean escaped HTML, CSS selectors and common encoded spaces.
   function cleanEscapedCode(code) {
     return String(code)
       .replace(/\\(?=<\/?[A-Za-z!])/g, "")
-      .replace(/^(\s*)\\#/gm, "$1#")
-      .replace(/&#x20;/gi, " ");
+      .replace(/^(\s*)\\?\*\s*\{/gm, "$1* {")
+      .replace(/^(\s*)-\s*\{\s*$/gm, "$1* {")
+      .replace(/&#x20;/gi, " ")
+      .replace(/^(\s*)\\#/gm, "$1#");
   }
 
   function addCodeBlock(container, code, language) {
@@ -133,7 +135,7 @@
 
     const cleanCode = cleanEscapedCode(code);
 
-    // Never interpret generated code as live HTML.
+    // Generated code is displayed as text, never executed as HTML.
     codeElement.textContent = cleanCode;
 
     copyButton.addEventListener("click", async () => {
@@ -157,47 +159,22 @@
     container.appendChild(wrapper);
   }
 
-  // Recognize normal, escaped and partially escaped Markdown fences.
+  // Normalize escaped backticks before detecting Markdown fences.
   function getCodeFence(line) {
     const trimmed = line.trim();
 
-    // Standard fences: ```html or ~~~html
-    let match = trimmed.match(
+    const normalized = trimmed.replace(/\\(?=`)/g, "");
+
+    const match = normalized.match(
       /^(`{3,}|~~~)\s*([a-zA-Z0-9_+#.-]*)\s*$/
     );
 
-    if (match) {
-      return {
-        language: match[2] || "",
-        marker: match[1]
-      };
-    }
+    if (!match) return null;
 
-    // Individually escaped backticks: \`\`\`html
-    match = trimmed.match(
-      /^(?:\\`){3,}\s*([a-zA-Z0-9_+#.-]*)\s*$/
-    );
-
-    if (match) {
-      return {
-        language: match[1] || "",
-        marker: "escaped"
-      };
-    }
-
-    // One backslash before the complete fence: \```
-    match = trimmed.match(
-      /^\\(`{3,})\s*([a-zA-Z0-9_+#.-]*)\s*$/
-    );
-
-    if (match) {
-      return {
-        language: match[2] || "",
-        marker: match[1]
-      };
-    }
-
-    return null;
+    return {
+      language: match[2] || "",
+      marker: match[1]
+    };
   }
 
   function renderAnswer(container, text) {
@@ -312,7 +289,6 @@
       container.appendChild(paragraph);
     });
 
-    // Preserve unfinished code blocks safely.
     if (codeLines !== null) {
       addCodeBlock(container, codeLines.join("\n"), codeLanguage);
     }
