@@ -89,7 +89,8 @@ function drawList() {
     const text = document.createElement('span'); text.className = 'model-item-copy';
     const title = document.createElement('strong'); title.textContent = record.title;
     const meta = document.createElement('small'); meta.textContent = record.chapter;
-    text.append(title, meta); button.append(number, text);
+    const description = document.createElement('span'); description.className = 'model-item-description'; description.textContent = record.description;
+    text.append(title, meta, description); button.append(number, text);
     button.style.setProperty('--subject-color', subjectColor[record.subject]);
     button.addEventListener('click', () => renderModel(record));
     fragment.append(button);
