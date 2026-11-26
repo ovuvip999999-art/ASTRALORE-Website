@@ -268,7 +268,7 @@ function antherSection(T,g){
   rod(T,g,[0,-1,0],[0,1,0],.045,0x5d9c77);
 }
 function embryoSac(T,g){
-  const sac=mesh(T,new T.SphereGeometry(.8,40,28),new T.MeshPhysicalMaterial({color:0x83c9a0,transparent:true,opacity:.18,side:THREE.DoubleSide}),0,0,0,g);sac.scale.set(.58,1.3,.38);
+  const sac=mesh(T,new T.SphereGeometry(.8,40,28),new T.MeshPhysicalMaterial({color:0x83c9a0,transparent:true,opacity:.18,side:T.DoubleSide}),0,0,0,g);sac.scale.set(.58,1.3,.38);
   // Micropylar end: egg cell flanked by two synergids; three antipodals at chalazal end; central polar nuclei.
   ellipsoid(T,g,[0,-.78,.08],[.17,.22,.13],0xffb66f);
   ellipsoid(T,g,[-.22,-.73,.08],[.12,.2,.1],0xe69ab2);
@@ -290,7 +290,7 @@ function spermCell(T,g){
   lineTube(T,g,[[0,.16,0],[.02,-.12,0],[.12,-.42,0],[.02,-.78,0],[-.1,-1.08,0],[.04,-1.4,0]],.035,0x7fc9c1);
 }
 function ovumCell(T,g){
-  const outer=mesh(T,new T.SphereGeometry(.68,40,28),new T.MeshPhysicalMaterial({color:0xf2c46f,transparent:true,opacity:.22,side:THREE.DoubleSide}),0,0,0,g);
+  const outer=mesh(T,new T.SphereGeometry(.68,40,28),new T.MeshPhysicalMaterial({color:0xf2c46f,transparent:true,opacity:.22,side:T.DoubleSide}),0,0,0,g);
   ring(T,g,.72,.07,0xf0c46f);
   ring(T,g,.58,.025,0xf5a4a8);
   ellipsoid(T,g,[0,0,.12],[.2,.22,.16],0x9d8bdb);
