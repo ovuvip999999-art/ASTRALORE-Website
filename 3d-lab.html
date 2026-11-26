@@ -2,38 +2,34 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="#080914"><meta name="description" content="Explore interactive 3D science models inside ASTRALORE.">
-  <meta property="og:site_name" content="ASTRALORE">
-  <meta property="og:type" content="website">
-  <meta property="og:title" content="3D Lab — ASTRALORE">
-  <meta property="og:description" content="Explore interactive 3D science models and discover how the universe and living systems work.">
-  <meta property="og:image" content="https://img.youtube.com/vi/x1vVXVKu3aE/hqdefault.jpg">
-  <meta property="og:image:alt" content="ASTRALORE — Explore Beyond">
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="3D Lab — ASTRALORE">
-  <meta name="twitter:description" content="Explore interactive 3D science models and discover how the universe and living systems work.">
-  <meta name="twitter:image" content="https://img.youtube.com/vi/x1vVXVKu3aE/hqdefault.jpg">
-<title>3D Lab | ASTRALORE</title>
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin><link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<meta name="theme-color" content="#080914"><meta name="description" content="Explore 100 interactive Class 12 Physics, Chemistry and Biology 3D science models inside ASTRALORE.">
+<meta property="og:site_name" content="ASTRALORE"><meta property="og:type" content="website"><meta property="og:title" content="Class 12 3D Lab — ASTRALORE"><meta property="og:description" content="100 interactive 3D models for Class 12 Physics, Chemistry and Biology.">
+<title>Class 12 3D Lab | ASTRALORE</title>
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="3d-lab.css">
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"}}</script>
 </head>
 <body>
 <header class="lab-header"><a class="lab-brand" href="index.html">✦ ASTRALORE</a><nav><a href="index.html">HOME</a><a class="active" href="3d-lab.html">3D LAB</a><a href="quiz.html">QUIZ ARENA</a></nav></header>
 <main class="lab-main">
-<section class="lab-intro"><div class="eyebrow">ASTRALORE / INTERACTIVE SCIENCE</div><h1>THE 3D <span>LABORATORY.</span></h1><p>Explore scientific structures in three dimensions. Drag to rotate, scroll to zoom, and inspect the model from every angle.</p></section>
-<section class="lab-layout">
-<div class="viewer-card"><div class="viewer-top"><span><i></i> LIVE MODEL VIEWER</span><span id="modelStatus">INITIALIZING…</span></div><div id="viewer"><div class="loading"><div class="loader"></div><span>Loading animal cell model…</span></div></div>
-<div class="viewer-controls"><button id="resetView">↺ RESET VIEW</button><button id="autoRotate" class="selected">AUTO ROTATE: ON</button><span>DRAG TO ROTATE · SCROLL TO ZOOM</span></div></div>
-<aside class="model-info"><div class="model-tag">BIOLOGY / CELL STRUCTURE</div><h2>Animal Cell</h2><p class="model-lead">A three-dimensional view of a eukaryotic animal cell and its internal structures.</p><div class="info-rule"></div><h3>Explore the structures</h3>
-<button class="organelle active" data-organelle="membrane"><b>01</b><span><strong>Cell membrane</strong><small>Controls entry and exit</small></span><i>↗</i></button>
-<button class="organelle" data-organelle="nucleus"><b>02</b><span><strong>Nucleus</strong><small>Stores genetic information</small></span><i>↗</i></button>
-<button class="organelle" data-organelle="mitochondria"><b>03</b><span><strong>Mitochondria</strong><small>ATP production</small></span><i>↗</i></button>
-<button class="organelle" data-organelle="er"><b>04</b><span><strong>Endoplasmic reticulum</strong><small>Protein and lipid synthesis</small></span><i>↗</i></button>
-<button class="organelle" data-organelle="golgi"><b>05</b><span><strong>Golgi apparatus</strong><small>Modifies and packages products</small></span><i>↗</i></button>
-<div id="organelleDetail" class="organelle-detail" aria-live="polite"><span>SELECTED STRUCTURE</span><strong>Cell membrane</strong><p>A selectively permeable boundary that regulates the movement of substances into and out of the cell.</p></div>
-<div id="selectionHint" class="selection-hint">Choose a structure above, or click a visible part of the 3D model.</div>
-<div class="model-note">MODEL FILE · assets/models/animal-cell.glb</div></aside>
+<section class="lab-intro"><div class="eyebrow">ASTRALORE / CLASS 12 INTERACTIVE SCIENCE</div><h1>THE 3D <span>LABORATORY.</span></h1><p>Explore 100 interactive, syllabus-linked 3D learning models. Choose a subject, search a chapter, rotate the scene and inspect the science in three dimensions.</p>
+<div class="lab-stats"><span><b id="totalModels">100</b> MODELS</span><span><b>3</b> SUBJECTS</span><span><b>CLASS 12</b> NCERT-ALIGNED</span></div></section>
+<section class="catalogue-tools">
+<label class="search-wrap"><span>⌕</span><input id="modelSearch" type="search" placeholder="Search models, topics or chapters…" autocomplete="off"></label>
+<div class="subject-tabs" role="tablist" aria-label="Filter by subject">
+<button class="subject-tab active" data-subject="All">ALL <b id="allCount">100</b></button>
+<button class="subject-tab" data-subject="Physics">PHYSICS <b id="physicsCount">33</b></button>
+<button class="subject-tab" data-subject="Chemistry">CHEMISTRY <b id="chemistryCount">33</b></button>
+<button class="subject-tab" data-subject="Biology">BIOLOGY <b id="biologyCount">34</b></button>
+</div>
+<div class="chapter-filter"><label for="chapterFilter">CHAPTER</label><select id="chapterFilter"><option value="All">All chapters</option></select><span id="resultCount">100 models</span></div>
 </section>
-<section class="lab-footer"><span>MORE MODELS ARE IN DEVELOPMENT</span><a href="index.html">← RETURN TO ASTRALORE</a></section>
+<section class="lab-workspace">
+<aside class="catalogue-panel"><div class="panel-heading"><span>MODEL LIBRARY</span><span id="visibleCount">100 / 100</span></div><div id="modelList" class="model-list" aria-label="3D model catalogue"></div><div id="emptyState" class="empty-state" hidden>No models match this search.</div></aside>
+<div class="viewer-column">
+<div class="viewer-card"><div class="viewer-top"><span><i></i> LIVE 3D VIEWER</span><span id="modelStatus">BUILDING MODEL…</span></div><div id="viewer"><div class="loading"><div class="loader"></div><span>Building interactive 3D scene…</span></div></div>
+<div class="viewer-controls"><button id="resetView">↺ RESET VIEW</button><button id="autoRotate" class="selected">AUTO ROTATE: ON</button><span>DRAG TO ROTATE · SCROLL TO ZOOM</span></div></div>
+<article class="model-detail"><div class="detail-top"><span id="detailSubject" class="model-tag">PHYSICS</span><span id="detailIndex">MODEL 01 / 100</span></div><h2 id="detailTitle">Electric charge and conservation</h2><div id="detailChapter" class="detail-chapter">Electric Charges and Fields</div><p id="detailDescription">Visualise positive and negative charges and the electric field around them.</p><div class="detail-note"><span>LEARNING TIP</span><p>Rotate the model slowly and use zoom to inspect how the parts are arranged. This is a conceptual learning visual, not a scale engineering or medical simulation.</p></div></article>
+</div></section>
+<section class="lab-footer"><span>100 CLASS 12 MODELS · PHYSICS / CHEMISTRY / BIOLOGY</span><a href="index.html">← RETURN TO ASTRALORE</a></section>
 </main><script type="module" src="3d-lab.js"></script></body></html>
