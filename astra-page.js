@@ -15,7 +15,8 @@
 
   if (!form || !input || !chat) return;
 
-  let history = window.ASTRAMemory ? window.ASTRAMemory.getHistory() : [];
+  if (window.ASTRAMemory) window.ASTRAMemory.ensureConversation();
+  let history = window.ASTRAMemory ? window.ASTRAMemory.getCurrentMessages() : [];
   let busy = false;
 
   function appendInline(parent, text) {
@@ -359,7 +360,8 @@ function renderAnswer(container, text) {
         history.splice(0, history.length - 16);
       }
       if (window.ASTRAMemory) {
-        window.ASTRAMemory.saveHistory(history);
+        window.ASTRAMemory.saveCurrentMessages(history);
+        renderArchive();
         const learned = Array.isArray(data.memoryUpdates) ? data.memoryUpdates : [];
         if (learned.length) {
           window.ASTRAMemory.addMemories(learned);
@@ -404,15 +406,63 @@ function renderAnswer(container, text) {
       if (busy) return;
 
       history = [];
-      if (window.ASTRAMemory) window.ASTRAMemory.clearHistory();
+      if (window.ASTRAMemory) window.ASTRAMemory.createConversation();
       chat.querySelectorAll(".astra-message").forEach(message => message.remove());
-
       if (welcome) welcome.hidden = false;
-
       input.value = "";
+      renderArchive();
       input.focus();
     });
   }
+
+  // Searchable conversation archive (stored locally on this device).
+  const archiveSearch = document.getElementById("astraArchiveSearch");
+  const archiveList = document.getElementById("astraArchiveList");
+
+  function renderArchive() {
+    if (!archiveList || !window.ASTRAMemory) return;
+    const query = archiveSearch ? archiveSearch.value : "";
+    const conversations = window.ASTRAMemory.searchConversations(query);
+    archiveList.replaceChildren();
+    if (!conversations.length) {
+      const empty = document.createElement("p");
+      empty.className = "archive-empty";
+      empty.textContent = query ? "No matching conversations." : "Your conversations will appear here.";
+      archiveList.appendChild(empty);
+      return;
+    }
+    conversations.forEach(item => {
+      if (item.id === window.ASTRAMemory.getCurrentConversationId() && !item.messages.length) return;
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "archive-conversation" +
+        (item.id === window.ASTRAMemory.getCurrentConversationId() ? " active" : "");
+      button.dataset.conversationId = item.id;
+      const title = document.createElement("span");
+      title.className = "archive-conversation-title";
+      title.textContent = item.title || "Conversation";
+      const meta = document.createElement("small");
+      meta.textContent = new Date(item.updatedAt).toLocaleDateString();
+      button.append(title, meta);
+      archiveList.appendChild(button);
+    });
+  }
+
+  if (archiveSearch) archiveSearch.addEventListener("input", renderArchive);
+  if (archiveList) archiveList.addEventListener("click", event => {
+    const button = event.target.closest("[data-conversation-id]");
+    if (!button || busy || !window.ASTRAMemory) return;
+    const restored = window.ASTRAMemory.openConversation(button.dataset.conversationId);
+    if (!restored) return;
+    history = restored;
+    chat.querySelectorAll(".astra-message").forEach(message => message.remove());
+    history.forEach(item => addMessage(item.content, item.role === "user" ? "user" : "bot"));
+    if (welcome) welcome.hidden = history.length > 0;
+    renderArchive();
+    input.focus();
+  });
+
+  renderArchive();
 
   // User-controlled, device-only memory controls.
   const memoryButton = document.getElementById("astraMemoryButton");
