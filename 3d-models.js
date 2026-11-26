@@ -228,5 +228,107 @@ function generic(T,g,kind,v){
  else if(kind==="micelle"){for(let i=0;i<18;i++){const a=i*Math.PI*2/18;ball(T,g,Math.cos(a)*.65,Math.sin(a)*.65,0,.14,0x7dbdff);rod(T,g,[Math.cos(a)*.65,Math.sin(a)*.65,0],[Math.cos(a)*.25,Math.sin(a)*.25,0],.035,0xffbb73);}}
  else molecule(T,g,v);
 }
-export function buildModel(THREE,record){const g=new THREE.Group();generic(THREE,g,record.kind,Number(record.id.slice(1))||0);labelBase(THREE,g,COLORS[record.subject]);g.rotation.y=.22;return g;}
+
+function ellipsoid(T,g,pos,scale,color){const o=mesh(T,new T.SphereGeometry(1,32,24),mat(T,color,.18,.42),...pos,g);o.scale.set(...scale);return o;}
+function lineTube(T,g,pts,r,color){return curve(T,g,pts,color,r);}
+function femaleReproductive(T,g){
+  // Anatomically recognisable schematic: uterus, paired oviducts, fimbriae, ovaries, cervix and vagina.
+  const uterine=mesh(T,new T.SphereGeometry(.55,40,28),mat(T,0xd8758c),0,.05,0,g);uterine.scale.set(.78,1.05,.42);
+  ellipsoid(T,g,[0,.12,.12],[.43,.72,.29],0xf0a0ad);
+  lineTube(T,g,[[0,-.48,0],[0,-.72,0],[0,-.92,0]],.13,0xc96b83);
+  lineTube(T,g,[[0,-.88,0],[0,-1.22,0],[0,-1.48,0]],.105,0xd98a9c);
+  for(const s of [-1,1]){
+    lineTube(T,g,[[s*.32,.48,0],[s*.62,.72,0],[s*.94,.77,0],[s*1.12,.58,0]],.075,0xe8a0a9);
+    lineTube(T,g,[[s*1.02,.66,0],[s*1.2,.78,0],[s*1.28,.88,0]],.035,0xf0b2b9);
+    lineTube(T,g,[[s*1.02,.66,0],[s*1.28,.66,0],[s*1.36,.58,0]],.035,0xf0b2b9);
+    ellipsoid(T,g,[s*1.48,.52,0],[.23,.31,.2],0xe6a36e);
+    for(let j=0;j<5;j++){const a=(j/4-.5)*1.5;lineTube(T,g,[[s*1.2,.66,0],[s*(1.34+Math.cos(a)*.16),.62+Math.sin(a)*.2,0]],.022,0xf3c2a0);}
+  }
+  // Endometrium is shown as a thin inner outline.
+  lineTube(T,g,[[-.27,.42,.28],[-.34,.12,.3],[-.22,-.25,.28],[0,-.38,.28],[.22,-.25,.28],[.34,.12,.3],[.27,.42,.28]],.025,0xffd3a4);
+}
+function maleReproductive(T,g){
+  // Schematic external profile with paired testes, epididymides, vas deferens, glands and urethra.
+  for(const s of [-1,1]){
+    ellipsoid(T,g,[s*.48,-.62,0],[.25,.34,.23],0x8eb9df);
+    lineTube(T,g,[[s*.55,-.38,0],[s*.62,-.12,0],[s*.58,.18,0],[s*.4,.48,0]],.055,0x7ec9b7);
+    lineTube(T,g,[[s*.4,.48,0],[s*.35,.78,0],[s*.2,.98,0],[0,1.08,0]],.045,0xe7b26e);
+    ellipsoid(T,g,[s*.22,.84,0],[.18,.12,.16],0xc78ab8);
+  }
+  ellipsoid(T,g,[0,.16,0],[.32,.23,.25],0xd58d9c);
+  lineTube(T,g,[[0,.1,.12],[0,-.2,.16],[0,-.48,.16],[0,-.85,.16]],.055,0xf0c58c);
+  lineTube(T,g,[[0,-.82,.16],[0,-1.18,.16],[0,-1.45,.16]],.11,0xd99a9e);
+}
+function antherSection(T,g){
+  ellipsoid(T,g,[0,0,0],[.45,1.05,.22],0x83b98b);
+  for(const [x,y] of [[-.25,.55],[.25,.55],[-.25,-.55],[.25,-.55]]){
+    ellipsoid(T,g,[x,y,.13],[.19,.32,.13],0xe5a85e);
+    for(let i=0;i<8;i++){const a=i*Math.PI/4;ellipsoid(T,g,[x+Math.cos(a)*.1,y+Math.sin(a)*.2,.25],[.045,.06,.04],0xffd77b);}
+  }
+  rod(T,g,[0,-1,0],[0,1,0],.045,0x5d9c77);
+}
+function embryoSac(T,g){
+  const sac=mesh(T,new T.SphereGeometry(.8,40,28),new T.MeshPhysicalMaterial({color:0x83c9a0,transparent:true,opacity:.18,side:THREE.DoubleSide}),0,0,0,g);sac.scale.set(.58,1.3,.38);
+  // Micropylar end: egg cell flanked by two synergids; three antipodals at chalazal end; central polar nuclei.
+  ellipsoid(T,g,[0,-.78,.08],[.17,.22,.13],0xffb66f);
+  ellipsoid(T,g,[-.22,-.73,.08],[.12,.2,.1],0xe69ab2);
+  ellipsoid(T,g,[.22,-.73,.08],[.12,.2,.1],0xe69ab2);
+  for(let i=0;i<3;i++)ellipsoid(T,g,[(i-1)*.22,.83,.05],[.12,.15,.1],0x9aaff0);
+  ellipsoid(T,g,[-.1,.05,.1],[.11,.11,.1],0xffd36f);
+  ellipsoid(T,g,[.1,.05,.1],[.11,.11,.1],0xffd36f);
+}
+function pollenGrain(T,g){
+  const shell=mesh(T,new T.SphereGeometry(.57,32,24),mat(T,0xe4b76c),0,0,0,g);
+  for(let i=0;i<16;i++){const a=i*Math.PI*2/16;const y=Math.sin(i*2.1)*.42,x=Math.cos(a)*.48,z=Math.sin(a)*.48;rod(T,g,[x*.85,y*.85,z*.85],[x*1.35,y*1.35,z*1.35],.035,0xffd98b);}
+  ellipsoid(T,g,[-.13,.12,.35],[.18,.23,.12],0x77baff);
+  ellipsoid(T,g,[.18,-.12,.35],[.11,.14,.1],0xd58aff);
+}
+function spermCell(T,g){
+  ellipsoid(T,g,[0,.62,0],[.2,.29,.16],0x83baff);
+  ellipsoid(T,g,[0,.78,.04],[.13,.18,.12],0x496fba);
+  ellipsoid(T,g,[0,.28,0],[.13,.16,.12],0xe8b36d);
+  lineTube(T,g,[[0,.16,0],[.02,-.12,0],[.12,-.42,0],[.02,-.78,0],[-.1,-1.08,0],[.04,-1.4,0]],.035,0x7fc9c1);
+}
+function ovumCell(T,g){
+  const outer=mesh(T,new T.SphereGeometry(.68,40,28),new T.MeshPhysicalMaterial({color:0xf2c46f,transparent:true,opacity:.22,side:THREE.DoubleSide}),0,0,0,g);
+  ring(T,g,.72,.07,0xf0c46f);
+  ring(T,g,.58,.025,0xf5a4a8);
+  ellipsoid(T,g,[0,0,.12],[.2,.22,.16],0x9d8bdb);
+  for(let i=0;i<14;i++){const a=i*Math.PI*2/14;ellipsoid(T,g,[Math.cos(a)*.84,Math.sin(a)*.84,0],[.08,.08,.07],0xe8a8b4);}
+}
+function distinctMolecule(T,g,id){
+  if(id==="C04"||id==="C05"){electrochem(T,g);return;}
+  if(id==="C13"||id==="C14"){coordination(T,g,id==="C13"?0:1);return;}
+  if(id==="C15"){for(let i=0;i<5;i++)rod(T,g,[-.8,-.7+i*.34,0],[.8,-.7+i*.34,0],.025,0x8ebaff);for(let i=0;i<3;i++)ellipsoid(T,g,[0,-.55+i*.55,.12],[.12,.12,.12],0xffc36f);return;}
+  if(id==="C28"){molecule(T,g,5);return;}
+  if(id==="C30"){helix(T,g,0x78c6ff);return;}
+  molecule(T,g,Number(id.slice(1)));
+}
+function buildSpecific(T,g,record){
+  const id=record.id;
+  if(id==="B09"){maleReproductive(T,g);return true;}
+  if(id==="B10"){femaleReproductive(T,g);return true;}
+  if(id==="B01"){antherSection(T,g);return true;}
+  if(id==="B02"){pollenGrain(T,g);return true;}
+  if(id==="B03"){embryoSac(T,g);return true;}
+  if(id==="B07"){spermCell(T,g);return true;}
+  if(id==="B08"){ovumCell(T,g);return true;}
+  if(id==="B20"||id==="B21"){helix(T,g,id==="B20"?0x78c6ff:0xffb66e);if(id==="B21"){rod(T,g,[-.1,-1.1,0],[-.1,1.1,0],.035,0xffd17a);for(let i=0;i<5;i++)rod(T,g,[-.1,-.8+i*.4,0],[.9,-.8+i*.4,.1],.02,0x7bc9ff);}return true;}
+  if(id==="B27"){const core=mesh(T,new T.TorusKnotGeometry(.48,.13,100,12,2,3),mat(T,0x8cbaff),0,.25,0,g);core.scale.set(1,1.35,.7);for(const s of [-1,1]){rod(T,g,[s*.35,-.1,0],[s*.72,-.65,0],.1,0xffbd78);rod(T,g,[s*.35,.55,0],[s*.72,1.05,0],.1,0xffbd78);}return true;}
+  if(id==="B30"){apparatus(T,g,0);for(let i=0;i<4;i++)rod(T,g,[-.25+i*.17,-.55,0],[-.25+i*.17,.7,0],.025,0x9cc8dd);return true;}
+  if(id==="P06"||id==="P07"){capacitor(T,g,id==="P06"?0:1);return true;}
+  if(id==="P11"||id==="P12"){circuit(T,g,id==="P11"?3:4);return true;}
+  if(id==="P17"){mechanics(T,g,2);return true;}
+  if(id==="P21"){generator(T,g);return true;}
+  if(id==="P22"){transformer(T,g);return true;}
+  if(id==="P25"||id==="P26"||id==="P27"){optics(T,g,id==="P25"?0:id==="P26"?1:2);return true;}
+  if(id==="P28"||id==="P29"){wave(T,g,id==="P28"?1:2);return true;}
+  if(id==="P33"){semiconductor(T,g);return true;}
+  if(id==="C04"||id==="C05"||id==="C13"||id==="C14"||id==="C15"||id==="C28"||id==="C30"){distinctMolecule(T,g,id);return true;}
+  if(id==="C03"){apparatus(T,g,2);for(let i=0;i<8;i++)ball(T,g,-.35+i*.1,-.4,0,.045,0x78baff);return true;}
+  if(id==="C07"){lattice(T,g,3);for(let i=0;i<8;i++)ball(T,g,Math.cos(i*.8)*.9,Math.sin(i*.8)*.9,.3,.055,0xff8a72);return true;}
+  if(id==="C08"||id==="C09"||id==="C10"){kinetics(T,g,id==="C08"?0:id==="C09"?1:2);return true;}
+  return false;
+}
+export function buildModel(THREE,record){const g=new THREE.Group();if(!buildSpecific(THREE,g,record))generic(THREE,g,record.kind,Number(record.id.slice(1))||0);labelBase(THREE,g,COLORS[record.subject]);g.rotation.y=.22;return g;}
 export const MODEL_COUNT=MODEL_DATA.length;
