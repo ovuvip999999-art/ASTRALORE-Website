@@ -320,7 +320,7 @@ function renderAnswer(container, text) {
       throw new Error("ASTRA returned an empty response. Please try again.");
     }
 
-    return data.reply;
+    return data;
   }
 
   async function send(text) {
@@ -343,7 +343,8 @@ function renderAnswer(container, text) {
     typing.classList.add("astra-message-loading");
 
     try {
-      const reply = await askAstra(message);
+      const data = await askAstra(message);
+      const reply = data.reply;
       if (status) status.textContent = "ONLINE";
 
       typing.remove();
@@ -357,7 +358,15 @@ function renderAnswer(container, text) {
       if (history.length > 16) {
         history.splice(0, history.length - 16);
       }
-      if (window.ASTRAMemory) window.ASTRAMemory.saveHistory(history);
+      if (window.ASTRAMemory) {
+        window.ASTRAMemory.saveHistory(history);
+        const learned = Array.isArray(data.memoryUpdates) ? data.memoryUpdates : [];
+        if (learned.length) {
+          window.ASTRAMemory.addMemories(learned);
+          renderMemories();
+          if (memoryNotice) memoryNotice.textContent = "ASTRA updated its memory from this conversation.";
+        }
+      }
     } catch (error) {
       if (status) status.textContent = "CONNECTION ISSUE";
       typing.remove();
@@ -408,8 +417,6 @@ function renderAnswer(container, text) {
   // User-controlled, device-only memory controls.
   const memoryButton = document.getElementById("astraMemoryButton");
   const memoryDialog = document.getElementById("astraMemoryDialog");
-  const memoryForm = document.getElementById("astraMemoryForm");
-  const memoryInput = document.getElementById("astraMemoryInput");
   const memoryList = document.getElementById("astraMemoryList");
   const memoryNotice = document.getElementById("astraMemoryNotice");
 
@@ -420,7 +427,7 @@ function renderAnswer(container, text) {
     if (!memories.length) {
       const empty = document.createElement("p");
       empty.className = "memory-empty";
-      empty.textContent = "No saved memories yet. Add facts you want ASTRA to remember.";
+      empty.textContent = "ASTRA hasn't learned any long-term memories yet. Keep chatting naturally; useful details will be saved automatically.";
       memoryList.appendChild(empty);
       return;
     }
@@ -444,22 +451,6 @@ function renderAnswer(container, text) {
       renderMemories();
       if (typeof memoryDialog.showModal === "function") memoryDialog.showModal();
       else memoryDialog.setAttribute("open", "");
-    });
-  }
-
-  if (memoryForm && memoryInput) {
-    memoryForm.addEventListener("submit", event => {
-      event.preventDefault();
-      if (!window.ASTRAMemory) return;
-      const result = window.ASTRAMemory.addMemory(memoryInput.value);
-      if (memoryNotice) {
-        memoryNotice.textContent = result.ok ? "Saved on this device." :
-          result.reason === "duplicate" ? "That memory is already saved." :
-          result.reason === "limit" ? "Memory is full. Remove an old item first." :
-          "Could not save. Check available device storage.";
-      }
-      if (result.ok) memoryInput.value = "";
-      renderMemories();
     });
   }
 
