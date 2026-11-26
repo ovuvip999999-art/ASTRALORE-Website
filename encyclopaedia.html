@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#070711">
+  <meta name="description" content="Explore the ASTRALORE Encyclopaedia: clear, sourced guides to space, science, life, Earth, history, mythology and technology.">
+  <meta property="og:site_name" content="ASTRALORE"><meta property="og:type" content="website">
+  <meta property="og:title" content="ASTRALORE Encyclopaedia — Explore Everything">
+  <meta property="og:description" content="A growing, carefully sourced knowledge library spanning the universe and our world.">
+  <meta name="twitter:card" content="summary_large_image">
+  <title>ASTRALORE Encyclopaedia — Explore Everything</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="encyclopaedia.css">
+</head>
+<body>
+  <div class="en-backdrop" aria-hidden="true"><span></span><span></span><span></span></div>
+  <header class="en-header"><a class="en-brand" href="index.html"><b>✧</b> ASTRA<span>LORE</span></a><nav aria-label="Main navigation"><a href="index.html">HOME</a><a class="active" href="encyclopaedia.html">ENCYCLOPAEDIA</a><a href="quiz.html">QUIZ ARENA</a><a href="3d-lab.html">3D LAB</a></nav><a class="en-home" href="index.html">BACK TO HOME ↗</a></header>
+  <main>
+    <section class="en-hero">
+      <div class="en-kicker"><i></i> THE ASTRALORE KNOWLEDGE PROJECT / VOL. 01</div>
+      <p class="en-overline">A UNIVERSE OF KNOWLEDGE</p>
+      <h1>THE <em>ENCYCLO</em><br>PAEDIA<span>.</span></h1>
+      <p class="en-intro">From the smallest building blocks of life to the largest structures in the cosmos — explore reliable explanations, follow connected ideas, and keep asking better questions.</p>
+      <div class="en-stats"><div><strong id="articleTotal">26</strong><small>STARTER ARTICLES</small></div><div><strong>08</strong><small>KNOWLEDGE DOMAINS</small></div><div><strong>∞</strong><small>QUESTIONS TO EXPLORE</small></div></div>
+    </section>
+    <section class="en-library" aria-labelledby="libraryTitle">
+      <div class="en-library-head"><div><p class="en-kicker">01 / THE KNOWLEDGE INDEX</p><h2 id="libraryTitle">FIND YOUR <em>NEXT QUESTION.</em></h2></div><p class="en-library-note">Search across every entry or choose a field to begin exploring.</p></div>
+      <div class="en-search"><span>⌕</span><input id="enSearch" type="search" placeholder="Search topics, concepts, keywords..." autocomplete="off"><button id="enClear" type="button" aria-label="Clear search">×</button></div>
+      <div class="en-filters" id="enFilters" role="group" aria-label="Filter encyclopaedia by subject">
+        <button class="selected" data-category="all" aria-pressed="true">ALL SUBJECTS</button>
+        <button data-category="space" aria-pressed="false">SPACE</button><button data-category="science" aria-pressed="false">SCIENCE</button>
+        <button data-category="life" aria-pressed="false">LIFE & BIOLOGY</button><button data-category="earth" aria-pressed="false">EARTH</button>
+        <button data-category="history" aria-pressed="false">HISTORY</button><button data-category="mythology" aria-pressed="false">MYTHOLOGY</button>
+        <button data-category="technology" aria-pressed="false">TECHNOLOGY</button><button data-category="mysteries" aria-pressed="false">MYSTERIES</button>
+      </div>
+      <div class="en-resultline"><span id="enCount" aria-live="polite">26 ARTICLES</span><span>SELECT AN ENTRY TO READ ↘</span></div>
+      <div class="en-grid" id="enGrid"></div>
+      <div class="en-empty" id="enEmpty" hidden><b>⌕</b><h3>NO ENTRY FOUND</h3><p>Try another keyword or reset the subject filter.</p><button id="enReset">RESET INDEX</button></div>
+    </section>
+    <section class="en-editorial"><span>ASTRALORE / EDITORIAL STANDARD</span><p>Knowledge should be curious, clear and checkable. Each entry is written as an original introduction and includes references so readers can continue learning from trusted sources.</p></section>
+  </main>
+  <footer class="en-footer"><a class="en-brand" href="index.html">✧ ASTRALORE</a><span>EXPLORE BEYOND. UNDERSTAND MORE.</span><a href="index.html">RETURN TO THE MAIN SITE ↗</a></footer>
+  <div class="en-modal" id="enModal" hidden role="dialog" aria-modal="true" aria-labelledby="enModalTitle">
+    <div class="en-modal-panel"><button class="en-modal-close" id="enModalClose" aria-label="Close article">×</button><p class="en-kicker" id="enModalMeta"></p><h2 id="enModalTitle"></h2><p class="en-modal-deck" id="enModalDeck"></p><div class="en-article-body" id="enModalBody"></div><section class="en-sources"><h3>REFERENCES & FURTHER READING</h3><ul id="enModalSources"></ul></section><div class="en-modal-bottom"><span>ASTRALORE / KNOWLEDGE INDEX</span><button id="enRelated" type="button">BACK TO INDEX ↑</button></div></div>
+  </div>
+  <script src="encyclopaedia.js" defer></script>
+</body></html>
