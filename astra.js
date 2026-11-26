@@ -393,6 +393,10 @@
     try {
       const reply = await askAstra(message);
 
+console.log("ASTRA RAW REPLY:", JSON.stringify(reply));
+console.log("ASTRA FIRST LINE:", JSON.stringify(reply.split("\n")[0]));
+console.log("ASTRA FENCE:", getCodeFence(reply.split("\n")[0]));
+
       typing.remove();
       addMessage(reply, "bot");
 
