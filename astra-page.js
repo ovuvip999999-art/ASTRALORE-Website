@@ -117,10 +117,14 @@ function renderAnswer(container, text) {
       : "";
 
     const cleanCode = codeLines.join("\n")
-      .replace(/\\+(?=<\/?[A-Za-z!])/g, "")
-      .replace(/&lt;/gi, "<")
-      .replace(/&gt;/gi, ">")
-      .replace(/&#x20;/gi, " ");
+  .replace(/\\+(?=<\/?[A-Za-z!])/g, "")
+  .replace(/\\+(?=<!DOCTYPE)/gi, "")
+  .replace(/\\+(?=```)/g, "")
+  .replace(/&lt;/gi, "<")
+  .replace(/&gt;/gi, ">")
+  .replace(/&#x20;/gi, " ")
+  .replace(/&#39;/gi, "'")
+  .replace(/&quot;/gi, '"');
 
     code.textContent = cleanCode;
 
