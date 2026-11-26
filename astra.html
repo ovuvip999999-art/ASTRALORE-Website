@@ -5,6 +5,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#080914">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="ASTRA AI">
+  <link rel="manifest" href="astra-manifest.webmanifest">
+  <link rel="icon" type="image/svg+xml" href="astra-icon.svg">
+  <link rel="apple-touch-icon" href="astra-icon.svg">
   <meta name="description" content="ASTRA — ASTRALORE's AI intelligence assistant.">
   <meta property="og:site_name" content="ASTRALORE">
   <meta property="og:type" content="website">
@@ -33,13 +40,9 @@
   <div class="astra-app">
 
     <aside class="astra-sidebar">
-      <a class="astra-logo" href="index.html">
-        <span>✦</span> ASTRA<span class="logo-muted">LORE</span>
-      </a>
-
-      <a class="back-home" href="index.html">
-        <span>←</span> BACK TO ASTRALORE
-      </a>
+      <div class="astra-logo" aria-label="ASTRA AI">
+        <span>✦</span> ASTRA<span class="logo-muted">AI</span>
+      </div>
 
       <button class="new-chat-button" id="newChat" type="button">
         <span>＋</span> New conversation
@@ -72,6 +75,7 @@
           <i></i>
           <span id="astraStatus">CONNECTING</span>
         </div>
+        <button class="install-app-button" id="installAstra" type="button" hidden>↓ INSTALL APP</button>
       </header>
 
       <section class="conversation" id="astraChat" aria-live="polite">
@@ -143,5 +147,6 @@
 
   <script src="astra-config.js"></script>
   <script src="astra-page.js"></script>
+  <script src="astra-pwa.js"></script>
 </body>
 </html>
