@@ -86,9 +86,10 @@ jobs:
           printf '%s' "$ASTRA_KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE_PATH"
           chmod 600 "$KEYSTORE_PATH"
 
-          # Fail early with a clear diagnostic if the store password or alias is wrong.
-          if ! keytool -list -keystore "$KEYSTORE_PATH" -storepass:env ASTRA_KEYSTORE_PASSWORD -alias "$ASTRA_KEY_ALIAS" >/dev/null 2>&1; then
-            echo "::error::The release keystore could not be opened with the configured store password and alias. Re-enter ASTRA_KEYSTORE_PASSWORD and ASTRA_KEY_ALIAS in GitHub Actions secrets; do not share them in chat."
+          # Print keytool's safe diagnostic (it never prints the supplied password).
+          if ! KEYTOOL_DIAGNOSTIC="$(keytool -list -keystore "$KEYSTORE_PATH" -storepass:env ASTRA_KEYSTORE_PASSWORD -alias "$ASTRA_KEY_ALIAS" 2>&1 >/dev/null)"; then
+            echo "::error::Keystore verification failed. Safe keytool diagnostic follows:"
+            echo "$KEYTOOL_DIAGNOSTIC"
             exit 1
           fi
 
