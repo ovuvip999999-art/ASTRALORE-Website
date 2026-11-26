@@ -46,10 +46,52 @@ jobs:
         run: gradle --no-daemon :app:assembleDebug
         working-directory: android
 
-      - name: Upload APK
+      - name: Upload debug APK
         uses: actions/upload-artifact@v4
         with:
           name: ASTRA-Android-APK
           path: android/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 30
+
+      - name: Check release signing secrets
+        id: signing-check
+        env:
+          ASTRA_KEYSTORE_BASE64: ${{ secrets.ASTRA_KEYSTORE_BASE64 }}
+          ASTRA_KEYSTORE_PASSWORD: ${{ secrets.ASTRA_KEYSTORE_PASSWORD }}
+          ASTRA_KEY_ALIAS: ${{ secrets.ASTRA_KEY_ALIAS }}
+          ASTRA_KEY_PASSWORD: ${{ secrets.ASTRA_KEY_PASSWORD }}
+        shell: bash
+        run: |
+          if [[ -n "$ASTRA_KEYSTORE_BASE64" && -n "$ASTRA_KEYSTORE_PASSWORD" && -n "$ASTRA_KEY_ALIAS" && -n "$ASTRA_KEY_PASSWORD" ]]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+            echo "Release signing secrets are not all configured; skipping signed release APK."
+          fi
+
+      - name: Build signed release APK
+        if: steps.signing-check.outputs.available == 'true'
+        env:
+          ASTRA_KEYSTORE_BASE64: ${{ secrets.ASTRA_KEYSTORE_BASE64 }}
+          ASTRA_KEYSTORE_PASSWORD: ${{ secrets.ASTRA_KEYSTORE_PASSWORD }}
+          ASTRA_KEY_ALIAS: ${{ secrets.ASTRA_KEY_ALIAS }}
+          ASTRA_KEY_PASSWORD: ${{ secrets.ASTRA_KEY_PASSWORD }}
+        shell: bash
+        working-directory: android
+        run: |
+          set -euo pipefail
+          KEYSTORE_PATH="$RUNNER_TEMP/astra-release.jks"
+          printf '%s' "$ASTRA_KEYSTORE_BASE64" | base64 --decode > "$KEYSTORE_PATH"
+          chmod 600 "$KEYSTORE_PATH"
+          ASTRA_KEYSTORE_PATH="$KEYSTORE_PATH" gradle --no-daemon :app:assembleRelease
+          rm -f "$KEYSTORE_PATH"
+
+      - name: Upload signed release APK
+        if: steps.signing-check.outputs.available == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: ASTRA-Android-Release-APK
+          path: android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
           retention-days: 30
