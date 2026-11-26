@@ -834,6 +834,3 @@ button, a {
   font-size: 11px;
   line-height: 1.5;
 }
-@media (max-width: 560px) {
-  .archive-heading, .archive-search, .archive-list { display: none; }
-}
