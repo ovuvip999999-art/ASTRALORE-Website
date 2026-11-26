@@ -27,7 +27,7 @@
     window.addEventListener("load", async () => {
       try {
         const registration = await navigator.serviceWorker.register("/astra-sw.js", {
-          scope: "/",
+          scope: "/astra.html",
           updateViaCache: "none"
         });
         registration.update().catch(() => {});
