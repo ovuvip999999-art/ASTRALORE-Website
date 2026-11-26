@@ -1,0 +1,19 @@
+{
+  "id": "/astra.html",
+  "name": "ASTRA AI — ASTRALORE",
+  "short_name": "ASTRA AI",
+  "description": "Your online AI assistant from ASTRALORE.",
+  "lang": "en",
+  "start_url": "/astra.html?app=1",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#080914",
+  "theme_color": "#080914",
+  "categories": ["education", "productivity", "utilities"],
+  "icons": [
+    { "src": "/astra-icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" },
+    { "src": "/astra-icon-maskable.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "maskable" }
+  ]
+}
