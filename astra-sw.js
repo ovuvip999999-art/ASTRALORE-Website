@@ -1,8 +1,9 @@
-const CACHE_NAME = "astra-ai-shell-v2";
+const CACHE_NAME = "astra-ai-shell-v3";
 const APP_FILES = [
   "/astra.html",
   "/astra-page.css",
   "/astra-config.js",
+  "/astra-memory.js",
   "/astra-page.js",
   "/astra-pwa.js",
   "/astra-manifest.webmanifest",
