@@ -355,7 +355,7 @@ function renderAnswer(container, text) {
         { role: "assistant", content: reply }
       );
 
-      if (history.length > 16) {
+      if (history.length > 500) {
         history.splice(0, history.length - 16);
       }
       if (window.ASTRAMemory) {
