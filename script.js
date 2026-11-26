@@ -56,18 +56,34 @@ function openFact(key){
   document.getElementById("modalText").textContent=fact.text;
   modal.hidden=false; document.body.style.overflow="hidden"; document.getElementById("modalClose").focus();
 }
-function closeFact(){modal.hidden=true;document.body.style.overflow="";}
+function closeFact(){
+  if(modal.hidden)return;
+  modal.hidden=true;
+  document.body.style.overflow="";
+  if(lastFactTrigger && typeof lastFactTrigger.focus==="function") lastFactTrigger.focus();
+  lastFactTrigger=null;
+}
 document.querySelectorAll("[data-open]").forEach(btn=>btn.addEventListener("click",()=>openFact(btn.dataset.open)));
 document.getElementById("modalClose").addEventListener("click",closeFact);
 modal.addEventListener("click",e=>{if(e.target===modal)closeFact();});
-document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!modal.hidden)closeFact();});
+document.addEventListener("keydown",e=>{
+  if(modal.hidden)return;
+  if(e.key==="Escape"){closeFact();return;}
+  if(e.key==="Tab"){
+    const focusable=[...modal.querySelectorAll('a[href],button:not([disabled]),input:not([disabled]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])')].filter(el=>el.getClientRects().length);
+    if(!focusable.length){e.preventDefault();return;}
+    const first=focusable[0], last=focusable[focusable.length-1];
+    if(e.shiftKey && document.activeElement===first){e.preventDefault();last.focus();}
+    else if(!e.shiftKey && document.activeElement===last){e.preventDefault();first.focus();}
+  }
+});
 const menuToggle=document.getElementById("menuToggle"), nav=document.getElementById("nav");
 menuToggle.addEventListener("click",()=>{
   const open=nav.classList.toggle("open");
   menuToggle.setAttribute("aria-expanded",String(open));
   menuToggle.setAttribute("aria-label",open?"Close menu":"Open menu");
 });
-nav.querySelectorAll("a").forEach(a=>a.addEventListener("click",()=>{nav.classList.remove("open");menuToggle.setAttribute("aria-expanded","false");}));
+nav.querySelectorAll("a").forEach(a=>a.addEventListener("click",()=>{nav.classList.remove("open");menuToggle.setAttribute("aria-expanded","false");menuToggle.setAttribute("aria-label","Open menu");}));
 const sections=[...document.querySelectorAll("main section[id]")];
 if("IntersectionObserver" in window){
   const observer=new IntersectionObserver(entries=>entries.forEach(entry=>{if(entry.isIntersecting){document.querySelectorAll(".nav-link").forEach(a=>a.classList.toggle("active",a.getAttribute("href")==="#"+entry.target.id));}}),{rootMargin:"-35% 0px -55% 0px"});
