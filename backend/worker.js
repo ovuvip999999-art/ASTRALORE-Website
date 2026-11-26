@@ -2,6 +2,7 @@ const ALLOWED_ORIGINS = new Set([
   "https://ovuvip999999-art.github.io",
   "https://astralore-aeb.pages.dev",
   "https://astralore-website.pages.dev",
+  "https://feature-astra-ai-pwa-app.astralore-website.pages.dev",
   "http://localhost:5500",
   "http://127.0.0.1:5500"
 ]);
