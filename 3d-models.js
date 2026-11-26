@@ -115,9 +115,61 @@ function atom(T,g,c,variant=0){ball(T,g,0,0,0,.25,0xffcf72);for(let i=0;i<6;i++)
 function molecule(T,g,variant=0){const shapes=[[[0,0,0],[1,0,0],[-1,0,0]],[[0,0,0],[.8,.7,0],[-.8,.7,0]],[[0,0,0],[.9,0,0],[-.45,.78,0],[-.45,-.78,0]],[[0,0,0],[.8,.4,.65],[-.8,.4,.65],[0,-.8,-.3]],[[0,0,0],[.8,0,0],[1.5,.45,0],[2.2,.45,0]],[[0,0,0],[.8,.8,0],[0,1.6,0],[-.8,.8,0]]];const pts=shapes[variant%shapes.length];const colors=[0xff6d75,0x7cb8ff,0xe8eaf2,0xffca70];pts.forEach((p,i)=>ball(T,g,...p,.22,colors[i%colors.length]));for(let i=1;i<pts.length;i++)rod(T,g,pts[0],pts[i],.055,0xb6c3d9);if(variant%6===5)rod(T,g,pts[1],pts[2],.055,0xb6c3d9);}
 function helix(T,g,c){for(let strand=0;strand<2;strand++){const pts=[];for(let i=0;i<=100;i++){const y=-1.25+i*.025,a=i*.19+strand*Math.PI;pts.push([Math.cos(a)*.48,y,Math.sin(a)*.48]);}curve(T,g,pts,strand?0xff91a4:c,.035);}for(let i=0;i<20;i++){const y=-1.2+i*.12,a=i*.19;rod(T,g,[Math.cos(a)*.48,y,Math.sin(a)*.48],[Math.cos(a+Math.PI)*.48,y,Math.sin(a+Math.PI)*.48],.022,0xe5d8a2);}}
 function cell(T,g,c,plant=false){const shell=mesh(T,new T.SphereGeometry(1.1,40,28),new T.MeshPhysicalMaterial({color:plant?0x6ed79c:0x7fc7ff,transparent:true,opacity:.23,roughness:.2,side:T.DoubleSide}),0,0,0,g);shell.scale.set(1.25,.85,1);ball(T,g,0,0,0,.42,0xd58aff);for(let i=0;i<12;i++){const a=i*Math.PI*2/12,x=Math.cos(a)*.77,y=Math.sin(a)*.48,z=Math.sin(a*2)*.25;if(plant){const o=mesh(T,new T.SphereGeometry(.16,16,12),mat(T,0x42b978),x,y,z,g);o.scale.set(1.5,.55,.7);}else ball(T,g,x,y,z,.13,i%2?0xffbf78:0x73d7c8);}if(plant){mesh(T,new T.BoxGeometry(2.6,1.8,1.8),new T.MeshStandardMaterial({color:0x62c98a,transparent:true,opacity:.08,wireframe:true}),0,0,0,g);mesh(T,new T.BoxGeometry(1.1,.7,.9),mat(T,0x5aa6ef),0,-.1,0,g);}}
-function field(T,g,variant=0){const pos=variant%2===0;ball(T,g,-.65,0,0,.2,pos?0xff687b:0x65aaff);ball(T,g,.65,0,0,.2,pos?0x65aaff:0xff687b);for(let i=0;i<9;i++){const y=(i-4)*.16;const pts=[];for(let j=0;j<=40;j++){const x=-1.25+j*.0625;pts.push([x,y+Math.sin(j/40*Math.PI*2+i*.18)*.25,Math.cos(j/40*Math.PI*2)*.15]);}curve(T,g,pts,0x80baff,.009);}}
-function wave(T,g,variant=0){for(let k=0;k<3;k++){const pts=[];for(let i=0;i<=100;i++){const x=-1.45+i*.029,y=Math.sin(i*.16+variant*.7+k*.8)*(.25+k*.1);pts.push([x,y,k*.22-.22]);}curve(T,g,pts,[0x78c8ff,0xffb879,0x9b8cff][k],.022);}rod(T,g,[-1.55,-.72,0],[1.55,-.72,0],.012,0x9b9bb8);}
-function circuit(T,g,variant=0){mesh(T,new T.BoxGeometry(2.8,.12,1.5),mat(T,0x1b755e,.2,.6),0,-.45,0,g);const pts=[[-1.15,-.35,-.48],[1.15,-.35,-.48],[1.15,-.35,.48],[-1.15,-.35,.48],[-1.15,-.35,-.48]];curve(T,g,pts,0xe2c76d,.025);mesh(T,new T.BoxGeometry(.38,.45,.34),mat(T,0x8b9bb8),-.65,-.12,0,g);mesh(T,new T.BoxGeometry(.55,.18,.32),mat(T,0xd9a35d),.3,-.25,0,g);for(let i=0;i<4;i++)ball(T,g,-1+i*.65,-.35,.5,.045,0xf4d76d);}
+function field(T,g,variant=0){
+ const mode=variant%6;
+ if(mode===0||mode===1){
+  ball(T,g,-.68,0,0,.2,0xff687b);ball(T,g,.68,0,0,.2,0x65aaff);
+  for(let i=0;i<13;i++){const y=(i-6)*.12;const pts=[];for(let j=0;j<=50;j++){const x=-1.35+j*.054;pts.push([x,y+Math.sin(j/50*Math.PI*2+i*.12)*.24,Math.cos(j/50*Math.PI*2)*.16]);}curve(T,g,pts,0x80baff,.009);}
+ }else if(mode===2){
+  const shell=mesh(T,new T.SphereGeometry(.88,32,24),new T.MeshPhysicalMaterial({color:0x8bbaff,wireframe:true,transparent:true,opacity:.48}),0,0,0,g);
+  ball(T,g,0,0,0,.23,0xffc66d);
+  for(let i=0;i<18;i++){const a=i*Math.PI*2/18;rod(T,g,[0,0,0],[Math.cos(a)*1.35,Math.sin(a)*1.35,0],.012,0xffd27d);}
+ }else if(mode===3){
+  rod(T,g,[0,-1.1,0],[0,1.1,0],.09,0xe0b36c);
+  for(let i=0;i<7;i++)ring(T,g,.35+i*.14,.014,0x76baff,0,0,0,Math.PI/2,0,0);
+ }else if(mode===4){
+  mesh(T,new T.CylinderGeometry(.16,.16,1.45,32),mat(T,0x4b75b8,.6),-.55,0,0,g);
+  mesh(T,new T.CylinderGeometry(.16,.16,1.45,32),mat(T,0xc85c65,.6),.55,0,0,g);
+  for(let i=0;i<7;i++){const y=-.85+i*.28;curve(T,g,[[-.5,y,0],[-.9,y+.25,.15],[0,y+.55,.3],[.9,y+.25,.15],[.5,y,0]],0x8dbdff,.012);}
+ }else{
+  rod(T,g,[-1.2,0,0],[1.2,0,0],.025,0xffd27d);
+  rod(T,g,[0,-1,0],[0,1,0],.025,0x75baff);
+  for(let i=0;i<6;i++)ball(T,g,-.8+i*.32,-.48+i*.19,0,.09,0xffd27d);
+  for(let i=0;i<5;i++)curve(T,g,[[-1,-.75+i*.36,0],[0,-.75+i*.36,0],[1,-.75+i*.36,0]],0x78baff,.012);
+ }
+}
+function wave(T,g,variant=0){
+ const mode=variant%4;
+ for(let k=0;k<(mode===1?2:3);k++){
+  const pts=[];for(let i=0;i<=100;i++){const x=-1.45+i*.029;let y=Math.sin(i*.16+variant*.35+k*.8)*(.22+k*.08);if(mode===1)y=Math.sin(i*.16+k*.55)*.22;pts.push([x,y,k*.22-.22]);}
+  curve(T,g,pts,[0x78c8ff,0xffb879,0x9b8cff][k],.022);
+ }
+ if(mode===2){for(let i=0;i<7;i++)rod(T,g,[-.15,-.8+i*.25,0],[.15,-.8+i*.25,0],.018,0xffd37c);}
+ if(mode===3){ring(T,g,.55,.02,0x8acbff,0,0,0,Math.PI/2);ring(T,g,.85,.02,0xffb879,0,0,0,0,Math.PI/2);}
+ rod(T,g,[-1.55,-.72,0],[1.55,-.72,0],.012,0x9b9bb8);
+}
+function circuit(T,g,variant=0){
+ const mode=variant%5;
+ mesh(T,new T.BoxGeometry(2.8,.12,1.5),mat(T,0x1b755e,.2,.6),0,-.45,0,g);
+ const wire=[[-1.15,-.35,-.48],[1.15,-.35,-.48],[1.15,-.35,.48],[-1.15,-.35,.48],[-1.15,-.35,-.48]];
+ curve(T,g,wire,0xe2c76d,.025);
+ if(mode===0||mode===1){
+  for(let i=0;i<(mode===0?1:3);i++)mesh(T,new T.BoxGeometry(.25,.34,.28),mat(T,0xd9a35d),-.35+i*.55,-.18,0,g);
+  mesh(T,new T.BoxGeometry(.3,.5,.32),mat(T,0x8b9bb8),-.85,-.08,0,g);
+ }else if(mode===2){
+  curve(T,g,[[-.9,-.35,-.3],[-.2,-.35,-.3],[-.2,-.35,.3],[.7,-.35,.3]],0xffcf72,.03);
+  curve(T,g,[[-.2,-.35,-.3],[.55,-.35,-.3],[.55,-.35,.3]],0x78baff,.03);
+  for(let i=0;i<3;i++)mesh(T,new T.BoxGeometry(.22,.34,.24),mat(T,0xd9a35d),-.55+i*.55,-.18,i===1?-.3:.3,g);
+ }else if(mode===3){
+  curve(T,g,[[-.85,-.35,-.35],[0,-.35,.35],[.85,-.35,-.35],[0,-.35,-.35],[-.85,-.35,-.35]],0x83c8ff,.025);
+  ball(T,g,0,-.25,0,.09,0xffd27d);
+  for(let i=0;i<4;i++)mesh(T,new T.BoxGeometry(.2,.3,.2),mat(T,0xd9a35d),Math.cos(i*Math.PI/2)*.55,-.18,Math.sin(i*Math.PI/2)*.35,g);
+ }else{
+  rod(T,g,[-1,-.15,0],[1,-.15,0],.025,0xffd27d);
+  rod(T,g,[.1,-.15,0],[.1,.65,0],.025,0x7cbaff);
+  ball(T,g,.1,.68,0,.12,0x7cbaff);
+ }
+}
 function optics(T,g,variant=0){const lens=mesh(T,new T.SphereGeometry(.6,32,20),new T.MeshPhysicalMaterial({color:0x83cfff,transparent:true,opacity:.28,roughness:.08,transmission:.5}),0,0,0,g);lens.scale.set(.22,1.2,.9);for(let i=-2;i<=2;i++){curve(T,g,[[-1.5,i*.2,0],[-.45,i*.2,0],[.55,i*.2*(variant%2?-.7:.7),0],[1.5,i*.2*(variant%2?-.7:.7),0]],0xffd77c,.012);}if(variant%3===0){mesh(T,new T.ConeGeometry(.7,1.2,3),mat(T,0x91aaff,.25),0,0,0,g).rotation.z=Math.PI/2;}}
 function mechanics(T,g,variant=0){if(variant%4===0){rod(T,g,[0,.8,0],[0,-.6,0],.025,0xb8c8dd);ball(T,g,0,-.7,0,.24,0xffb86d);ring(T,g,.82,.025,0x7ebcff,0,.8,0);}else if(variant%4===1){rod(T,g,[-1,-.6,0],[1,.6,0],.07,0x9aa9c7);ball(T,g,-.3,-.3,.18,.22,0xffb86d);}else if(variant%4===2){ring(T,g,.48,.055,0xb5c9ed,0,.2,0,Math.PI/2);rod(T,g,[0,.2,0],[0,1,0],.025,0xb5c9ed);ball(T,g,0,-.35,0,.2,0xffb86d);}else{for(let i=0;i<30;i++){const t=i/29;ball(T,g,Math.sin(t*18)*.18,-.9+t*1.8,0,.055,0x78c8ff);}rod(T,g,[0,-1,0],[0,1,0],.025,0xb5c9ed);}}
 function apparatus(T,g,variant=0){mesh(T,new T.CylinderGeometry(.48,.42,.95,32,1,true),new T.MeshPhysicalMaterial({color:0x81caff,transparent:true,opacity:.25,side:T.DoubleSide}),0,-.15,0,g);ring(T,g,.45,.035,0xb5dfff,0,.33,0);rod(T,g,[-.7,-.8,0],[.7,-.8,0],.035,0x9bb4cc);for(let i=0;i<3;i++)ball(T,g,-.28+i*.28,-.45,0,.07,[0xff7a7a,0x7cb8ff,0xffd36b][i],g);}
