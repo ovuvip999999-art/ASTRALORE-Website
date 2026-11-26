@@ -1,6 +1,7 @@
 const ALLOWED_ORIGINS = new Set([
   "https://ovuvip999999-art.github.io",
   "https://astralore-aeb.pages.dev",
+  "https://feature-astra-local-memory.astralore-aeb.pages.dev",
   "https://astralore-website.pages.dev",
   "https://feature-astra-ai-pwa-app.astralore-website.pages.dev",
   "https://feature-astra-ai-pwa-app.astralore-aeb.pages.dev",
