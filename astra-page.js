@@ -68,92 +68,195 @@
     );
   }
 
-  function renderAnswer(container, text) {
-    const lines = String(text).split(/\r?\n/);
-    let list = null;
-    let table = null;
+ 
+function renderAnswer(container, text) {
+  const lines = String(text)
+    .replace(/\r\n?/g, "\n")
+    .split("\n");
 
-    lines.forEach(line => {
-      const trimmed = line.trim();
+  let list = null;
+  let table = null;
+  let codeLines = null;
+  let codeLanguage = "";
 
-      if (!trimmed) {
-        list = null;
-        table = null;
-        return;
-      }
-
-      const heading = trimmed.match(/^#{1,4}\s+(.+)$/);
-
-      if (heading) {
-        list = null;
-        table = null;
-
-        const h = document.createElement("h4");
-        appendInline(h, heading[1]);
-        container.appendChild(h);
-        return;
-      }
-
-      if (trimmed.includes("|")) {
-        const cells = trimmed.replace(/^\|/, "").replace(/\|$/, "")
-          .split("|").map(cell => cell.trim());
-
-        if (cells.length && cells.every(cell => /^:?-{3,}:?$/.test(cell))) {
-          return;
-        }
-
-        if (cells.length > 1) {
-          if (!table) {
-            table = document.createElement("table");
-            container.appendChild(table);
-          }
-
-          const row = document.createElement("tr");
-
-          cells.forEach(cell => {
-            const element = document.createElement("td");
-            appendInline(element, cell);
-            row.appendChild(element);
-          });
-
-          table.appendChild(row);
-          list = null;
-          return;
-        }
-      }
-
-      table = null;
-
-      const bullet = trimmed.match(/^[-*]\s+(.+)$/);
-      const numbered = trimmed.match(/^\d+[.)]\s+(.+)$/);
-
-      if (bullet || numbered) {
-        const type = bullet ? "ul" : "ol";
-
-        if (!list || list.tagName.toLowerCase() !== type) {
-          list = document.createElement(type);
-          container.appendChild(list);
-        }
-
-        const item = document.createElement("li");
-        appendInline(item, (bullet || numbered)[1]);
-        list.appendChild(item);
-        return;
-      }
-
-      list = null;
-
-      if (/^([-*_])\1{2,}$/.test(trimmed)) {
-        const divider = document.createElement("hr");
-        container.appendChild(divider);
-        return;
-      }
-
-      const paragraph = document.createElement("p");
-      appendInline(paragraph, trimmed);
-      container.appendChild(paragraph);
-    });
+  function resetBlocks() {
+    list = null;
+    table = null;
   }
+
+  function getFence(line) {
+    const normalized = line.trim().replace(/\\+(?=`)/g, "");
+    const match = normalized.match(/^(`{3,}|~~~)\s*([a-zA-Z0-9_+#.-]*)\s*$/);
+
+    return match
+      ? { marker: match[1], language: match[2] || "" }
+      : null;
+  }
+
+  function finishCodeBlock() {
+    const wrapper = document.createElement("div");
+    wrapper.className = "astra-code-block";
+
+    const toolbar = document.createElement("div");
+    toolbar.className = "astra-code-toolbar";
+
+    const label = document.createElement("span");
+    label.className = "astra-code-language";
+    label.textContent = codeLanguage || "CODE";
+
+    const copyButton = document.createElement("button");
+    copyButton.type = "button";
+    copyButton.className = "astra-copy-code";
+    copyButton.textContent = "Copy code";
+
+    const pre = document.createElement("pre");
+    const code = document.createElement("code");
+
+    code.className = codeLanguage
+      ? "language-" + codeLanguage.toLowerCase().replace(/[^a-z0-9_-]/g, "")
+      : "";
+
+    const cleanCode = codeLines.join("\n")
+      .replace(/\\+(?=<\/?[A-Za-z!])/g, "")
+      .replace(/&lt;/gi, "<")
+      .replace(/&gt;/gi, ">")
+      .replace(/&#x20;/gi, " ");
+
+    code.textContent = cleanCode;
+
+    copyButton.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(cleanCode);
+        copyButton.textContent = "Copied!";
+      } catch {
+        copyButton.textContent = "Copy unavailable";
+      }
+    });
+
+    toolbar.appendChild(label);
+    toolbar.appendChild(copyButton);
+    pre.appendChild(code);
+    wrapper.appendChild(toolbar);
+    wrapper.appendChild(pre);
+    container.appendChild(wrapper);
+
+    codeLines = null;
+    codeLanguage = "";
+  }
+
+  lines.forEach(line => {
+    const trimmed = line.trim();
+    const fence = getFence(line);
+
+    // Code fence detection
+    if (fence) {
+      resetBlocks();
+
+      if (codeLines === null) {
+        codeLines = [];
+        codeLanguage = fence.language;
+      } else {
+        finishCodeBlock();
+      }
+
+      return;
+    }
+
+    // Preserve every line inside code blocks
+    if (codeLines !== null) {
+      codeLines.push(line);
+      return;
+    }
+
+    if (!trimmed) {
+      resetBlocks();
+      return;
+    }
+
+    // Clean escaped Markdown outside code blocks
+    const cleanLine = trimmed
+      .replace(/\\+(?=`|<|>)/g, "")
+      .replace(/^\\#/g, "#");
+
+    const heading = cleanLine.match(/^#{1,4}\s+(.+)$/);
+
+    if (heading) {
+      resetBlocks();
+
+      const h = document.createElement("h4");
+      appendInline(h, heading[1]);
+      container.appendChild(h);
+      return;
+    }
+
+    if (cleanLine.includes("|")) {
+      const cells = cleanLine
+        .replace(/^\|/, "")
+        .replace(/\|$/, "")
+        .split("|")
+        .map(cell => cell.trim());
+
+      if (cells.length && cells.every(cell => /^:?-{3,}:?$/.test(cell))) {
+        return;
+      }
+
+      if (cells.length > 1) {
+        if (!table) {
+          table = document.createElement("table");
+          container.appendChild(table);
+        }
+
+        const row = document.createElement("tr");
+
+        cells.forEach(cell => {
+          const element = document.createElement("td");
+          appendInline(element, cell);
+          row.appendChild(element);
+        });
+
+        table.appendChild(row);
+        list = null;
+        return;
+      }
+    }
+
+    table = null;
+
+    const bullet = cleanLine.match(/^[-*]\s+(.+)$/);
+    const numbered = cleanLine.match(/^\d+[.)]\s+(.+)$/);
+
+    if (bullet || numbered) {
+      const type = bullet ? "ul" : "ol";
+
+      if (!list || list.tagName.toLowerCase() !== type) {
+        list = document.createElement(type);
+        container.appendChild(list);
+      }
+
+      const item = document.createElement("li");
+      appendInline(item, (bullet || numbered)[1]);
+      list.appendChild(item);
+      return;
+    }
+
+    list = null;
+
+    if (/^([-*_])\1{2,}$/.test(cleanLine)) {
+      container.appendChild(document.createElement("hr"));
+      return;
+    }
+
+    const paragraph = document.createElement("p");
+    appendInline(paragraph, cleanLine);
+    container.appendChild(paragraph);
+  });
+
+  // Handle code blocks without a closing fence
+  if (codeLines !== null) {
+    finishCodeBlock();
+  }
+}
+
 
   function addMessage(text, who) {
     const bubble = document.createElement("div");
