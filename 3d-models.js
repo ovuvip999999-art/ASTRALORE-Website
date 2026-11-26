@@ -304,7 +304,31 @@ function distinctMolecule(T,g,id){
   if(id==="C30"){helix(T,g,0x78c6ff);return;}
   molecule(T,g,Number(id.slice(1)));
 }
+
+function electrostaticModel(T,g,id){
+  if(id==="P01"){
+    ball(T,g,-.55,0,0,.24,0xff687b);ball(T,g,.55,0,0,.24,0x68aaff);
+    for(let i=0;i<12;i++){const a=i*Math.PI/6;curve(T,g,[[-.55,0,0],[Math.cos(a)*.25,Math.sin(a)*.25,.08],[Math.cos(a)*.85,Math.sin(a)*.85,.08]],0xffc878,.014);}
+  }else if(id==="P02"){
+    ball(T,g,0,0,0,.2,0xffbd70);
+    for(let i=0;i<16;i++){const a=i*Math.PI/8;const pts=[];for(let j=0;j<=30;j++){const r=.28+j*.035;pts.push([Math.cos(a)*r,Math.sin(a)*r,0]);}curve(T,g,pts,0x78baff,.014);}
+  }else if(id==="P03"){
+    ball(T,g,-.62,0,0,.22,0xff687b);ball(T,g,.62,0,0,.22,0x68aaff);
+    rod(T,g,[-.62,0,0],[.62,0,0],.025,0xffd27d);
+    for(let i=0;i<11;i++){const y=-.9+i*.18;curve(T,g,[[-1.25,y,0],[-.75,y+.2,0],[0,y+.42,0],[.75,y+.2,0],[1.25,y,0]],0x7fbaff,.012);}
+  }else if(id==="P04"){
+    const shell=mesh(T,new T.SphereGeometry(.85,32,24),new T.MeshPhysicalMaterial({color:0x7dbaff,wireframe:true,transparent:true,opacity:.55}),0,0,0,g);
+    ball(T,g,0,0,0,.2,0xffbd70);
+    for(let i=0;i<12;i++){const a=i*Math.PI/6;rod(T,g,[0,0,0],[Math.cos(a)*1.25,Math.sin(a)*1.25,0],.012,0xffd27d);}
+  }else if(id==="P05"){
+    ball(T,g,0,0,0,.28,0xffbd70);
+    for(let i=0;i<5;i++)ring(T,g,.38+i*.22,.018,[0x78baff,0x83d7c2,0xffc878,0xb69aff,0xff91a4][i],0,0,0,Math.PI/2,0,0);
+  }
+}
+
 function buildSpecific(T,g,record){
+  if(id==="P01"||id==="P02"||id==="P03"||id==="P04"||id==="P05"){electrostaticModel(T,g,id);return true;}
+
   const id=record.id;
   if(id==="B09"){maleReproductive(T,g);return true;}
   if(id==="B10"){femaleReproductive(T,g);return true;}
