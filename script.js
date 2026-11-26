@@ -14,6 +14,7 @@ const filters = [...document.querySelectorAll(".filter[data-filter]")];
 const count = document.getElementById("resultCount");
 const empty = document.getElementById("emptyState");
 let activeFilter = "all";
+filters.forEach(button => button.setAttribute("aria-pressed", String(button.dataset.filter === activeFilter)));
 function updateArchive(){
   const q = search.value.trim().toLowerCase();
   let shown = 0;
@@ -27,6 +28,7 @@ function updateArchive(){
   });
   count.textContent = String(shown).padStart(2,"0")+" DISCOVER"+(shown===1?"Y":"IES");
   empty.hidden = shown !== 0;
+  filters.forEach(button => button.setAttribute("aria-pressed", String(button.dataset.filter === activeFilter)));
 }
 filters.forEach(btn=>btn.addEventListener("click",()=>{
   activeFilter=btn.dataset.filter;
@@ -44,8 +46,10 @@ search.addEventListener("keydown",e=>{if(e.key==="Enter") document.getElementByI
 document.getElementById("clearSearch").addEventListener("click",()=>{search.value="";updateArchive();search.focus();});
 document.getElementById("resetFilters").addEventListener("click",()=>{activeFilter="all";search.value="";filters.forEach(b=>b.classList.toggle("active",b.dataset.filter==="all"));updateArchive();});
 const modal=document.getElementById("modal");
+let lastFactTrigger = null;
 function openFact(key){
   const fact=facts[key]; if(!fact)return;
+  lastFactTrigger = document.activeElement;
   document.getElementById("modalCategory").textContent=fact.category;
   document.getElementById("modalIndex").textContent=fact.index;
   document.getElementById("modalTitle").textContent=fact.title;
@@ -58,7 +62,11 @@ document.getElementById("modalClose").addEventListener("click",closeFact);
 modal.addEventListener("click",e=>{if(e.target===modal)closeFact();});
 document.addEventListener("keydown",e=>{if(e.key==="Escape"&&!modal.hidden)closeFact();});
 const menuToggle=document.getElementById("menuToggle"), nav=document.getElementById("nav");
-menuToggle.addEventListener("click",()=>{const open=nav.classList.toggle("open");menuToggle.setAttribute("aria-expanded",String(open));});
+menuToggle.addEventListener("click",()=>{
+  const open=nav.classList.toggle("open");
+  menuToggle.setAttribute("aria-expanded",String(open));
+  menuToggle.setAttribute("aria-label",open?"Close menu":"Open menu");
+});
 nav.querySelectorAll("a").forEach(a=>a.addEventListener("click",()=>{nav.classList.remove("open");menuToggle.setAttribute("aria-expanded","false");}));
 const sections=[...document.querySelectorAll("main section[id]")];
 if("IntersectionObserver" in window){
