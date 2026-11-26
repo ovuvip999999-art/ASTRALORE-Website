@@ -2,18 +2,19 @@ package com.astralore.astra
 
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.content.Intent
 import android.graphics.Color
+import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.view.View
+import android.webkit.SafeBrowsingResponse
 import android.webkit.WebChromeClient
 import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import android.widget.FrameLayout
 import android.widget.ProgressBar
-import android.widget.TextView
-import android.content.Intent
-import android.net.Uri
 
 class MainActivity : Activity() {
     private lateinit var webView: WebView
@@ -24,6 +25,10 @@ class MainActivity : Activity() {
         super.onCreate(savedInstanceState)
         window.statusBarColor = Color.rgb(8, 9, 20)
         window.navigationBarColor = Color.rgb(8, 9, 20)
+
+        // The app is a remote HTTPS WebView. Never enable WebView remote debugging
+        // in the published build.
+        WebView.setWebContentsDebuggingEnabled(false)
 
         val root = FrameLayout(this).apply {
             setBackgroundColor(Color.rgb(8, 9, 20))
@@ -46,21 +51,29 @@ class MainActivity : Activity() {
 
         webView.settings.javaScriptEnabled = true
         webView.settings.domStorageEnabled = true
-        webView.settings.databaseEnabled = true
         webView.settings.loadsImagesAutomatically = true
         webView.settings.javaScriptCanOpenWindowsAutomatically = false
         webView.settings.setSupportMultipleWindows(false)
         webView.settings.allowFileAccess = false
         webView.settings.allowContentAccess = false
+        webView.settings.allowFileAccessFromFileURLs = false
+        webView.settings.allowUniversalAccessFromFileURLs = false
         webView.settings.mixedContentMode = android.webkit.WebSettings.MIXED_CONTENT_NEVER_ALLOW
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            webView.settings.safeBrowsingEnabled = true
+        }
 
         webView.webViewClient = object : WebViewClient() {
             override fun shouldOverrideUrlLoading(view: WebView?, request: WebResourceRequest?): Boolean {
-                val uri = request?.url ?: return false
+                val uri = request?.url ?: return true
+
+                // Only the official ASTRALORE origin is allowed inside the app.
                 if (uri.scheme == "https" && uri.host == "astralore-aeb.pages.dev") return false
-                if (uri.scheme == "https" || uri.scheme == "http") {
+
+                // External HTTPS links open in the user's browser. Block HTTP,
+                // file:, content:, intent: and all other schemes.
+                if (uri.scheme == "https") {
                     startActivity(Intent(Intent.ACTION_VIEW, uri))
-                    return true
                 }
                 return true
             }
