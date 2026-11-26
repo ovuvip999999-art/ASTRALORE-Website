@@ -327,9 +327,24 @@ function electrostaticModel(T,g,id){
 }
 
 function buildSpecific(T,g,record){
-  if(id==="P01"||id==="P02"||id==="P03"||id==="P04"||id==="P05"){electrostaticModel(T,g,id);return true;}
-
   const id=record.id;
+  if(id==="P01"||id==="P02"||id==="P03"||id==="P04"||id==="P05"){electrostaticModel(T,g,id);return true;}
+  // Dedicated current-electricity and magnetism scenes.
+  if(id==="P08"){circuit(T,g,0);ball(T,g,-.92,.18,.18,.13,0xffbd70);return true;}
+  if(id==="P09"){circuit(T,g,1);rod(T,g,[-.72,.48,.1],[.72,.48,.1],.025,0x8fd8bd);return true;}
+  if(id==="P10"){circuit(T,g,2);ball(T,g,0,0,.18,.12,0xffd27d);return true;}
+  if(id==="P13"){rod(T,g,[0,-1.2,0],[0,1.2,0],.065,0xffbd70);for(let i=0;i<5;i++)ring(T,g,.35+i*.2,.018,0x79baff,0,0,0,Math.PI*2,0,0);}
+  if(id==="P14"){solenoid(T,g);return true;}
+  if(id==="P15"){magnet(T,g,1);rod(T,g,[-1.1,0,0],[1.1,0,0],.08,0xffbd70);curve(T,g,[[0,-.8,0],[.35,-.25,0],[.35,.25,0],[0,.8,0]],0x7dbaff,.035);return true;}
+  if(id==="P16"){rod(T,g,[-1.1,0,0],[1.1,0,0],.025,0xffbd70);rod(T,g,[0,-1,0],[0,1,0],.025,0x79baff);for(let i=0;i<5;i++)ball(T,g,-.8+i*.4,0,0,.07,0xffd27d);return true;}
+  if(id==="P18"){magnet(T,g,0);return true;}
+  if(id==="P19"){ellipsoid(T,g,[0,0,0],[.62,.82,.42],0x4c8dba);rod(T,g,[0,-1.2,0],[0,1.2,0],.025,0xffd27d);curve(T,g,[[0,-1.1,0],[.35,-.5,0],[.55,.2,0],[.2,1.1,0]],0x9bd5ff,.025);return true;}
+  if(id==="P20"){for(let i=0;i<5;i++)ring(T,g,.35+i*.18,.025,0x7bbdff,0,0,0,Math.PI*2,0,0);rod(T,g,[-1.15,0,0],[1.15,0,0],.07,0xffbd70);ball(T,g,0,.75,0,.12,0xffd27d);return true;}
+  if(id==="P23"){circuit(T,g,5);ring(T,g,.3,.045,0xffbd70,.72,.2,0,Math.PI*2,0,0);return true;}
+  if(id==="P24"){wave(T,g,0);for(let i=0;i<5;i++)ring(T,g,.3+i*.2,.012,0x78baff,0,0,0,Math.PI*2,0,0);return true;}
+  if(id==="P30"){ball(T,g,-.72,0,0,.24,0xffbd70);mesh(T,g,new T.BoxGeometry(.5,1.25,.45),mat(T,0x779acb,.35),.45,0,0,g);for(let i=0;i<5;i++)rod(T,g,[-.4,.5-i*.25,0],[.25,.5-i*.25,.05],.018,0xffd27d);return true;}
+  if(id==="P31"){ball(T,g,0,0,0,.2,0xffbd70);for(let i=0;i<3;i++)ring(T,g,.45+i*.25,.025,0x7bbdff,0,0,0,Math.PI*2,0,0);for(let i=0;i<8;i++)ball(T,g,Math.cos(i*Math.PI/4)*.7,Math.sin(i*Math.PI/4)*.7,0,.055,0xffd27d);return true;}
+  if(id==="P32"){ball(T,g,-.48,0,0,.28,0x78baff);ball(T,g,.48,0,0,.28,0xffbd70);for(let i=0;i<6;i++){const a=i*Math.PI/3;rod(T,g,[-.3,0,0],[.3*Math.cos(a),.3*Math.sin(a),0],.018,0xffd27d);}return true;}
   if(id==="B09"){maleReproductive(T,g);return true;}
   if(id==="B10"){femaleReproductive(T,g);return true;}
   if(id==="B01"){antherSection(T,g);return true;}
