@@ -11,3 +11,39 @@
 .organelle-detail strong{font:600 16px 'Space Grotesk'}
 .organelle-detail p{font-size:11px;line-height:1.8;color:#b1abc5;margin:8px 0 0}
 .selection-hint{font:9px 'DM Mono';line-height:1.7;color:#88829f;margin-top:13px}
+
+
+/* Class 12 100-model catalogue */
+.lab-stats{display:flex;gap:24px;flex-wrap:wrap;margin-top:22px}
+.lab-stats span{font:9px 'DM Mono';letter-spacing:1.2px;color:#89839f}
+.lab-stats b{color:#e8e2ff;margin-right:5px}
+.catalogue-tools{display:grid;grid-template-columns:minmax(240px,1fr) auto;gap:15px 22px;align-items:center;margin:0 0 18px;padding:18px;border:1px solid #b79aff30;border-radius:8px;background:#111226b8}
+.search-wrap{display:flex;align-items:center;gap:12px;min-height:44px;padding:0 14px;border:1px solid #ffffff20;border-radius:5px;background:#090b19;color:#b9a5ff}
+.search-wrap>span{font-size:23px}.search-wrap input{width:100%;border:0;outline:0;background:transparent;color:#f4f1ff;font:12px Manrope}.search-wrap input::placeholder{color:#77728e}
+.subject-tabs{display:flex;gap:6px;flex-wrap:wrap}.subject-tab{border:1px solid #ffffff1b;border-radius:4px;background:#ffffff06;color:#aaa6c0;padding:12px 13px;font:9px 'DM Mono';letter-spacing:1px;cursor:pointer}.subject-tab b{margin-left:5px;color:#e5e0f7}.subject-tab.active{background:#9c83ff20;border-color:#ad98ff;color:#e6dcff}
+.chapter-filter{grid-column:1/-1;display:flex;align-items:center;gap:12px}.chapter-filter label,.panel-heading,.detail-index{font:9px 'DM Mono';letter-spacing:1.3px;color:#928ba9}.chapter-filter select{max-width:min(440px,70vw);border:1px solid #ffffff20;border-radius:4px;background:#101226;color:#e8e3f6;padding:9px 12px;font:11px Manrope}.chapter-filter #resultCount{margin-left:auto;color:#a99ec9;font:9px 'DM Mono'}
+.lab-workspace{display:grid;grid-template-columns:minmax(240px,.72fr) minmax(0,1.7fr);gap:18px;align-items:start}
+.catalogue-panel{border:1px solid #b79aff30;border-radius:8px;background:linear-gradient(145deg,#17162bdf,#0b0e1fef);overflow:hidden;position:sticky;top:14px}
+.panel-heading{height:48px;display:flex;justify-content:space-between;align-items:center;padding:0 15px;border-bottom:1px solid #ffffff12}
+.model-list{max-height:720px;overflow:auto;padding:7px;scrollbar-color:#55477d #101123;scrollbar-width:thin}
+.model-item{width:100%;display:flex;gap:12px;align-items:flex-start;text-align:left;padding:12px 10px;border:0;border-bottom:1px solid #ffffff0d;border-radius:4px;background:transparent;color:#e9e4f8;cursor:pointer}
+.model-item:hover,.model-item.active{background:color-mix(in srgb,var(--subject-color) 12%,transparent)}
+.model-item.active{box-shadow:inset 2px 0 var(--subject-color)}
+.model-number{flex:0 0 25px;font:9px 'DM Mono';color:var(--subject-color);padding-top:2px}
+.model-item-copy{display:flex;min-width:0;flex-direction:column;gap:5px}
+.model-item-copy strong{font:600 11px Manrope;line-height:1.4}
+.model-item-copy small{font:9px Manrope;color:#89839f;line-height:1.4}
+.model-item-description{display:block;margin-top:5px;font:10px/1.55 Manrope;color:#aaa6c0;white-space:normal;max-width:100%;}
+.empty-state{padding:25px;color:#aaa6c0;font-size:12px;text-align:center}
+.viewer-column{min-width:0;display:grid;gap:15px}
+.model-detail{border:1px solid #b79aff30;border-radius:8px;padding:22px 24px;background:linear-gradient(145deg,#17162bdf,#0b0e1fef)}
+.detail-top{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.detail-top #detailIndex{font:9px 'DM Mono';letter-spacing:1.2px;color:#89839f}
+.model-detail h2{font:700 clamp(23px,3vw,34px) 'Space Grotesk';letter-spacing:-1px;margin:13px 0 5px}
+.detail-chapter{font:10px 'DM Mono';letter-spacing:.7px;color:#b9a5ff}
+.model-detail>p{font-size:12px;line-height:1.8;color:#aaa6c0;max-width:780px}
+.detail-note{margin-top:18px;padding:14px 16px;border:1px solid #ffffff12;border-radius:5px;background:#ffffff05}
+.detail-note span{font:8px 'DM Mono';letter-spacing:1.4px;color:#b9a5ff}
+.detail-note p{font-size:10px;line-height:1.7;color:#9690aa;margin:7px 0 0}
+@media(max-width:1050px){.catalogue-tools{grid-template-columns:1fr}.subject-tabs{grid-row:2}.chapter-filter{grid-column:1}.lab-workspace{grid-template-columns:1fr}.catalogue-panel{position:static}.model-list{max-height:330px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:620px){.catalogue-tools{padding:12px}.subject-tab{flex:1;padding:11px 7px;font-size:8px}.model-list{grid-template-columns:1fr;max-height:300px}.model-detail{padding:18px}.lab-stats{gap:12px}.chapter-filter{flex-wrap:wrap}.chapter-filter #resultCount{width:100%;margin-left:0}}
