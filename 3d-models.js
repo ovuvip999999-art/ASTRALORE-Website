@@ -66,7 +66,7 @@ C29~Peptide bond and protein chain~Biomolecules~polymer~A peptide bond links ami
 C30~DNA nucleotide pair~Biomolecules~dna~Complementary bases pair within the double helix of DNA.
 C31~Starch and cellulose polymer~Biomolecules~polymer~Different glucose linkages produce distinct polysaccharide structures.
 C32~Micelle formation~Solutions~micelle~Amphiphilic molecules arrange with hydrophilic heads outward and hydrophobic tails inward.
-C33~Molecular orbital overlap~Chemical Bonding Revision~orbital~Atomic orbitals overlap to form bonding and antibonding molecular orbitals.
+C33~Vitamins and biomolecules~Biomolecules~molecule~Explore representative vitamin and biomolecule structures and their roles in living systems.
 B01~T.S. of anther~Sexual Reproduction in Flowering Plants~flower~A transverse view shows pollen sacs and developing pollen grains.
 B02~Pollen grain structure~Sexual Reproduction in Flowering Plants~cell~Explore the exine, intine, vegetative cell and generative cell.
 B03~Embryo sac of angiosperm~Sexual Reproduction in Flowering Plants~embryo~The mature embryo sac contains the egg apparatus, central cell and antipodals.
@@ -179,6 +179,54 @@ function flower(T,g){rod(T,g,[0,-.9,0],[0,.6,0],.045,0x4fba78);for(let i=0;i<6;i
 function embryo(T,g){ball(T,g,0,0,0,.82,0xffc9a1);ball(T,g,0,.25,0,.22,0xd58aff);for(let i=0;i<8;i++)ball(T,g,Math.cos(i*.78)*.65,Math.sin(i*.78)*.55,Math.sin(i*1.3)*.4,.09,0xff9d9d);}
 function genetics(T,g,variant=0){for(let i=0;i<4;i++){const x=-.9+i*.6;rod(T,g,[x,-.75,0],[x,.75,0],.045,0x7bb8ff);for(let j=0;j<3;j++){const y=-.5+j*.5;rod(T,g,[x,y,0],[x+.3,y,0],.035,0xffc36f);}}}
 function ecosystem(T,g){for(let i=0;i<5;i++){const x=-1+i*.5;rod(T,g,[x,-.7,0],[x,.3,0],.025,0x55bb78);ball(T,g,x,.4,0,.17,0x7cd58e);}for(let i=0;i<4;i++)curve(T,g,[[-1,.7-i*.35,0],[-.3,.9-i*.35,.1],[.4,.6-i*.35,0],[1,.85-i*.35,-.1]],0xffd37c,.018);}
-function generic(T,g,kind,v){if(kind==="atom")atom(T,g,0x7cb8ff,v);else if(kind==="molecule"||kind==="organic"||kind==="polymer"||kind==="orbital")molecule(T,g,v);else if(kind==="dna")helix(T,g,0x78c6ff);else if(kind==="cell"||kind==="virus")cell(T,g,0x78c6ff,false);else if(kind==="plant"||kind==="flower")flower(T,g);else if(kind==="organ"||kind==="neuron")organ(T,g,v);else if(kind==="field"||kind==="magnet"||kind==="solenoid"||kind==="induction")field(T,g,v);else if(kind==="wave"||kind==="kinetics"||kind==="evolution")wave(T,g,v);else if(kind==="circuit"||kind==="capacitor"||kind==="semiconductor"||kind==="transformer"||kind==="generator")circuit(T,g,v);else if(kind==="optics")optics(T,g,v);else if(kind==="mechanics")mechanics(T,g,v);else if(kind==="apparatus"||kind==="electrochem"||kind==="corrosion"||kind==="osmosis")apparatus(T,g,v);else if(kind==="lattice"||kind==="coordination"||kind==="crystal")lattice(T,g,v);else if(kind==="embryo")embryo(T,g);else if(kind==="genetics")genetics(T,g,v);else if(kind==="ecosystem"||kind==="cycle")ecosystem(T,g);else if(kind==="nucleus"){ball(T,g,0,0,0,.48,0xff8b78);for(let i=0;i<24;i++)ball(T,g,Math.cos(i*2.4)*.42,Math.sin(i*2.4)*.42,Math.sin(i*1.1)*.3,.07,0xffd17a);}else if(kind==="micelle"){for(let i=0;i<18;i++){const a=i*Math.PI*2/18;ball(T,g,Math.cos(a)*.65,Math.sin(a)*.65,0,.14,0x7dbdff);rod(T,g,[Math.cos(a)*.65,Math.sin(a)*.65,0],[Math.cos(a)*.25,Math.sin(a)*.25,.0],.035,0xffbb73);}}else{molecule(T,g,v);}}
+
+function coordination(T,g,variant=0){const oct=variant%2===0;ball(T,g,0,0,0,.25,0xffc36f);const n=oct?6:4;for(let i=0;i<n;i++){const a=i*Math.PI*2/n;const p=oct?[Math.cos(a)*.85,(i%2?-.65:.65),Math.sin(a)*.85]:[Math.cos(a)*.78,(i%2?-.58:.58),Math.sin(a)*.78];rod(T,g,[0,0,0],p,.035,0xb7c7df);ball(T,g,...p,.16,0x7dbaff);}}
+function capacitor(T,g,variant=0){for(let i=0;i<2;i++){const p=mesh(T,new T.BoxGeometry(.12,1.65,1.15),mat(T,i?0x78baff:0xffbd70,.55),i?-.62:.62,0,0,g);}for(let i=0;i<7;i++)rod(T,g,[0,-.68+i*.22,-.42],[0,.68-i*.22,.42],.012,0x9bd5ff);if(variant%2)ball(T,g,0,0,0,.38,0x8dca9f);}
+function magnet(T,g,variant=0){mesh(T,new T.BoxGeometry(1.7,.4,.45),mat(T,0xd36b72,.55),0,0,0,g);mesh(T,new T.BoxGeometry(.82,.42,.47),mat(T,0x6e9fe0,.55),-.44,0,0,g);for(let i=0;i<6;i++){const y=-.8+i*.32;curve(T,g,[[-.72,y,0],[-1.05,y+.3,.1],[0,y+.55,.15],[1.05,y+.3,.1],[.72,y,0]],0x83baff,.012);}}
+function solenoid(T,g){rod(T,g,[0,-1.05,0],[0,1.05,0],.12,0x8799b6);const pts=[];for(let i=0;i<=260;i++){const t=i/260;const a=t*Math.PI*2*13;pts.push([Math.cos(a)*.48,-1+t*2,Math.sin(a)*.48]);}curve(T,g,pts,0xe8a85e,.035);}
+function generator(T,g){mesh(T,new T.BoxGeometry(2,.25,.2),mat(T,0x879bb7),0,0,0,g);mesh(T,new T.BoxGeometry(.18,1.2,.22),mat(T,0xd36c78),-.95,0,0,g);mesh(T,new T.BoxGeometry(.18,1.2,.22),mat(T,0x6f9ddd),.95,0,0,g);const coil=mesh(T,new T.BoxGeometry(.72,.92,.12),mat(T,0xdcb46e,.6),0,0,0,g);coil.rotation.y=.45;rod(T,g,[0,-.95,0],[0,.95,0],.05,0xb6c7df);}
+function transformer(T,g){mesh(T,new T.TorusGeometry(.72,.12,16,48),mat(T,0x8598b6,.7),0,0,0,g);for(let i=0;i<8;i++){const y=-.8+i*.22;rod(T,g,[-.62,y,0],[-.32,y,0],.05,0xffb66e);rod(T,g,[.32,y,0],[.62,y,0],.05,0x78baff);}}
+function electrochem(T,g){for(let side=0;side<2;side++){const x=side?-.72:.72;mesh(T,new T.CylinderGeometry(.4,.34,.9,32,1,true),new T.MeshPhysicalMaterial({color:side?0x7cbaff:0xffbd70,transparent:true,opacity:.22,side:T.DoubleSide}),x,-.25,0,g);rod(T,g,[x,-.55,0],[x,.72,0],.055,side?0x7cbaff:0xffbd70);ball(T,g,x,-.5,0,.11,side?0x7cbaff:0xffbd70);}curve(T,g,[[-.72,.55,0],[-.45,.95,0],[.45,.95,0],[.72,.55,0]],0x8ed7b2,.07);curve(T,g,[[-.72,.72,0],[-.72,1.05,0],[.72,1.05,0],[.72,.72,0]],0xe5c86e,.018);}
+function virus(T,g){const core=mesh(T,new T.IcosahedronGeometry(.52,1),mat(T,0x9d8aff,.4),0,0,0,g);for(let i=0;i<18;i++){const a=i*2.4, y=Math.sin(i*1.7)*.75, x=Math.cos(a)*.65,z=Math.sin(a)*.65;rod(T,g,[Math.cos(a)*.38,y*.55,Math.sin(a)*.38],[x,y,z],.035,0x8cc9ff);ball(T,g,x,y,z,.09,0xffb978);}}
+function neuron(T,g){ball(T,g,0,0,0,.3,0xe3b46e);for(let i=0;i<9;i++){const a=i*Math.PI*2/9;curve(T,g,[[Math.cos(a)*.2,Math.sin(a)*.2,0],[Math.cos(a)*.65,Math.sin(a)*.65,.1],[Math.cos(a)*1.1,Math.sin(a)*1.1,.05]],0x79c9b5,.035);}curve(T,g,[[.15,-.1,0],[.6,-.4,0],[1,-.55,0],[1.4,-.55,0]],0x78baff,.06);for(let i=0;i<5;i++)ring(T,g,.1,.025,0xe4b56e,1+i*.12,-.55,0,Math.PI/2);}
+function semiconductor(T,g){mesh(T,new T.BoxGeometry(1.25,1.15,.65),mat(T,0x7398d0,.4),-.65,0,0,g);mesh(T,new T.BoxGeometry(1.25,1.15,.65),mat(T,0xd18b83,.4),.65,0,0,g);for(let i=0;i<6;i++){ball(T,g,-1.05+(i%3)*.35,-.35+Math.floor(i/3)*.7,.36,.07,0x9ed1ff);ball(T,g,.25+(i%3)*.35,-.35+Math.floor(i/3)*.7,.36,.07,0xffd17d);}rod(T,g,[0,-.8,0],[0,.8,0],.025,0xffffff);}
+function kinetics(T,g,variant=0){const pts=[[-1.3,-.65,0],[-.8,-.2,0],[-.35,.65,0],[.1,.85,0],[.5,.25,0],[1.25,-.55,0]];curve(T,g,pts,0xffb66e,.035);rod(T,g,[-1.4,-.75,0],[1.4,-.75,0],.015,0xa9a2c0);rod(T,g,[-1.3,-.75,0],[-1.3,1,0],.015,0xa9a2c0);if(variant%2)curve(T,g,[[-1.3,-.65,.1],[-.8,-.35,.1],[-.3,.05,.1],[.2,.18,.1],[.8,.42,.1],[1.25,.58,.1]],0x7dbaff,.025);}
+function evolution(T,g){const pts=[[0,-.95,0],[0,-.45,0],[-.7,.05,0],[-1,.55,0],[-.4,.55,0],[.4,.05,0],[.9,.55,0],[.4,.9,0],[1.25,.9,0]];for(const [a,b] of [[0,1],[1,2],[2,3],[2,4],[1,5],[5,6],[5,7],[7,8]])rod(T,g,pts[a],pts[b],.035,0x83c8a6);pts.forEach((p,i)=>ball(T,g,...p,.09,i%2?0xffc36f:0x7dbaff));}
+
+function generic(T,g,kind,v){
+ if(kind==="atom")atom(T,g,0x7cb8ff,v);
+ else if(kind==="molecule"||kind==="organic"||kind==="polymer"||kind==="orbital")molecule(T,g,v);
+ else if(kind==="dna")helix(T,g,0x78c6ff);
+ else if(kind==="cell")cell(T,g,0x78c6ff,false);
+ else if(kind==="plant"||kind==="flower")flower(T,g);
+ else if(kind==="neuron")neuron(T,g);
+ else if(kind==="organ")organ(T,g,v);
+ else if(kind==="field"||kind==="induction")field(T,g,v);
+ else if(kind==="magnet")magnet(T,g,v);
+ else if(kind==="solenoid")solenoid(T,g);
+ else if(kind==="generator")generator(T,g);
+ else if(kind==="transformer")transformer(T,g);
+ else if(kind==="wave")wave(T,g,v);
+ else if(kind==="circuit")circuit(T,g,v);
+ else if(kind==="capacitor")capacitor(T,g,v);
+ else if(kind==="semiconductor")semiconductor(T,g);
+ else if(kind==="optics")optics(T,g,v);
+ else if(kind==="mechanics")mechanics(T,g,v);
+ else if(kind==="apparatus")apparatus(T,g,v);
+ else if(kind==="electrochem")electrochem(T,g);
+ else if(kind==="corrosion")lattice(T,g,v);
+ else if(kind==="osmosis")apparatus(T,g,v);
+ else if(kind==="kinetics")kinetics(T,g,v);
+ else if(kind==="lattice"||kind==="crystal")lattice(T,g,v);
+ else if(kind==="coordination")coordination(T,g,v);
+ else if(kind==="embryo")embryo(T,g);
+ else if(kind==="genetics")genetics(T,g,v);
+ else if(kind==="evolution")evolution(T,g);
+ else if(kind==="virus")virus(T,g);
+ else if(kind==="ecosystem"||kind==="cycle")ecosystem(T,g);
+ else if(kind==="nucleus"){ball(T,g,0,0,0,.48,0xff8b78);for(let i=0;i<24;i++)ball(T,g,Math.cos(i*2.4)*.42,Math.sin(i*2.4)*.42,Math.sin(i*1.1)*.3,.07,0xffd17a);}
+ else if(kind==="micelle"){for(let i=0;i<18;i++){const a=i*Math.PI*2/18;ball(T,g,Math.cos(a)*.65,Math.sin(a)*.65,0,.14,0x7dbdff);rod(T,g,[Math.cos(a)*.65,Math.sin(a)*.65,0],[Math.cos(a)*.25,Math.sin(a)*.25,0],.035,0xffbb73);}}
+ else molecule(T,g,v);
+}
 export function buildModel(THREE,record){const g=new THREE.Group();generic(THREE,g,record.kind,Number(record.id.slice(1))||0);labelBase(THREE,g,COLORS[record.subject]);g.rotation.y=.22;return g;}
 export const MODEL_COUNT=MODEL_DATA.length;
