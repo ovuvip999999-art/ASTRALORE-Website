@@ -3,6 +3,17 @@ plugins {
     id("org.jetbrains.kotlin.android")
 }
 
+val releaseStoreFile = System.getenv("ASTRA_KEYSTORE_PATH")
+val releaseStorePassword = System.getenv("ASTRA_KEYSTORE_PASSWORD")
+val releaseKeyAlias = System.getenv("ASTRA_KEY_ALIAS")
+val releaseKeyPassword = System.getenv("ASTRA_KEY_PASSWORD")
+val hasReleaseSigning = listOf(
+    releaseStoreFile,
+    releaseStorePassword,
+    releaseKeyAlias,
+    releaseKeyPassword
+).all { !it.isNullOrBlank() }
+
 android {
     namespace = "com.astralore.astra"
     compileSdk = 35
@@ -13,6 +24,33 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "1.0.0"
+    }
+
+    if (hasReleaseSigning) {
+        signingConfigs {
+            create("release") {
+                storeFile = file(releaseStoreFile!!)
+                storePassword = releaseStorePassword!!
+                keyAlias = releaseKeyAlias!!
+                keyPassword = releaseKeyPassword!!
+            }
+        }
+    }
+
+    buildTypes {
+        getByName("release") {
+            // Obfuscates/minifies the native Android wrapper. This is not a substitute
+            // for keeping credentials and private data on the server.
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("release")
+            }
+        }
     }
 
     compileOptions {
