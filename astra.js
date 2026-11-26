@@ -1,5 +1,5 @@
 
-/* V16 — ASTRA assistant. Improved escaped Markdown parsing and safe code rendering. */
+/* V17 — ASTRA assistant. Improved escaped Markdown and code rendering. */
 (() => {
   "use strict";
 
@@ -47,6 +47,13 @@
       closePanel();
     }
   });
+
+  // Normalize line endings without altering legitimate code backslashes.
+  function normalizeResponse(text) {
+    return String(text)
+      .replace(/\r\n/g, "\n")
+      .replace(/\r/g, "\n");
+  }
 
   function appendInline(parent, text) {
     const pattern =
@@ -100,12 +107,13 @@
     );
   }
 
-  // Clean escaped HTML, CSS selectors and common encoded spaces.
+  // Remove only escaping that is clearly corrupting generated HTML.
+  // Other backslashes, such as \n, \d and Windows paths, are preserved.
   function cleanEscapedCode(code) {
     return String(code)
-      .replace(/\\(?=<\/?[A-Za-z!])/g, "")
-      .replace(/^(\s*)\\?\*\s*\{/gm, "$1* {")
-      .replace(/^(\s*)-\s*\{\s*$/gm, "$1* {")
+      .replace(/\\+(?=<\/?[A-Za-z!])/g, "")
+      .replace(/&lt;/gi, "<")
+      .replace(/&gt;/gi, ">")
       .replace(/&#x20;/gi, " ")
       .replace(/^(\s*)\\#/gm, "$1#");
   }
@@ -135,7 +143,7 @@
 
     const cleanCode = cleanEscapedCode(code);
 
-    // Generated code is displayed as text, never executed as HTML.
+    // Code is rendered as text. It is never executed as HTML.
     codeElement.textContent = cleanCode;
 
     copyButton.addEventListener("click", async () => {
@@ -159,11 +167,9 @@
     container.appendChild(wrapper);
   }
 
-  // Normalize escaped backticks before detecting Markdown fences.
+  // Recognize both normal and individually escaped Markdown fences.
   function getCodeFence(line) {
-    const trimmed = line.trim();
-
-    const normalized = trimmed.replace(/\\(?=`)/g, "");
+    const normalized = line.trim().replace(/\\+(`)/g, "$1");
 
     const match = normalized.match(
       /^(`{3,}|~~~)\s*([a-zA-Z0-9_+#.-]*)\s*$/
@@ -172,25 +178,30 @@
     if (!match) return null;
 
     return {
-      language: match[2] || "",
-      marker: match[1]
+      marker: match[1],
+      language: match[2] || ""
     };
   }
 
   function renderAnswer(container, text) {
-    const lines = String(text)
-      .replace(/\r\n/g, "\n")
-      .replace(/\r/g, "\n")
-      .split("\n");
+    const lines = normalizeResponse(text).split("\n");
 
     let list = null;
     let table = null;
     let codeLines = null;
     let codeLanguage = "";
+    let codeMarker = "";
 
     function resetBlocks() {
       list = null;
       table = null;
+    }
+
+    function finishCodeBlock() {
+      addCodeBlock(container, codeLines.join("\n"), codeLanguage);
+      codeLines = null;
+      codeLanguage = "";
+      codeMarker = "";
     }
 
     lines.forEach(line => {
@@ -203,10 +214,14 @@
         if (codeLines === null) {
           codeLines = [];
           codeLanguage = fence.language;
+          codeMarker = fence.marker;
+        } else if (
+          fence.marker[0] === codeMarker[0] &&
+          fence.marker.length >= codeMarker.length
+        ) {
+          finishCodeBlock();
         } else {
-          addCodeBlock(container, codeLines.join("\n"), codeLanguage);
-          codeLines = null;
-          codeLanguage = "";
+          codeLines.push(line);
         }
 
         return;
@@ -290,7 +305,7 @@
     });
 
     if (codeLines !== null) {
-      addCodeBlock(container, codeLines.join("\n"), codeLanguage);
+      finishCodeBlock();
     }
   }
 
