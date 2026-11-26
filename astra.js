@@ -1,5 +1,5 @@
 
-/* V12 — ASTRA assistant. Safe formatted responses, session context and live backend support. */
+/* V14 — ASTRA assistant. Robust Markdown code blocks, safe rendering, copy buttons and session context. */
 (() => {
   const launcher = document.getElementById("astraLauncher");
   const panel = document.getElementById("astraWidget");
@@ -10,7 +10,10 @@
   const suggestions = document.getElementById("astraSuggestions");
   const status = document.querySelector(".astra-status");
   const disclaimer = document.querySelector(".astra-disclaimer");
-  const API_URL = typeof window.ASTRA_API_URL === "string" ? window.ASTRA_API_URL.trim() : "";
+
+  const API_URL = typeof window.ASTRA_API_URL === "string"
+    ? window.ASTRA_API_URL.trim()
+    : "";
 
   if (!launcher || !panel || !form || !input || !chat) return;
 
@@ -44,7 +47,9 @@
   });
 
   function appendInline(parent, text) {
-    const pattern = /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)|\*\*(.+?)\*\*|\*(.+?)\*|`([^`]+)`/g;
+    const pattern =
+      /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)|\*\*(.+?)\*\*|\*(.+?)\*|`([^`]+)`/g;
+
     const source = String(text);
     let lastIndex = 0;
     let match;
@@ -93,25 +98,144 @@
     );
   }
 
+  // Remove only common Markdown-escaping artifacts from generated code.
+  // Legitimate JavaScript strings, regexes and file paths are preserved.
+  function cleanEscapedCode(code) {
+    return String(code)
+      .replace(/\\(?=<\/?[A-Za-z!])/g, "")
+      .replace(/^(\s*)\\#/gm, "$1#")
+      .replace(/&#x20;/gi, " ");
+  }
+
+  function addCodeBlock(container, code, language) {
+    const wrapper = document.createElement("div");
+    wrapper.className = "astra-code-block";
+
+    const toolbar = document.createElement("div");
+    toolbar.className = "astra-code-toolbar";
+
+    const languageLabel = document.createElement("span");
+    languageLabel.className = "astra-code-language";
+    languageLabel.textContent = language || "CODE";
+
+    const copyButton = document.createElement("button");
+    copyButton.type = "button";
+    copyButton.className = "astra-copy-code";
+    copyButton.textContent = "Copy code";
+
+    const pre = document.createElement("pre");
+    const codeElement = document.createElement("code");
+
+    codeElement.className = language
+      ? "language-" + language.toLowerCase().replace(/[^a-z0-9_-]/g, "")
+      : "";
+
+    const cleanCode = cleanEscapedCode(code);
+
+    // textContent prevents generated HTML from executing.
+    codeElement.textContent = cleanCode;
+
+    copyButton.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(cleanCode);
+        copyButton.textContent = "Copied!";
+
+        setTimeout(() => {
+          copyButton.textContent = "Copy code";
+        }, 1600);
+      } catch {
+        copyButton.textContent = "Copy unavailable";
+      }
+    });
+
+    pre.appendChild(codeElement);
+    toolbar.appendChild(languageLabel);
+    toolbar.appendChild(copyButton);
+    wrapper.appendChild(toolbar);
+    wrapper.appendChild(pre);
+    container.appendChild(wrapper);
+  }
+
+  // Recognize normal fences and individually escaped backticks.
+  function getCodeFence(line) {
+    const trimmed = line.trim();
+
+    const normal = trimmed.match(
+      /^(`{3,}|~~~)\s*([a-zA-Z0-9_+#.-]*)\s*$/
+    );
+
+    if (normal) {
+      return {
+        language: normal[2] || "",
+        marker: normal[1]
+      };
+    }
+
+    const escaped = trimmed.match(
+      /^(?:\\`){3,}\s*([a-zA-Z0-9_+#.-]*)\s*$/
+    );
+
+    if (escaped) {
+      return {
+        language: escaped[1] || "",
+        marker: "escaped"
+      };
+    }
+
+    return null;
+  }
+
   function renderAnswer(container, text) {
-    const lines = String(text).split(/\r?\n/);
+    const lines = String(text)
+      .replace(/\r\n/g, "\n")
+      .split("\n");
+
     let list = null;
     let table = null;
+    let codeLines = null;
+    let codeLanguage = "";
+    let activeFence = null;
+
+    function resetBlocks() {
+      list = null;
+      table = null;
+    }
 
     lines.forEach(line => {
       const trimmed = line.trim();
+      const fence = getCodeFence(line);
+
+      if (fence) {
+        resetBlocks();
+
+        if (codeLines === null) {
+          codeLines = [];
+          codeLanguage = fence.language;
+          activeFence = fence.marker;
+        } else {
+          addCodeBlock(container, codeLines.join("\n"), codeLanguage);
+          codeLines = null;
+          codeLanguage = "";
+          activeFence = null;
+        }
+
+        return;
+      }
+
+      if (codeLines !== null) {
+        codeLines.push(line);
+        return;
+      }
 
       if (!trimmed) {
-        list = null;
-        table = null;
+        resetBlocks();
         return;
       }
 
       const heading = trimmed.match(/^#{1,4}\s+(.+)$/);
 
       if (heading) {
-        list = null;
-        table = null;
+        resetBlocks();
 
         const h = document.createElement("h4");
         appendInline(h, heading[1]);
@@ -120,10 +244,14 @@
       }
 
       if (trimmed.includes("|")) {
-        const cells = trimmed.split("|").slice(1, -1).map(cell => cell.trim());
+        const cells = trimmed.split("|")
+          .slice(1, -1)
+          .map(cell => cell.trim());
 
         if (cells.length) {
-          if (cells.every(cell => /^:?-{3,}:?$/.test(cell))) return;
+          if (cells.every(cell => /^:?-{3,}:?$/.test(cell))) {
+            return;
+          }
 
           if (!table) {
             table = document.createElement("table");
@@ -132,7 +260,7 @@
 
           const row = document.createElement("tr");
 
-          cells.forEach((cell, index) => {
+          cells.forEach(cell => {
             const element = document.createElement("td");
             appendInline(element, cell);
             row.appendChild(element);
@@ -169,6 +297,11 @@
       appendInline(paragraph, trimmed);
       container.appendChild(paragraph);
     });
+
+    // Safely display unfinished code blocks too.
+    if (codeLines !== null) {
+      addCodeBlock(container, codeLines.join("\n"), codeLanguage);
+    }
   }
 
   function addMessage(text, who) {
@@ -213,7 +346,9 @@
     const data = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-      throw new Error(data.error || "ASTRA couldn't connect right now. Please try again.");
+      throw new Error(
+        data.error || "ASTRA couldn't connect right now. Please try again."
+      );
     }
 
     if (!data.reply || typeof data.reply !== "string") {
@@ -225,17 +360,23 @@
 
   async function send(text) {
     const message = text.trim();
+
     if (!message || busy) return;
 
     busy = true;
     input.disabled = true;
 
     const submitButton = form.querySelector("button[type='submit']");
-    if (submitButton) submitButton.disabled = true;
+
+    if (submitButton) {
+      submitButton.disabled = true;
+    }
 
     addMessage(message, "user");
 
-    if (suggestions) suggestions.hidden = true;
+    if (suggestions) {
+      suggestions.hidden = true;
+    }
 
     input.value = "";
 
@@ -258,12 +399,18 @@
       }
     } catch (error) {
       typing.remove();
-      addMessage(error.message || "Connection interrupted. Please try again.", "bot");
+
+      addMessage(
+        error.message || "Connection interrupted. Please try again.",
+        "bot"
+      );
     } finally {
       busy = false;
       input.disabled = false;
 
-      if (submitButton) submitButton.disabled = false;
+      if (submitButton) {
+        submitButton.disabled = false;
+      }
 
       input.focus();
     }
@@ -278,16 +425,27 @@
     suggestions.addEventListener("click", event => {
       const button = event.target.closest("button[data-prompt]");
 
-      if (button) send(button.dataset.prompt);
+      if (button) {
+        send(button.dataset.prompt);
+      }
     });
   }
 
   if (API_URL) {
-    if (status) status.innerHTML = "<i></i> LIVE CONNECTION";
-    if (disclaimer) disclaimer.textContent = "ASTRALORE AI · SESSION CONTEXT ACTIVE";
+    if (status) {
+      status.innerHTML = "<i></i> LIVE CONNECTION";
+    }
+
+    if (disclaimer) {
+      disclaimer.textContent = "ASTRALORE AI · SESSION CONTEXT ACTIVE";
+    }
   } else {
-    if (status) status.innerHTML = "<i></i> OFFLINE";
-    if (disclaimer) disclaimer.textContent = "ASTRA LIVE CONNECTION NOT CONFIGURED";
+    if (status) {
+      status.innerHTML = "<i></i> OFFLINE";
+    }
+
+    if (disclaimer) {
+      disclaimer.textContent = "ASTRA LIVE CONNECTION NOT CONFIGURED";
+    }
   }
 })();
-
