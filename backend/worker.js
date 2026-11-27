@@ -189,6 +189,20 @@ async function loadEnabledSkills(env, authorization, userId) {
 }
 
 
+async function releaseImageQuota(env, authorization, userId) {
+  const baseUrl = String(env.SUPABASE_URL || "").replace(/\/+$/, "");
+  if (!baseUrl || !env.SUPABASE_ANON_KEY) return;
+  await fetch(baseUrl + "/rest/v1/rpc/astra_release_image_generation", {
+    method: "POST",
+    headers: {
+      "apikey": env.SUPABASE_ANON_KEY,
+      "Authorization": authorization,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ p_user_id: userId })
+  });
+}
+
 async function consumeImageQuota(env, authorization, userId) {
   const baseUrl = String(env.SUPABASE_URL || "").replace(/\/+$/, "");
   if (!baseUrl || !env.SUPABASE_ANON_KEY) throw new Error("Image usage limits are not configured.");
@@ -368,6 +382,7 @@ export default {
           remainingToday: quota.remaining
         }, 200, origin);
       } catch (error) {
+        try { await releaseImageQuota(env, authorization, authenticatedUser.id); } catch {}
         console.error("ASTRA image generation failed", String(error?.message || error).slice(0, 180));
         return json({ error: "ASTRA could not generate that image. Try a different prompt or try again later." }, 503, origin);
       }
