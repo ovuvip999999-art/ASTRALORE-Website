@@ -167,8 +167,6 @@ export default {
     }
 
     if (request.method !== "POST") return json({ error: "Method not allowed." }, 405, origin);
-    if (!env.AI) return json({ error: "ASTRA's free AI service is not enabled on this Worker yet." }, 503, origin);
-
     let body;
     try {
       const raw = await request.text();
@@ -181,6 +179,8 @@ export default {
     const message = typeof body.message === "string" ? body.message.trim().slice(0, 800) : "";
     const image = body.image && typeof body.image === "object" ? body.image : null;
     let document = body.document && typeof body.document === "object" ? body.document : null;
+    const documentAction = body.documentAction && typeof body.documentAction === "object" ? body.documentAction : null;
+    const documentToSave = documentAction?.operation === "save" ? documentAction.document : null;
     const conversationId = typeof body.conversationId === "string" ? body.conversationId : "";
     const validConversationId = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(conversationId);
     const validDocumentTypes = new Set([
@@ -193,15 +193,23 @@ export default {
       "text/markdown",
       "application/octet-stream"
     ]);
-    if (document && (
-      typeof document.name !== "string" || document.name.length > 240 ||
-      !validDocumentTypes.has(document.mimeType) ||
-      typeof document.text !== "string" || !document.text.trim() ||
-      document.text.length > 50000
-    )) {
+    const validDocument = value => value &&
+      typeof value.name === "string" && value.name.trim() && value.name.length <= 240 &&
+      validDocumentTypes.has(value.mimeType) &&
+      typeof value.text === "string" && value.text.trim() && value.text.length <= 50000;
+    if (document && !validDocument(document)) {
       return json({ error: "Unsupported or invalid document. Upload a text-based PDF, DOCX, XLSX, XLS, CSV, TXT or MD file up to 10 MB." }, 400, origin);
     }
-    if (document && !validConversationId) {
+    if (documentAction && !["load", "save"].includes(documentAction.operation)) {
+      return json({ error: "Unsupported document operation." }, 400, origin);
+    }
+    if (documentAction?.operation === "save" && !validDocument(documentToSave)) {
+      return json({ error: "The edited document is empty, too large, or has unsupported file metadata." }, 400, origin);
+    }
+    if (document && documentAction) {
+      return json({ error: "Send either a document attachment or a document action, not both." }, 400, origin);
+    }
+    if ((document || documentAction) && !validConversationId) {
       return json({ error: "Start a cloud conversation before attaching a document so ASTRA can retain it for follow-up questions." }, 400, origin);
     }
     const validImageTypes = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -210,7 +218,7 @@ export default {
       !/^[A-Za-z0-9+/]+={0,2}$/.test(image.data))) {
       return json({ error: "Unsupported or invalid image. Use a JPG, PNG or WEBP image up to 3 MB." }, 400, origin);
     }
-    if (!message && !image && !document) return json({ error: "Enter a message or attach a file." }, 400, origin);
+    if (!message && !image && !document && !documentAction) return json({ error: "Enter a message or attach a file." }, 400, origin);
 
     let authenticatedUser = null;
     let archiveRows = [];
@@ -226,6 +234,33 @@ export default {
     if (!authenticatedUser) {
       return json({ error: "Your session is invalid or expired. Please sign in again." }, 401, origin);
     }
+
+    if (documentAction) {
+      try {
+        const documentStore = createDocumentStore({
+          baseUrl: env.SUPABASE_URL,
+          anonKey: env.SUPABASE_ANON_KEY,
+          authorization
+        });
+        if (documentAction.operation === "load") {
+          const savedDocument = await documentStore.load(conversationId, authenticatedUser.id);
+          return json({
+            document: savedDocument,
+            documentPersistenceStatus: savedDocument ? "RESTORED" : "NOT_FOUND"
+          }, 200, origin);
+        }
+        await documentStore.save(conversationId, authenticatedUser.id, documentToSave);
+        return json({
+          documentName: documentToSave.name,
+          documentPersistenceStatus: "SAVED"
+        }, 200, origin);
+      } catch (error) {
+        console.error("ASTRA document editor persistence failed", String(error?.message || error).slice(0, 180));
+        return json({ error: "ASTRA could not access the saved document. Please retry; your edits have not been treated as saved." }, 503, origin);
+      }
+    }
+
+    if (!env.AI) return json({ error: "ASTRA's free AI service is not enabled on this Worker yet." }, 503, origin);
 
     let documentSource = "NO_DOCUMENT";
     let documentPersistenceStatus = validConversationId ? "NOT_FOUND" : "NO_CONVERSATION_ID";
