@@ -43,10 +43,13 @@ test("ASTRA exposes a cloud-backed extracted-document editor", async () => {
   assert.ok(editor.includes("pdf.registerFontkit(window.fontkit)"));
   assert.ok(editor.includes("pdf.embedFont(fontBytes, { subset: true })"));
   assert.ok(editor.includes("originalFont.widthOfTextAtSize(text, fontSize)"));
+  assert.ok(editor.includes("Number.isFinite(ascent) && ascent > 0 && ascent <= 2"));
   assert.ok(editor.includes("fontFallbacks"));
   assert.ok(editor.includes("document.fonts.load"));
-  assert.ok(editor.includes("could not recover the original embedded font"));
-  assert.ok(editor.includes("Export cancelled to avoid silently substituting the original font"));
+  assert.ok(editor.includes("embedded.encodeText(String(item.text || \"\"))"));
+  assert.ok(editor.includes("fontFallbacks = fallbackItems.size"));
+  assert.ok(editor.includes("font may be subsetted or missing required characters"));
+  assert.ok(editor.includes("Export cancelled because the original font cannot render every replacement character"));
   assert.ok(editor.includes("textDirection"));
   assert.ok(editor.includes("TEXT SELECTED"));
   assert.ok(editor.includes("REPLACEMENT PREVIEW ADDED"));
