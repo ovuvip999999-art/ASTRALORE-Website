@@ -74,3 +74,43 @@ test("returns null when the conversation has no saved document", async () => {
   });
   assert.equal(await store.load(conversationId, userId), null);
 });
+
+
+test("a document is restored only for the matching conversation and user", async () => {
+  const rows = new Map();
+  const store = createDocumentStore({
+    baseUrl: "https://example.supabase.co",
+    anonKey: "public-key",
+    authorization: "Bearer user-token",
+    fetchImpl: async (url, options) => {
+      if (options.method === "POST") {
+        const row = JSON.parse(options.body);
+        rows.set(row.conversation_id + ":" + row.user_id, row);
+        return { ok: true, status: 201 };
+      }
+      const parsed = new URL(url);
+      const conversation = parsed.searchParams.get("conversation_id")?.slice(3);
+      const user = parsed.searchParams.get("user_id")?.slice(3);
+      const row = rows.get(conversation + ":" + user);
+      return {
+        ok: true,
+        status: 200,
+        json: async () => row ? [{
+          file_name: row.file_name,
+          mime_type: row.mime_type,
+          extracted_text: row.extracted_text
+        }] : []
+      };
+    }
+  });
+
+  await store.save(conversationId, userId, {
+    name: "planner.pdf",
+    mimeType: "application/pdf",
+    text: "Test 15 schedule"
+  });
+
+  assert.equal((await store.load(conversationId, userId))?.text, "Test 15 schedule");
+  assert.equal(await store.load(conversationId, "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"), null);
+  assert.equal(await store.load("aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", userId), null);
+});
