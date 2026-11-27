@@ -20,7 +20,9 @@ test("saves extracted document text under the authenticated conversation", async
   await store.save(conversationId, userId, {
     name: "planner.pdf",
     mimeType: "application/pdf",
-    text: "[Page 1] Test schedule"
+    text: "[Page 1] Test schedule",
+    storagePath: null,
+    editorState: { annotations: [] }
   });
 
   assert.equal(request.url, "https://example.supabase.co/rest/v1/astra_documents?on_conflict=conversation_id");
@@ -61,7 +63,9 @@ test("restores the saved document for the same conversation and user", async () 
   assert.deepEqual(document, {
     name: "planner.pdf",
     mimeType: "application/pdf",
-    text: "[Page 1] Test schedule"
+    text: "[Page 1] Test schedule",
+    storagePath: null,
+    editorState: { annotations: [] }
   });
 });
 
