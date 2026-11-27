@@ -85,7 +85,7 @@
       showStatus(data.session
         ? "Account created and signed in."
         : "Account created. Check your email for the confirmation link, then sign in.");
-      if (data.user) updateAccount(data.user);
+      updateAccount(data.session?.user || null);
     } catch (error) {
       showStatus(error.message || "Account creation failed. Please try again.");
     } finally {
