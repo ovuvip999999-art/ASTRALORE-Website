@@ -490,6 +490,7 @@ function renderAnswer(container, text) {
   const removeAttachment = document.getElementById("astraRemoveAttachment");
   const MAX_FILE_BYTES = 10 * 1024 * 1024;
   const MAX_EXTRACTED_CHARS = 50000;
+  let lastPdfDiagnostic = null;
 
   function clearAttachment() {
     activeAttachment = null;
@@ -520,6 +521,7 @@ function renderAnswer(container, text) {
       return await file.text();
     }
     if (lower.endsWith(".pdf") || file.type === "application/pdf") {
+      lastPdfDiagnostic = null;
       const pdfjs = await loadScriptOnce("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js", "pdfjsLib");
       pdfjs.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
       const pdf = await pdfjs.getDocument({ data: await file.arrayBuffer() }).promise;
@@ -779,6 +781,9 @@ function renderAnswer(container, text) {
           const diagnostic = JSON.stringify(report);
           throw new Error("PDF extraction failed. Diagnostic report: " + diagnostic);
         }
+        // Keep successful OCR diagnostics available to the upload UI so that
+        // quality can be reviewed even when extraction passes its thresholds.
+        lastPdfDiagnostic = report;
         if (pdf.numPages > report.ocr.pagesProcessed) {
           ocrPages.push("[OCR processed " + report.ocr.pagesProcessed + " of " + pdf.numPages + " pages. Remaining pages were not processed.]");
         }
@@ -871,6 +876,14 @@ function renderAnswer(container, text) {
         const extracted = await extractDocument(file);
         if (!extracted.trim()) throw new Error("No readable text was found. Scanned PDFs and image-only documents need OCR, which is not available yet.");
         activeAttachment = { kind: "document", name: file.name, mimeType: file.type || "application/octet-stream", text: extracted };
+        if (lastPdfDiagnostic) {
+          addMessage(
+            "PDF OCR completed. Here are the extraction diagnostics, including confidence and both recognition passes. Use Copy code to share this report for troubleshooting.\\n\\n```json\\n" +
+              JSON.stringify(lastPdfDiagnostic, null, 2) +
+              "\\n```",
+            "bot"
+          );
+        }
         if (attachmentThumb) { attachmentThumb.hidden = true; attachmentThumb.removeAttribute("src"); }
         if (attachmentName) attachmentName.textContent = file.name;
         if (attachmentKind) attachmentKind.textContent = "Text extracted · up to " + MAX_EXTRACTED_CHARS.toLocaleString() + " characters";
