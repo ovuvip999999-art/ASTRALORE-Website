@@ -100,9 +100,9 @@
     const base = Math.max(4, Number(item.fontSize || 12) * renderScale);
     const context = document.createElement("canvas").getContext("2d");
     if (!context) return base;
-    const family = item.fontFamily === "serif" ? "serif" : item.fontFamily === "monospace" ? "monospace" : "sans-serif";
+    const family = String(item.fontFamily || "sans-serif").replace(/["\\]/g, "");
     const size = base;
-    context.font = (item.fontWeight || "normal") + " " + (item.fontStyle || "normal") + " " + size + "px " + family;
+    context.font = (item.fontWeight || "normal") + " " + (item.fontStyle || "normal") + " " + size + 'px "' + family + '";
     const measured = context.measureText(String(item.text || "")).width;
     if (measured > Math.max(2, widthPx - 2)) return Math.max(4, size * Math.max(0.35, (widthPx - 2) / measured));
     return size;
@@ -149,7 +149,9 @@
       const style = content.styles?.[item.fontName] || {};
       const familyName = String(style.fontFamily || "").toLowerCase();
       const sourceFontName = String(item.fontName || "");
-      const fontFamily = /mono|courier/.test(familyName) ? "monospace" : /serif|times|georgia/.test(familyName) ? "serif" : "sans-serif";
+      // Keep PDF.js's actual loaded font-family name; collapsing it to generic CSS
+      // families discards the embedded font PDF.js has already made available.
+      const fontFamily = String(style.fontFamily || (/mono|courier/.test(familyName) ? "monospace" : /serif|times|georgia/.test(familyName) ? "serif" : "sans-serif"));
       const fontWeight = /bold|black|heavy/i.test(sourceFontName) ? "bold" : "normal";
       const fontStyle = /italic|oblique/i.test(sourceFontName) ? "italic" : "normal";
       const box = {
@@ -159,7 +161,10 @@
         width: Math.max(1, Math.min(100, item.width * viewport.scale / viewport.width * 100 + 0.5)),
         height: Math.max(1, Math.min(100, fontHeight * 1.25 / viewport.height * 100 + 0.8)),
         fontSize: Math.max(4, Math.min(72, Number(item.height) || fontHeight / viewport.scale || 12)),
-        fontFamily, fontWeight, fontStyle
+        fontFamily, fontWeight, fontStyle,
+        fontAscent: Number.isFinite(style.ascent) ? style.ascent : null,
+        fontDescent: Number.isFinite(style.descent) ? style.descent : null,
+        textDirection: item.dir === "rtl" ? "rtl" : "ltr"
       };
       const span = document.createElement("span");
       span.className = "pdf-detected-text";
@@ -322,14 +327,7 @@
         await ensurePdfLib();
         const { PDFDocument, StandardFonts, rgb } = window.PDFLib;
         const pdf = await PDFDocument.load(pdfBytes);
-        const fontCache = new Map();
-        const resolveFontKey = item => {
-          const family = String(item.fontFamily || "sans-serif").toLowerCase();
-          const bold = item.fontWeight === "bold", italic = item.fontStyle === "italic";
-          if (family === "monospace") return bold ? (italic ? "CourierBoldOblique" : "CourierBold") : (italic ? "CourierOblique" : "Courier");
-          if (family === "serif") return bold ? (italic ? "TimesRomanBoldItalic" : "TimesRomanBold") : (italic ? "TimesRomanItalic" : "TimesRoman");
-          return bold ? (italic ? "HelveticaBoldOblique" : "HelveticaBold") : (italic ? "HelveticaOblique" : "Helvetica");
-        };
+        await (document.fonts?.ready || Promise.resolve());
         for (const item of annotations) {
           const page = pdf.getPage(item.page - 1);
           if (!page) continue;
@@ -341,15 +339,33 @@
           if (item.type === "cover") {
             page.drawRectangle({ x, y: size.height - top - height, width, height, color: rgb(1, 1, 1), borderWidth: 0 });
           } else {
-            const key = resolveFontKey(item);
-            if (!fontCache.has(key)) fontCache.set(key, await pdf.embedFont(StandardFonts[key]));
-            const font = fontCache.get(key);
-            const naturalSize = Math.max(4, Math.min(72, Number(item.fontSize) || 12, height * 0.88));
-            const widthAtOne = Math.max(0.01, font.widthOfTextAtSize(item.text, 1));
-            const fontSize = Math.max(4, Math.min(naturalSize, Math.max(2, width - 1) / widthAtOne));
-            const textHeight = font.heightAtSize(fontSize);
-            const y = size.height - top - Math.max(0, (height - textHeight) / 2) - textHeight * 0.82;
-            page.drawText(item.text, { x: x + 0.5, y, size: fontSize, font, color: rgb(0.05, 0.05, 0.08) });
+            // Rasterize only the replacement text using PDF.js's loaded font.
+            // This avoids replacing an embedded font with a generic PDF standard font.
+            const density = 4;
+            const textCanvas = document.createElement("canvas");
+            textCanvas.width = Math.max(2, Math.ceil(width * density));
+            textCanvas.height = Math.max(2, Math.ceil(height * density));
+            const ctx = textCanvas.getContext("2d");
+            if (!ctx) throw new Error("Could not prepare replacement text artwork.");
+            const family = String(item.fontFamily || "sans-serif").replace(/["\\]/g, "");
+            const maxFont = Math.max(4, Math.min(72, Number(item.fontSize) || 12, height * 0.88));
+            let fontSize = maxFont * density;
+            const fontSpec = () => (item.fontStyle || "normal") + " " + (item.fontWeight || "normal") + " " + fontSize + 'px "' + family + '"';
+            ctx.font = fontSpec();
+            const availableWidth = Math.max(2, textCanvas.width - 4 * density);
+            const measured = ctx.measureText(String(item.text || "")).width;
+            if (measured > availableWidth) {
+              fontSize = Math.max(4 * density, fontSize * availableWidth / measured);
+              ctx.font = fontSpec();
+            }
+            ctx.clearRect(0, 0, textCanvas.width, textCanvas.height);
+            ctx.fillStyle = "#0d0d14";
+            ctx.textAlign = item.textDirection === "rtl" ? "right" : "left";
+            ctx.textBaseline = "middle";
+            const textX = item.textDirection === "rtl" ? textCanvas.width - 2 * density : 2 * density;
+            ctx.fillText(String(item.text || ""), textX, textCanvas.height / 2, availableWidth);
+            const png = await pdf.embedPng(textCanvas.toDataURL("image/png"));
+            page.drawImage(png, { x, y: size.height - top - height, width, height });
           }
         }
         const bytes = await pdf.save();
