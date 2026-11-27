@@ -21,6 +21,7 @@
   let cloudReady = false;
   let cloudInitPromise = null;
   let busy = false;
+  let signedIn = document.body.dataset.authenticated === "true";
 
   async function initializeCloudArchive() {
     if (!window.ASTRACloud || !window.ASTRASupabase) return;
@@ -28,6 +29,7 @@
     cloudInitPromise = (async () => {
       try {
         const user = await window.ASTRACloud.requireUser();
+        signedIn = true;
         const conversations = await window.ASTRACloud.listConversations();
         cloudConversation = conversations[0] || await window.ASTRACloud.createConversation("New conversation");
         history = await window.ASTRACloud.loadMessages(cloudConversation.id);
@@ -355,6 +357,7 @@ function renderAnswer(container, text) {
   }
 
   async function askAstra(question) {
+    if (!signedIn) throw new Error("Sign in to use ASTRA.");
     if (!API_URL) {
       throw new Error("ASTRA's live connection is not configured.");
     }
@@ -392,13 +395,25 @@ function renderAnswer(container, text) {
   async function send(text) {
     const message = text.trim();
 
+    if (!signedIn) {
+      const accountDialog = document.getElementById("astraAccountDialog");
+      if (accountDialog && !accountDialog.open && typeof accountDialog.showModal === "function") accountDialog.showModal();
+      if (status) status.textContent = "SIGN IN REQUIRED";
+      return;
+    }
     if (!message || busy) return;
 
     busy = true;
     input.disabled = true;
 
     const sendButton = form.querySelector("button[type='submit']");
-    if (sendButton) sendButton.disabled = true;
+    if (sendButton) {
+      sendButton.disabled = true;
+      sendButton.textContent = "…";
+      sendButton.setAttribute("aria-label", "ASTRA is responding");
+    }
+    input.placeholder = "ASTRA is thinking…";
+    if (status) status.textContent = "ASTRA IS THINKING";
 
     if (welcome) welcome.hidden = true;
 
@@ -468,8 +483,12 @@ function renderAnswer(container, text) {
       busy = false;
       input.disabled = false;
 
-      if (sendButton) sendButton.disabled = false;
-
+      if (sendButton) {
+        sendButton.disabled = false;
+        sendButton.textContent = "↑";
+        sendButton.setAttribute("aria-label", "Send message");
+      }
+      input.placeholder = "Ask ASTRA anything…";
       input.focus();
     }
   }
@@ -590,16 +609,101 @@ function renderAnswer(container, text) {
     input.focus();
   });
 
-  window.addEventListener("astra-auth-ready", () => initializeCloudArchive());
+  window.addEventListener("astra-auth-ready", event => {
+    signedIn = !!event.detail?.user;
+    if (signedIn) initializeCloudArchive();
+  });
   window.addEventListener("astra-auth-changed", event => {
-    if (event.detail?.user) initializeCloudArchive();
+    signedIn = !!event.detail?.user;
+    if (signedIn) initializeCloudArchive();
     else {
       cloudReady = false;
       cloudConversation = null;
-      if (status) status.textContent = "SIGNED OUT · LOCAL MODE";
+      history = [];
+      chat.querySelectorAll(".astra-message").forEach(message => message.remove());
+      if (welcome) welcome.hidden = false;
+      if (status) status.textContent = "SIGN IN REQUIRED";
     }
   });
   // Authentication bootstrap emits astra-auth-ready after restoring the saved session.
+
+  // Conversation actions. Sharing exports message text only; it never exposes a public archive URL.
+  function conversationText() {
+    return history.map(item => (item.role === "user" ? "YOU" : "ASTRA") + ":\n" + item.content).join("\n\n");
+  }
+  const copyChatButton = document.getElementById("astraCopyChat");
+  const shareChatButton = document.getElementById("astraShareChat");
+  const deleteChatButton = document.getElementById("astraDeleteChat");
+
+  if (copyChatButton) copyChatButton.addEventListener("click", async () => {
+    const content = conversationText();
+    if (!content) return;
+    try {
+      await navigator.clipboard.writeText(content);
+      copyChatButton.textContent = "COPIED";
+      setTimeout(() => { copyChatButton.textContent = "COPY"; }, 1600);
+    } catch {
+      if (status) status.textContent = "CLIPBOARD UNAVAILABLE";
+    }
+  });
+
+  if (shareChatButton) shareChatButton.addEventListener("click", async () => {
+    const content = conversationText();
+    if (!content) return;
+    try {
+      if (navigator.share) await navigator.share({ title: "ASTRA conversation", text: content });
+      else {
+        await navigator.clipboard.writeText(content);
+        if (status) status.textContent = "CHAT COPIED · READY TO SHARE";
+      }
+    } catch (error) {
+      if (error.name !== "AbortError" && status) status.textContent = "SHARE UNAVAILABLE";
+    }
+  });
+
+  if (deleteChatButton) deleteChatButton.addEventListener("click", async () => {
+    if (busy || !history.length && !cloudConversation) return;
+    if (!window.confirm("Delete this conversation permanently? This cannot be undone.")) return;
+    deleteChatButton.disabled = true;
+    try {
+      if (cloudReady && cloudConversation) {
+        await window.ASTRACloud.deleteConversation(cloudConversation.id);
+        cloudConversation = await window.ASTRACloud.createConversation("New conversation");
+      } else if (window.ASTRAMemory) {
+        const currentId = window.ASTRAMemory.getCurrentConversationId();
+        window.ASTRAMemory.deleteConversation(currentId);
+        window.ASTRAMemory.createConversation();
+      }
+      history = [];
+      chat.querySelectorAll(".astra-message").forEach(message => message.remove());
+      if (welcome) welcome.hidden = false;
+      input.value = "";
+      await renderArchive();
+      if (status) status.textContent = "CONVERSATION DELETED";
+    } catch (error) {
+      if (status) status.textContent = "DELETE FAILED · " + (error.message || "PLEASE RETRY");
+    } finally {
+      deleteChatButton.disabled = false;
+    }
+  });
+
+  // Persistent light/dark appearance preference.
+  const themeToggle = document.getElementById("astraThemeToggle");
+  function applyTheme(theme) {
+    const selected = theme === "light" ? "light" : "dark";
+    document.body.dataset.theme = selected;
+    if (themeToggle) {
+      themeToggle.textContent = selected === "dark" ? "LIGHT MODE" : "DARK MODE";
+      themeToggle.setAttribute("aria-pressed", selected === "light" ? "true" : "false");
+    }
+    try { localStorage.setItem("astralore.astra.theme", selected); } catch {}
+  }
+  let initialTheme = "dark";
+  try { initialTheme = localStorage.getItem("astralore.astra.theme") || "dark"; } catch {}
+  applyTheme(initialTheme);
+  if (themeToggle) themeToggle.addEventListener("click", () => {
+    applyTheme(document.body.dataset.theme === "dark" ? "light" : "dark");
+  });
 
   // User-controlled, device-only memory controls.
   const memoryButton = document.getElementById("astraMemoryButton");
