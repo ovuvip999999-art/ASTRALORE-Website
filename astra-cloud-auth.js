@@ -105,6 +105,12 @@
     showStatus("Signed out.");
   });
 
-  client.auth.onAuthStateChange((_event, session) => updateAccount(session?.user || null));
-  client.auth.getSession().then(({ data }) => updateAccount(data.session?.user || null));
+  client.auth.onAuthStateChange((_event, session) => {
+    updateAccount(session?.user || null);
+    window.dispatchEvent(new CustomEvent("astra-auth-changed", { detail: { user: session?.user || null } }));
+  });
+  client.auth.getSession().then(({ data }) => {
+    updateAccount(data.session?.user || null);
+    window.dispatchEvent(new CustomEvent("astra-auth-ready", { detail: { user: data.session?.user || null } }));
+  });
 })();
