@@ -12,9 +12,9 @@ Official pricing: https://developers.cloudflare.com/workers-ai/platform/pricing/
 2. Install Node.js on the computer if it is not already installed.
 3. Open a terminal in this `backend` folder.
 4. Run `npx wrangler login` and complete Cloudflare authorization with the account owner.
-5. Run `npx wrangler deploy`.
-6. Copy the deployed Worker URL (it will look like `https://astralore-astra-api.<your-subdomain>.workers.dev`).
-7. Put that URL in the `window.ASTRA_API_URL` value in the website's `astra-config.js`, commit the change, and publish the GitHub Pages update.
+5. For the feature-branch preview, run `npx wrangler deploy --env preview`. This deploys the isolated `astralore-astra-api-preview` Worker. For production only, run `npx wrangler deploy`.
+6. The website (Cloudflare Pages) and the AI Worker are separate deployments. A successful Pages preview does NOT automatically deploy the Worker. The preview website's `astra-config.js` must point to the preview Worker URL; production must point to the production Worker URL.
+7. Keep the production Worker untouched while testing the feature branch. After the preview Worker has been deployed, test document upload, save, reload, restore, and follow-up questions before merging the pull request.
 
 No API key or payment secret is required by this Worker. Keep the Cloudflare account on its Free plan. Do not add a payment method or upgrade just to increase usage.
 
