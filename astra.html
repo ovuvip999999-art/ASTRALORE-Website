@@ -137,14 +137,15 @@
         <form class="astra-composer" id="astraForm">
           <label class="sr-only" for="astraInput">Message ASTRA</label>
 
-          <input
+          <textarea
             id="astraInput"
-            type="text"
+            rows="1"
             maxlength="800"
-            placeholder="Ask ASTRA anything..."
+            placeholder="Message ASTRA..."
             autocomplete="off"
+            aria-label="Message ASTRA"
             required
-          >
+          ></textarea>
 
           <button type="submit" aria-label="Send message">↑</button>
         </form>
