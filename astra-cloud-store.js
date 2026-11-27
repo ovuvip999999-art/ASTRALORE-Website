@@ -84,6 +84,14 @@
       .eq("id", id).eq("user_id", user.id);
     if (error) throw error;
   }
+  async function deleteMessagesFromSequence(conversationId, sequenceNo) {
+    const user = await requireUser();
+    const { error } = await client.from("astra_messages").delete()
+      .eq("conversation_id", conversationId)
+      .eq("user_id", user.id)
+      .gte("sequence_no", Number(sequenceNo));
+    if (error) throw error;
+  }
   async function deleteConversation(id) {
     const user = await requireUser();
     const { error } = await client.from("astra_conversations").delete()
@@ -92,6 +100,6 @@
   }
   window.ASTRACloud = Object.freeze({
     requireUser, listConversations, createConversation, loadMessages,
-    appendMessages, searchMessages, renameConversation, deleteConversation
+    appendMessages, searchMessages, renameConversation, deleteMessagesFromSequence, deleteConversation
   });
 })();
