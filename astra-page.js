@@ -511,7 +511,7 @@ function renderAnswer(container, text) {
       return pages.join("\n").slice(0, MAX_EXTRACTED_CHARS);
     }
     if (lower.endsWith(".docx")) {
-      const mammoth = await loadScriptOnce("https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.9.0/mammoth.browser.min.js", "mammoth");
+      const mammoth = await loadScriptOnce("https://cdn.jsdelivr.net/npm/mammoth@1.9.0/mammoth.browser.min.js", "mammoth");
       const result = await mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() });
       return String(result.value || "").slice(0, MAX_EXTRACTED_CHARS);
     }
