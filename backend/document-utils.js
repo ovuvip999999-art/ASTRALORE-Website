@@ -43,8 +43,24 @@ export function buildDocumentChunks(source, question) {
   if (chunks.length <= 7) return { chunks: ranked.map(item => item.chunk), total: chunks.length, selected: chunks.length };
 
   const chosen = new Set();
+
+  // For explicit numbered ranges, never let generic keyword scores crowd out
+  // a requested test header. Include each matching header and its neighbors.
+  if (requested.length) {
+    for (const item of ranked) {
+      const hasRequestedHeader = requested.some(number =>
+        new RegExp("(?:test\\s*" + number + "\\b|^\\s*" + number + "\\s+arjuna)", "im").test(item.chunk)
+      );
+      if (hasRequestedHeader) {
+        chosen.add(item.index);
+        if (item.index > 0) chosen.add(item.index - 1);
+        if (item.index + 1 < chunks.length) chosen.add(item.index + 1);
+      }
+    }
+  }
+
   const ordered = ranked.slice().sort((a, b) => b.score - a.score || a.index - b.index);
-  const limit = requested.length ? 16 : 9;
+  const limit = requested.length ? 8 : 9;
   for (const item of ordered.slice(0, limit)) {
     if (item.score <= 0 && chosen.size >= 3) break;
     chosen.add(item.index);
