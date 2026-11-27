@@ -345,7 +345,7 @@ export default {
     }
     if (creativeAction) {
       const prompt = typeof creativeAction.prompt === "string" ? creativeAction.prompt.trim() : "";
-      const restrictedPrompt = /\\b(nude|naked|porn(?:ographic)?|erotic|sexually explicit|gore|gory|dismember(?:ment)?|self[- ]harm|suicide|graphic injury|weapon construction|bomb making)\\b/i;
+      const restrictedPrompt = /\b(nude|naked|porn(?:ographic)?|erotic|sexually explicit|gore|gory|dismember(?:ment)?|self[- ]harm|suicide|graphic injury|weapon|firearm|gun|knife|bomb|explosive)\b/i;
       if (restrictedPrompt.test(prompt)) return json({ error: "That prompt is not supported. Keep generated content age-appropriate and non-graphic." }, 400, origin);
       const ratios = new Set(["1:1", "9:16", "16:9"]);
       if (!["generate-image", "generate-video"].includes(creativeAction.operation) || prompt.length < 5 || prompt.length > 1000 || !ratios.has(creativeAction.aspectRatio)) {
