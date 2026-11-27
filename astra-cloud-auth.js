@@ -40,7 +40,7 @@
   button.addEventListener("click", async () => {
     const { data } = await client.auth.getSession();
     updateAccount(data.session?.user || null);
-    showStatus(data.session ? "Signed in. Cloud sync will be enabled after the Worker integration is deployed." : "Sign in or create an account to prepare cloud sync.");
+    showStatus(data.session ? "Signed in. Your cloud archive will load when the page finishes connecting." : "Sign in or create an account to access your cloud conversation archive.");
     if (typeof dialog.showModal === "function") dialog.showModal();
     else dialog.setAttribute("open", "");
   });
@@ -59,7 +59,7 @@
       if (error) throw error;
       updateAccount(data.user);
       password.value = "";
-      showStatus("Signed in successfully. Cloud conversation sync is not active yet.");
+      showStatus("Signed in successfully. Connecting to your cloud conversation archive…");
     } catch (error) {
       showStatus(error.message || "Sign-in failed. Please try again.");
     } finally {
