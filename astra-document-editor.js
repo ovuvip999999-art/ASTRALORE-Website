@@ -64,18 +64,49 @@
   async function loadPdfLibrary() {
     if (window.jspdf?.jsPDF || window.jsPDF) return;
     if (pdfLibraryPromise) return pdfLibraryPromise;
-    pdfLibraryPromise = new Promise((resolve, reject) => {
-      const existing = document.querySelector('script[data-astra-document-pdf="true"]');
-      const script = existing || document.createElement("script");
-      script.addEventListener("load", resolve, { once: true });
-      script.addEventListener("error", () => reject(new Error("PDF export library could not be loaded.")), { once: true });
-      if (!existing) {
-        script.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js";
-        script.async = true;
-        script.dataset.astraDocumentPdf = "true";
-        document.head.appendChild(script);
+
+    pdfLibraryPromise = (async () => {
+      const sources = [
+        "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js",
+        "https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js",
+        "https://unpkg.com/jspdf@2.5.2/dist/jspdf.umd.min.js"
+      ];
+      const previous = document.querySelector('script[data-astra-document-pdf="true"]');
+      if (previous) previous.remove();
+
+      let lastError = null;
+      for (const src of sources) {
+        try {
+          await new Promise((resolve, reject) => {
+            const script = document.createElement("script");
+            const timeout = window.setTimeout(() => {
+              script.remove();
+              reject(new Error("PDF library request timed out."));
+            }, 15000);
+            script.src = src;
+            script.async = true;
+            script.dataset.astraDocumentPdf = "true";
+            script.onload = () => {
+              window.clearTimeout(timeout);
+              resolve();
+            };
+            script.onerror = () => {
+              window.clearTimeout(timeout);
+              script.remove();
+              reject(new Error("PDF library source failed."));
+            };
+            document.head.appendChild(script);
+          });
+          if (window.jspdf?.jsPDF || window.jsPDF) return;
+          throw new Error("PDF library loaded without its export API.");
+        } catch (error) {
+          lastError = error;
+        }
       }
-    });
+      throw new Error("PDF export library could not be loaded from the available sources. " +
+        String(lastError?.message || ""));
+    })();
+
     try { await pdfLibraryPromise; }
     catch (error) { pdfLibraryPromise = null; throw error; }
   }
