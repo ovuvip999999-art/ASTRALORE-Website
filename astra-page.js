@@ -590,8 +590,38 @@ function renderAnswer(container, text) {
     }
     if (lower.endsWith(".docx")) {
       const mammoth = await loadScriptOnce("https://cdn.jsdelivr.net/npm/mammoth@1.9.0/mammoth.browser.min.js", "mammoth");
-      const result = await mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() });
-      return String(result.value || "").slice(0, MAX_EXTRACTED_CHARS);
+      const result = await mammoth.convertToHtml({ arrayBuffer: await file.arrayBuffer() });
+      const parsed = new DOMParser().parseFromString(result.value || "", "text/html");
+      const output = [];
+      const root = parsed.body;
+
+      function collectDocumentNode(node) {
+        if (node.nodeType !== Node.ELEMENT_NODE) return;
+        const tag = node.tagName.toLowerCase();
+
+        if (tag === "table") {
+          output.push("[TABLE]");
+          Array.from(node.querySelectorAll("tr")).forEach((row, rowIndex) => {
+            const cells = Array.from(row.children)
+              .filter(cell => ["td", "th"].includes(cell.tagName.toLowerCase()))
+              .map(cell => cell.textContent.replace(/\s+/g, " ").trim());
+            if (cells.length) output.push("Row " + (rowIndex + 1) + ": " + cells.join(" | "));
+          });
+          output.push("[/TABLE]");
+          return;
+        }
+
+        if (["p", "h1", "h2", "h3", "h4", "li"].includes(tag)) {
+          const value = node.textContent.replace(/\s+/g, " ").trim();
+          if (value) output.push((tag.startsWith("h") ? "[" + tag.toUpperCase() + "] " : "") + value);
+          return;
+        }
+
+        Array.from(node.children).forEach(collectDocumentNode);
+      }
+
+      Array.from(root.children).forEach(collectDocumentNode);
+      return output.join("\n").slice(0, MAX_EXTRACTED_CHARS);
     }
     if (lower.endsWith(".xlsx") || lower.endsWith(".xls")) {
       const XLSX = await loadScriptOnce("https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js", "XLSX");
