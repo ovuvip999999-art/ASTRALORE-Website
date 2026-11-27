@@ -11,11 +11,17 @@
   }
   async function listConversations() {
     const user = await requireUser();
-    const { data, error } = await client.from("astra_conversations")
-      .select("id,title,created_at,updated_at")
-      .eq("user_id", user.id).order("updated_at", { ascending: false }).limit(100);
-    if (error) throw error;
-    return data || [];
+    const all = [];
+    for (let offset = 0; ; offset += 500) {
+      const { data, error } = await client.from("astra_conversations")
+        .select("id,title,created_at,updated_at")
+        .eq("user_id", user.id).order("updated_at", { ascending: false })
+        .range(offset, offset + 499);
+      if (error) throw error;
+      all.push(...(data || []));
+      if (!data || data.length < 500) break;
+    }
+    return all;
   }
   async function createConversation(title) {
     const user = await requireUser();
@@ -27,12 +33,18 @@
   }
   async function loadMessages(conversationId) {
     const user = await requireUser();
-    const { data, error } = await client.from("astra_messages")
-      .select("role,content,sequence_no,created_at")
-      .eq("user_id", user.id).eq("conversation_id", conversationId)
-      .order("sequence_no", { ascending: true }).limit(5000);
-    if (error) throw error;
-    return (data || []).map(row => ({ role: row.role, content: row.content }));
+    const all = [];
+    for (let offset = 0; ; offset += 1000) {
+      const { data, error } = await client.from("astra_messages")
+        .select("role,content,sequence_no,created_at")
+        .eq("user_id", user.id).eq("conversation_id", conversationId)
+        .order("sequence_no", { ascending: true })
+        .range(offset, offset + 999);
+      if (error) throw error;
+      all.push(...(data || []));
+      if (!data || data.length < 1000) break;
+    }
+    return all.map(row => ({ role: row.role, content: row.content }));
   }
   async function appendMessages(conversation, messages) {
     const user = await requireUser();
