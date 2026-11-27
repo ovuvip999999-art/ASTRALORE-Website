@@ -32,7 +32,7 @@
         cloudConversation = conversations[0] || await window.ASTRACloud.createConversation("New conversation");
         history = await window.ASTRACloud.loadMessages(cloudConversation.id);
         chat.querySelectorAll(".astra-message").forEach(message => message.remove());
-        history.forEach(item => addMessage(item.content, item.role === "user" ? "user" : "bot"));
+        history.slice(-100).forEach(item => addMessage(item.content, item.role === "user" ? "user" : "bot"));
         if (welcome) welcome.hidden = history.length > 0;
         cloudReady = true;
         await refreshCloudArchive();
@@ -350,7 +350,7 @@ function renderAnswer(container, text) {
 
   // Restore the most recent conversation stored on this device.
   if (history.length) {
-    history.forEach(item => addMessage(item.content, item.role === "user" ? "user" : "bot"));
+    history.slice(-100).forEach(item => addMessage(item.content, item.role === "user" ? "user" : "bot"));
     if (welcome) welcome.hidden = true;
   }
 
@@ -406,7 +406,7 @@ function renderAnswer(container, text) {
     input.value = "";
     const userSequence = history.length;
     history.push({ role: "user", content: message });
-    if (window.ASTRAMemory) window.ASTRAMemory.saveCurrentMessages(history);
+    if (window.ASTRAMemory && !cloudReady) window.ASTRAMemory.saveCurrentMessages(history);
     if (window.ASTRACloud && cloudReady && cloudConversation) {
       try {
         await window.ASTRACloud.appendMessages(cloudConversation, [
@@ -445,8 +445,10 @@ function renderAnswer(container, text) {
         }
       }
       if (window.ASTRAMemory) {
-        window.ASTRAMemory.saveCurrentMessages(history);
-        if (!cloudReady) renderArchive();
+        if (!cloudReady) {
+          window.ASTRAMemory.saveCurrentMessages(history);
+          renderArchive();
+        }
         const learned = Array.isArray(data.memoryUpdates) ? data.memoryUpdates : [];
         if (learned.length) {
           window.ASTRAMemory.addMemories(learned);
@@ -455,7 +457,7 @@ function renderAnswer(container, text) {
         }
       }
     } catch (error) {
-      if (window.ASTRAMemory) window.ASTRAMemory.saveCurrentMessages(history);
+      if (window.ASTRAMemory && !cloudReady) window.ASTRAMemory.saveCurrentMessages(history);
       if (status) status.textContent = "CONNECTION ISSUE";
       typing.remove();
       addMessage(
@@ -552,7 +554,7 @@ function renderAnswer(container, text) {
     if (!restored) return;
     history = restored;
     chat.querySelectorAll(".astra-message").forEach(message => message.remove());
-    history.forEach(item => addMessage(item.content, item.role === "user" ? "user" : "bot"));
+    history.slice(-100).forEach(item => addMessage(item.content, item.role === "user" ? "user" : "bot"));
     if (welcome) welcome.hidden = history.length > 0;
     renderArchive();
     input.focus();
@@ -569,7 +571,7 @@ function renderAnswer(container, text) {
       if (!cloudConversation) return;
       history = await window.ASTRACloud.loadMessages(cloudConversation.id);
       chat.querySelectorAll(".astra-message").forEach(message => message.remove());
-      history.forEach(item => addMessage(item.content, item.role === "user" ? "user" : "bot"));
+      history.slice(-100).forEach(item => addMessage(item.content, item.role === "user" ? "user" : "bot"));
       if (welcome) welcome.hidden = history.length > 0;
       await refreshCloudArchive();
     } catch (error) {
