@@ -1029,7 +1029,7 @@ body[data-theme="light"] .astra-message-user { background:linear-gradient(120deg
   width:100%;
   min-height:38px;
 }
-.topbar-actions { display:none !important; }
+.topbar-actions { display:flex !important; align-items:center; justify-content:flex-end; gap:16px; }
 
 @media(max-width:560px) {
   .astra-sidebar {
