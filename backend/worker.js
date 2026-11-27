@@ -247,6 +247,11 @@ export default {
     if (!authenticatedUser) {
       return json({ error: "Your session is invalid or expired. Please sign in again." }, 401, origin);
     }
+    const suppliedStoragePaths = [document?.storagePath, documentToSave?.storagePath]
+      .filter(path => typeof path === "string");
+    if (suppliedStoragePaths.some(path => path.split("/")[0] !== authenticatedUser.id)) {
+      return json({ error: "The original PDF storage path does not belong to this account." }, 403, origin);
+    }
 
     if (documentAction) {
       try {
