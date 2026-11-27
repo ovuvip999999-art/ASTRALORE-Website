@@ -534,7 +534,7 @@ function renderAnswer(container, text) {
       if (pdf.numPages > pageLimit) pages.push("[Only the first " + pageLimit + " pages were extracted.]");
       const extractedText = pages.join("\n").slice(0, MAX_EXTRACTED_CHARS);
       const meaningful = extractedText.replace(/\[Page \d+\]/g, "").replace(/\s/g, "");
-      const readable = (meaningful.match(/[\p{L}\p{N}.,;:!?'"()\[\]{}%&+\-=/\\]/gu) || []).length;
+      const readable = (meaningful.match(/[\p{L}\p{N}\p{P}]/gu) || []).length;
       const replacementChars = (meaningful.match(/\uFFFD/g) || []).length;
       const readableRatio = meaningful.length ? readable / meaningful.length : 0;
       if (meaningful.length < 40 || readableRatio < 0.58 || replacementChars / Math.max(1, meaningful.length) > 0.01) {
