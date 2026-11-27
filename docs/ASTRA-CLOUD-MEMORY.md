@@ -15,7 +15,7 @@ Persist every conversation message in a cloud account archive and make prior con
 - Each user owns conversations and messages through `user_id`.
 - RLS is enabled on both tables. Browser clients can only read/write rows whose `user_id` matches `auth.uid()`.
 - The Worker must verify every access token with Supabase Auth before trusting its user ID.
-- The service-role key is a Cloudflare Worker secret only. Never commit it, put it in `astra-config.js`, or bundle it in the APK.
+- The initial implementation uses the user's Supabase access token plus the public publishable key for Worker database requests. The Worker verifies the token with Supabase Auth, and Postgres RLS enforces user isolation. Do not use a service-role key for ordinary chat/archive operations.
 - Full messages are retained independently from AI context windows. Retrieval sends only a bounded, relevant selection to the model.
 - Provide account-level export and permanent delete controls before public launch.
 - Do not store passwords, payment details, government identifiers, or sensitive personal/health information as extracted memory. Users should be warned not to share secrets.
@@ -34,17 +34,18 @@ Browser-safe values:
 - `ASTRA_SUPABASE_URL`
 - `ASTRA_SUPABASE_ANON_KEY`
 
-Cloudflare Worker secrets:
+Cloudflare Worker variables:
 - `SUPABASE_URL`
 - `SUPABASE_ANON_KEY`
-- `SUPABASE_SERVICE_ROLE_KEY`
+
+No service-role key is required for the initial chat/archive flow. The Worker verifies the user's access token and uses that same token for RLS-protected database calls.
 
 The Worker must not be deployed with placeholder values. The user must create the Supabase project and configure secrets through the Supabase/Cloudflare dashboards. Never ask the user to paste the service-role key into chat or commit it to Git.
 
 ## Implementation sequence
 1. Create Supabase project and apply the SQL migration.
 2. Add Supabase Auth UI and session handling to ASTRA.
-3. Add Worker authentication and per-user message persistence.
+3. Add Worker access-token verification and per-user message persistence using the user's JWT and RLS.
 4. Add archive list/open/search from cloud data.
 5. Add cross-chat retrieval (full-text first, semantic retrieval after embedding tests).
 6. Add export/delete-account flows, abuse controls, retention controls and tests.
