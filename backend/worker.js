@@ -196,7 +196,10 @@ export default {
     const validDocument = value => value &&
       typeof value.name === "string" && value.name.trim() && value.name.length <= 240 &&
       validDocumentTypes.has(value.mimeType) &&
-      typeof value.text === "string" && value.text.trim() && value.text.length <= 50000;
+      typeof value.text === "string" && value.text.trim() && value.text.length <= 50000 &&
+      (value.storagePath === undefined || value.storagePath === null ||
+        (typeof value.storagePath === "string" && value.storagePath.length <= 700 &&
+          value.storagePath.startsWith(authenticatedUser?.id + "/")));
     if (document && !validDocument(document)) {
       return json({ error: "Unsupported or invalid document. Upload a text-based PDF, DOCX, XLSX, XLS, CSV, TXT or MD file up to 10 MB." }, 400, origin);
     }
