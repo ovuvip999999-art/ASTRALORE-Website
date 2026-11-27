@@ -7,6 +7,16 @@ Cloudflare currently documents a free allocation of 10,000 Neurons per day for W
 
 Official pricing: https://developers.cloudflare.com/workers-ai/platform/pricing/
 
+## Original PDF storage setup
+
+Before testing the visual PDF editor, apply the SQL migrations in the Supabase SQL Editor in this order:
+1. `backend/migrations/0004_astra_original_pdf_storage.sql`
+2. `backend/migrations/0005_astra_pdf_editor_state.sql`
+
+These create a private Storage bucket for original PDFs (10 MB limit, PDF only), owner-scoped Storage policies, and a JSON column for editor annotations. Do not make this bucket public. The browser uploads originals using the signed-in user's Supabase session; the Worker stores only the private object path and extracted text.
+
+Existing documents uploaded before this setup remain text-only. Upload those PDFs again after the migrations to retain their original binary.
+
 ## Deploy
 1. Have a parent/guardian review and oversee creation or use of the Cloudflare account and its settings.
 2. Install Node.js on the computer if it is not already installed.
@@ -14,7 +24,7 @@ Official pricing: https://developers.cloudflare.com/workers-ai/platform/pricing/
 4. Run `npx wrangler login` and complete Cloudflare authorization with the account owner.
 5. For the feature-branch preview, run `npx wrangler deploy --env preview`. This deploys the isolated `astralore-astra-api-preview` Worker. For production only, run `npx wrangler deploy`.
 6. The website (Cloudflare Pages) and the AI Worker are separate deployments. A successful Pages preview does NOT automatically deploy the Worker. The preview website's `astra-config.js` must point to the preview Worker URL; production must point to the production Worker URL.
-7. Keep the production Worker untouched while testing the feature branch. After the preview Worker has been deployed, test document upload, save, reload, restore, and follow-up questions before merging the pull request.
+7. Keep the production Worker untouched while testing the feature branch. After the preview Worker has been deployed, test PDF upload, visual page rendering, text/cover annotations, cloud save, reload/restore, PDF export, and follow-up questions before merging the pull request.
 
 No API key or payment secret is required by this Worker. Keep the Cloudflare account on its Free plan. Do not add a payment method or upgrade just to increase usage.
 
