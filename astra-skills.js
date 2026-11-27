@@ -122,18 +122,19 @@
       if (skills.length >= MAX_SKILLS) throw new Error("You have reached the 10-skill limit. Delete one before adding another.");
       const content = await file.text();
       if (!content.trim() || content.length > MAX_SKILL_CHARS) throw new Error("This file is empty or exceeds the 20,000-character limit.");
+      const canEnable = skills.filter(skill => skill.enabled).length < 5;
       const cleanName = file.name.replace(/[^a-z0-9._ -]/gi, "").slice(0, 120) || "custom-skill.md";
       const { error } = await client.from("astra_skills").insert({
         user_id: user.id,
         name: cleanName,
         description: "Uploaded Markdown skill",
         content,
-        enabled: true
+        enabled: canEnable
       });
       if (error) throw error;
       fileInput.value = "";
       await loadSkills();
-      say("Uploaded and enabled " + cleanName + ".");
+      say(canEnable ? "Uploaded and enabled " + cleanName + "." : "Uploaded " + cleanName + " as OFF. Disable another skill before enabling it.");
     } catch (error) {
       say(error.message || "Skill upload failed.");
     } finally {
