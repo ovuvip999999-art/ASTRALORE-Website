@@ -34,7 +34,10 @@
         cloudConversation = conversations[0] || await window.ASTRACloud.createConversation("New conversation");
         history = await window.ASTRACloud.loadMessages(cloudConversation.id);
         chat.querySelectorAll(".astra-message").forEach(message => message.remove());
-        history.slice(-100).forEach(item => addMessage(item.content, item.role === "user" ? "user" : "bot"));
+        history.slice(-100).forEach((item, offset) => {
+          const index = history.length - Math.min(history.length, 100) + offset;
+          addMessage(item.content, item.role === "user" ? "user" : "bot", index);
+        });
         if (welcome) welcome.hidden = history.length > 0;
         cloudReady = true;
         await refreshCloudArchive();
@@ -359,9 +362,12 @@ function renderAnswer(container, text) {
 }
 
 
-  function addMessage(text, who) {
+  function addMessage(text, who, messageIndex = null) {
     const bubble = document.createElement("div");
     bubble.className = "astra-message astra-message-" + who;
+    if (who === "user" && Number.isInteger(messageIndex)) {
+      bubble.dataset.messageIndex = String(messageIndex);
+    }
 
     const label = document.createElement("span");
     label.className = "astra-message-label";
@@ -378,6 +384,20 @@ function renderAnswer(container, text) {
     }
 
     bubble.appendChild(content);
+    if (who === "user" && Number.isInteger(messageIndex)) {
+      const actions = document.createElement("div");
+      actions.className = "astra-message-actions";
+      [["edit","Edit"],["delete","Delete"],["share","Share"]].forEach(([action,labelText]) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "astra-message-action astra-message-action-" + action;
+        button.dataset.messageAction = action;
+        button.dataset.messageIndex = String(messageIndex);
+        button.textContent = labelText;
+        actions.appendChild(button);
+      });
+      bubble.appendChild(actions);
+    }
     chat.appendChild(bubble);
     chat.scrollTop = chat.scrollHeight;
 
@@ -386,7 +406,10 @@ function renderAnswer(container, text) {
 
   // Restore the most recent conversation stored on this device.
   if (history.length) {
-    history.slice(-100).forEach(item => addMessage(item.content, item.role === "user" ? "user" : "bot"));
+    history.slice(-100).forEach((item, offset) => {
+      const index = history.length - Math.min(history.length, 100) + offset;
+      addMessage(item.content, item.role === "user" ? "user" : "bot", index);
+    });
     if (welcome) welcome.hidden = true;
   }
 
@@ -451,9 +474,9 @@ function renderAnswer(container, text) {
 
     if (welcome) welcome.hidden = true;
 
-    addMessage(message, "user");
-    input.value = "";
     const userSequence = history.length;
+    addMessage(message, "user", userSequence);
+    input.value = "";
     history.push({ role: "user", content: message });
     if (window.ASTRAMemory && !cloudReady) window.ASTRAMemory.saveCurrentMessages(history);
     if (window.ASTRACloud && cloudReady && cloudConversation) {
@@ -526,6 +549,71 @@ function renderAnswer(container, text) {
       input.focus();
     }
   }
+
+
+  // Message-level actions are available only on the user's own messages.
+  chat.addEventListener("click", async event => {
+    const action = event.target.closest("[data-message-action]");
+    if (!action || busy) return;
+    event.stopPropagation();
+    const index = Number(action.dataset.messageIndex);
+    const message = history[index];
+    if (!Number.isInteger(index) || !message || message.role !== "user") return;
+    const operation = action.dataset.messageAction;
+    const content = message.content;
+
+    if (operation === "share") {
+      try {
+        if (navigator.share) await navigator.share({ title: "My message to ASTRA", text: content });
+        else {
+          await navigator.clipboard.writeText(content);
+          if (status) status.textContent = "MESSAGE COPIED · READY TO SHARE";
+        }
+      } catch (error) {
+        if (error.name !== "AbortError" && status) status.textContent = "SHARE UNAVAILABLE · " + (error.message || "TRY COPYING");
+      }
+      return;
+    }
+
+    if (operation === "edit") {
+      const updated = window.prompt("Edit your message. ASTRA will answer again from this point:", content);
+      if (updated === null) return;
+      const clean = updated.trim();
+      if (!clean) { if (status) status.textContent = "MESSAGE CANNOT BE EMPTY"; return; }
+      if (clean === content) return;
+      try {
+        if (cloudReady && cloudConversation) {
+          await window.ASTRACloud.deleteMessagesFromSequence(cloudConversation.id, index);
+        }
+        history = history.slice(0, index);
+        if (window.ASTRAMemory && !cloudReady) window.ASTRAMemory.saveCurrentMessages(history);
+        chat.querySelectorAll(".astra-message").forEach(node => node.remove());
+        history.forEach((item, i) => addMessage(item.content, item.role === "user" ? "user" : "bot", i));
+        if (welcome) welcome.hidden = true;
+        await send(clean);
+      } catch (error) {
+        if (status) status.textContent = "EDIT FAILED · " + (error.message || "PLEASE RETRY");
+      }
+      return;
+    }
+
+    if (operation === "delete") {
+      if (!window.confirm("Delete this message and everything after it in this conversation? This keeps the chat in context order.")) return;
+      try {
+        if (cloudReady && cloudConversation) {
+          await window.ASTRACloud.deleteMessagesFromSequence(cloudConversation.id, index);
+        }
+        history = history.slice(0, index);
+        if (window.ASTRAMemory && !cloudReady) window.ASTRAMemory.saveCurrentMessages(history);
+        chat.querySelectorAll(".astra-message").forEach(node => node.remove());
+        history.forEach((item, i) => addMessage(item.content, item.role === "user" ? "user" : "bot", i));
+        if (welcome) welcome.hidden = history.length > 0;
+        if (status) status.textContent = "MESSAGE AND FOLLOWING REPLIES DELETED";
+      } catch (error) {
+        if (status) status.textContent = "DELETE FAILED · " + (error.message || "PLEASE RETRY");
+      }
+    }
+  });
 
   form.addEventListener("submit", event => {
     event.preventDefault();
@@ -606,7 +694,10 @@ function renderAnswer(container, text) {
     if (!restored) return;
     history = restored;
     chat.querySelectorAll(".astra-message").forEach(message => message.remove());
-    history.slice(-100).forEach(item => addMessage(item.content, item.role === "user" ? "user" : "bot"));
+    history.slice(-100).forEach((item, offset) => {
+      const index = history.length - Math.min(history.length, 100) + offset;
+      addMessage(item.content, item.role === "user" ? "user" : "bot", index);
+    });
     if (welcome) welcome.hidden = history.length > 0;
     renderArchive();
     input.focus();
@@ -623,7 +714,10 @@ function renderAnswer(container, text) {
       if (!cloudConversation) return;
       history = await window.ASTRACloud.loadMessages(cloudConversation.id);
       chat.querySelectorAll(".astra-message").forEach(message => message.remove());
-      history.slice(-100).forEach(item => addMessage(item.content, item.role === "user" ? "user" : "bot"));
+      history.slice(-100).forEach((item, offset) => {
+        const index = history.length - Math.min(history.length, 100) + offset;
+        addMessage(item.content, item.role === "user" ? "user" : "bot", index);
+      });
       if (welcome) welcome.hidden = history.length > 0;
       await refreshCloudArchive();
     } catch (error) {
