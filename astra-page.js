@@ -49,6 +49,52 @@
     return cloudInitPromise;
   }
 
+  function createArchiveRow(item, isCloud) {
+    const row = document.createElement("div");
+    row.className = "archive-row";
+    row.dataset.rowId = item.id;
+    const open = document.createElement("button");
+    open.type = "button";
+    open.className = "archive-conversation" + ((isCloud ? item.id === cloudConversation?.id : item.id === window.ASTRAMemory?.getCurrentConversationId()) ? " active" : "");
+    if (isCloud) open.dataset.cloudConversationId = item.id;
+    else open.dataset.conversationId = item.id;
+    const title = document.createElement("span");
+    title.className = "archive-conversation-title";
+    title.textContent = item.title || "Conversation";
+    const meta = document.createElement("small");
+    meta.textContent = new Date(isCloud ? item.updated_at : item.updatedAt).toLocaleDateString();
+    open.append(title, meta);
+    const more = document.createElement("button");
+    more.type = "button";
+    more.className = "archive-more";
+    more.textContent = "⋯";
+    more.setAttribute("aria-label", "Conversation options");
+    more.setAttribute("aria-expanded", "false");
+    const menu = document.createElement("div");
+    menu.className = "archive-menu";
+    menu.hidden = true;
+    [["edit","Rename"],["share","Share"],["delete","Delete"]].forEach(([action,label]) => {
+      const option = document.createElement("button");
+      option.type = "button";
+      option.dataset.chatAction = action;
+      option.dataset.chatId = item.id;
+      option.dataset.cloud = isCloud ? "true" : "false";
+      option.textContent = label;
+      if (action === "delete") option.className = "archive-menu-danger";
+      menu.appendChild(option);
+    });
+    more.addEventListener("click", event => {
+      event.stopPropagation();
+      const willOpen = menu.hidden;
+      archiveList.querySelectorAll(".archive-menu").forEach(node => { node.hidden = true; });
+      archiveList.querySelectorAll(".archive-more").forEach(node => node.setAttribute("aria-expanded","false"));
+      menu.hidden = !willOpen;
+      more.setAttribute("aria-expanded", willOpen ? "true" : "false");
+    });
+    row.append(open, more, menu);
+    return row;
+  }
+
   async function refreshCloudArchive() {
     if (!cloudReady || !window.ASTRACloud) return;
     const query = archiveSearch ? archiveSearch.value.trim() : "";
@@ -66,19 +112,7 @@
       archiveList.appendChild(empty);
       return;
     }
-    shown.forEach(item => {
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "archive-conversation" + (item.id === cloudConversation?.id ? " active" : "");
-      button.dataset.cloudConversationId = item.id;
-      const title = document.createElement("span");
-      title.className = "archive-conversation-title";
-      title.textContent = item.title || "Conversation";
-      const meta = document.createElement("small");
-      meta.textContent = new Date(item.updated_at).toLocaleDateString();
-      button.append(title, meta);
-      archiveList.appendChild(button);
-    });
+    shown.forEach(item => archiveList.appendChild(createArchiveRow(item, true)));
   }
 
   function appendInline(parent, text) {
@@ -560,18 +594,7 @@ function renderAnswer(container, text) {
     }
     conversations.forEach(item => {
       if (item.id === window.ASTRAMemory.getCurrentConversationId() && !item.messages.length) return;
-      const button = document.createElement("button");
-      button.type = "button";
-      button.className = "archive-conversation" +
-        (item.id === window.ASTRAMemory.getCurrentConversationId() ? " active" : "");
-      button.dataset.conversationId = item.id;
-      const title = document.createElement("span");
-      title.className = "archive-conversation-title";
-      title.textContent = item.title || "Conversation";
-      const meta = document.createElement("small");
-      meta.textContent = new Date(item.updatedAt).toLocaleDateString();
-      button.append(title, meta);
-      archiveList.appendChild(button);
+      archiveList.appendChild(createArchiveRow(item, false));
     });
   }
 
@@ -627,63 +650,92 @@ function renderAnswer(container, text) {
   });
   // Authentication bootstrap emits astra-auth-ready after restoring the saved session.
 
-  // Conversation actions. Sharing exports message text only; it never exposes a public archive URL.
-  function conversationText() {
-    return history.map(item => (item.role === "user" ? "YOU" : "ASTRA") + ":\n" + item.content).join("\n\n");
+  // Conversation actions live inside each archive row's contextual menu.
+  function messagesToText(messages) {
+    return (messages || []).map(item => (item.role === "user" ? "YOU" : "ASTRA") + ":\\n" + item.content).join("\\n\\n");
   }
-  const copyChatButton = document.getElementById("astraCopyChat");
-  const shareChatButton = document.getElementById("astraShareChat");
-  const deleteChatButton = document.getElementById("astraDeleteChat");
 
-  if (copyChatButton) copyChatButton.addEventListener("click", async () => {
-    const content = conversationText();
-    if (!content) return;
+  if (archiveList) archiveList.addEventListener("click", async event => {
+    const action = event.target.closest("[data-chat-action]");
+    if (!action) return;
+    event.stopPropagation();
+    if (busy) return;
+    const id = action.dataset.chatId;
+    const isCloud = action.dataset.cloud === "true";
+    const operation = action.dataset.chatAction;
+    action.disabled = true;
     try {
-      await navigator.clipboard.writeText(content);
-      copyChatButton.textContent = "COPIED";
-      setTimeout(() => { copyChatButton.textContent = "COPY"; }, 1600);
-    } catch {
-      if (status) status.textContent = "CLIPBOARD UNAVAILABLE";
-    }
-  });
-
-  if (shareChatButton) shareChatButton.addEventListener("click", async () => {
-    const content = conversationText();
-    if (!content) return;
-    try {
-      if (navigator.share) await navigator.share({ title: "ASTRA conversation", text: content });
-      else {
-        await navigator.clipboard.writeText(content);
-        if (status) status.textContent = "CHAT COPIED · READY TO SHARE";
+      let item, messages;
+      if (isCloud) {
+        item = (await window.ASTRACloud.listConversations()).find(entry => entry.id === id);
+        if (!item) throw new Error("Conversation not found.");
+        if (operation === "share") messages = await window.ASTRACloud.loadMessages(id);
+      } else {
+        item = window.ASTRAMemory.getConversations().find(entry => entry.id === id);
+        if (!item) throw new Error("Conversation not found.");
+        messages = item.messages;
+      }
+      if (operation === "edit") {
+        const nextTitle = window.prompt("Rename conversation:", item.title || "Conversation");
+        if (nextTitle === null) return;
+        const clean = nextTitle.trim().replace(/\\s+/g, " ").slice(0, 90);
+        if (!clean) { if (status) status.textContent = "NAME CANNOT BE EMPTY"; return; }
+        if (isCloud) await window.ASTRACloud.renameConversation(id, clean);
+        else {
+          const localData = window.ASTRAMemory.getConversations().find(entry => entry.id === id);
+          if (localData) {
+            const key = "astralore.astra.memory.v1";
+            const data = JSON.parse(localStorage.getItem(key) || "{}");
+            const target = (data.conversations || []).find(entry => entry.id === id);
+            if (target) { target.title = clean; localStorage.setItem(key, JSON.stringify(data)); }
+          }
+        }
+        if (status) status.textContent = "CONVERSATION RENAMED";
+      } else if (operation === "share") {
+        const content = messagesToText(messages);
+        if (!content) { if (status) status.textContent = "NOTHING TO SHARE YET"; return; }
+        if (navigator.share) await navigator.share({ title: item.title || "ASTRA conversation", text: content });
+        else {
+          await navigator.clipboard.writeText(content);
+          if (status) status.textContent = "CHAT COPIED · READY TO SHARE";
+        }
+      } else if (operation === "delete") {
+        if (!window.confirm("Delete this conversation permanently? This cannot be undone.")) return;
+        if (isCloud) {
+          await window.ASTRACloud.deleteConversation(id);
+          if (cloudConversation?.id === id) {
+            cloudConversation = await window.ASTRACloud.createConversation("New conversation");
+            history = [];
+            chat.querySelectorAll(".astra-message").forEach(message => message.remove());
+            if (welcome) welcome.hidden = false;
+          }
+          await refreshCloudArchive();
+        } else {
+          window.ASTRAMemory.deleteConversation(id);
+          if (window.ASTRAMemory.getCurrentConversationId() !== id && !window.ASTRAMemory.getConversations().some(entry => entry.id === window.ASTRAMemory.getCurrentConversationId())) {
+            window.ASTRAMemory.createConversation();
+          }
+          if (id === action.closest(".archive-row")?.querySelector("[data-conversation-id]")?.dataset.conversationId) {
+            history = window.ASTRAMemory.getCurrentMessages();
+            chat.querySelectorAll(".astra-message").forEach(message => message.remove());
+            history.forEach(entry => addMessage(entry.content, entry.role === "user" ? "user" : "bot"));
+            if (welcome) welcome.hidden = history.length > 0;
+          }
+          renderArchive();
+        }
+        if (status) status.textContent = "CONVERSATION DELETED";
       }
     } catch (error) {
-      if (error.name !== "AbortError" && status) status.textContent = "SHARE UNAVAILABLE";
-    }
-  });
-
-  if (deleteChatButton) deleteChatButton.addEventListener("click", async () => {
-    if (busy || !history.length && !cloudConversation) return;
-    if (!window.confirm("Delete this conversation permanently? This cannot be undone.")) return;
-    deleteChatButton.disabled = true;
-    try {
-      if (cloudReady && cloudConversation) {
-        await window.ASTRACloud.deleteConversation(cloudConversation.id);
-        cloudConversation = await window.ASTRACloud.createConversation("New conversation");
-      } else if (window.ASTRAMemory) {
-        const currentId = window.ASTRAMemory.getCurrentConversationId();
-        window.ASTRAMemory.deleteConversation(currentId);
-        window.ASTRAMemory.createConversation();
-      }
-      history = [];
-      chat.querySelectorAll(".astra-message").forEach(message => message.remove());
-      if (welcome) welcome.hidden = false;
-      input.value = "";
-      await renderArchive();
-      if (status) status.textContent = "CONVERSATION DELETED";
-    } catch (error) {
-      if (status) status.textContent = "DELETE FAILED · " + (error.message || "PLEASE RETRY");
+      if (status) status.textContent = "CHAT ACTION FAILED · " + (error.message || "PLEASE RETRY");
     } finally {
-      deleteChatButton.disabled = false;
+      action.disabled = false;
+    }
+  });
+
+  document.addEventListener("click", event => {
+    if (!event.target.closest(".archive-row")) {
+      archiveList?.querySelectorAll(".archive-menu").forEach(menu => { menu.hidden = true; });
+      archiveList?.querySelectorAll(".archive-more").forEach(button => button.setAttribute("aria-expanded","false"));
     }
   });
 
