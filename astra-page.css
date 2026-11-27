@@ -1363,3 +1363,21 @@ body[data-theme="light"] .astra-user-file-details small { color:#655b79; }
 .document-editor-actions button:hover{background:#8060c566}
 .document-editor-actions button:disabled{opacity:.5;cursor:wait}
 @media(max-width:560px){.topbar-actions{width:100%;justify-content:space-between}.document-editor-open{padding:8px 10px;font-size:8px}.astra-document-dialog{padding:15px}.document-editor-text{min-height:52vh;font-size:11px}}
+
+.astra-pdf-editor{margin:14px 0 18px}
+.pdf-page-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:10px 0;color:#c9b9ed;font:10px 'DM Mono',monospace}
+.pdf-page-toolbar button,.pdf-annotation-controls button{border:1px solid #a88bea55;border-radius:7px;padding:9px 11px;background:#8060c533;color:#eee8ff;font:10px 'DM Mono',monospace}
+.pdf-page-toolbar button:disabled{opacity:.35;cursor:not-allowed}
+.pdf-page-stage{position:relative;max-width:100%;margin:0 auto 15px;overflow:hidden;background:#fff;box-shadow:0 12px 35px #0008}
+.pdf-page-stage canvas{display:block;max-width:100%;height:auto}
+.pdf-overlay-layer{position:absolute;inset:0;pointer-events:none}
+.pdf-preview-cover{position:absolute;background:#fff;border:1px dashed #8a79b4aa}
+.pdf-preview-text{position:absolute;overflow-wrap:anywhere;white-space:pre-wrap;color:#111;background:#fff9;border-bottom:1px dashed #9a82cc;line-height:1.2}
+.pdf-annotation-controls{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;padding:12px;border:1px solid #ffffff1b;border-radius:10px;background:#ffffff08}
+.pdf-annotation-controls label{display:flex;flex-direction:column;gap:5px;color:#a99cc7;font:9px 'DM Mono',monospace;letter-spacing:.4px}
+.pdf-annotation-controls input,.pdf-annotation-controls select{min-width:0;width:100%;padding:9px;border:1px solid #ffffff25;border-radius:6px;background:#080914;color:#f3edff;font:12px 'Manrope',sans-serif}
+.pdf-annotation-controls button{align-self:end;min-height:36px}
+.pdf-annotation-list{max-height:120px;overflow:auto;color:#c7bfd9;font-size:11px}
+.pdf-annotation-list li{padding:5px 0}
+.pdf-annotation-list button{margin-left:10px;border:0;background:transparent;color:#d2bfff;font:9px 'DM Mono',monospace}
+@media(max-width:600px){.pdf-annotation-controls{grid-template-columns:repeat(2,minmax(0,1fr))}.pdf-page-stage{max-width:100%;overflow:hidden}}
