@@ -185,6 +185,10 @@
       const fontFamily = String(style.fontFamily || (/mono|courier/.test(familyName) ? "monospace" : /serif|times|georgia/.test(familyName) ? "serif" : "sans-serif"));
       const fontWeight = /bold|black|heavy/i.test(sourceFontName) ? "bold" : "normal";
       const fontStyle = /italic|oblique/i.test(sourceFontName) ? "italic" : "normal";
+      // Load PDF.js actual registered face before using it for replacement rendering.
+      if (document.fonts?.load && fontFamily && !/^(serif|sans-serif|monospace)$/i.test(fontFamily)) {
+        try { await document.fonts.load(fontHeight + 'px "' + fontFamily.replaceAll('"', "") + '"'); } catch (_) {}
+      }
       const box = {
         text: value,
         x: Math.max(0, Math.min(99, tx[4] / viewport.width * 100)),
@@ -386,6 +390,7 @@
               const fontBytes = await getPdfJsFontBytes(item.page, item.fontName);
               if (!fontBytes?.length) throw new Error("Original embedded font data unavailable");
               const embedded = await pdf.embedFont(fontBytes, { subset: true });
+              if (!embedded || typeof embedded.widthOfTextAtSize !== "function") throw new Error("Original font metrics unavailable");
               embeddedFonts.set(item.fontName, embedded);
             } catch (_) {
               embeddedFonts.set(item.fontName, null);
@@ -393,6 +398,10 @@
           }
         }
         await (document.fonts?.ready || Promise.resolve());
+        fontFallbacks = textEdits.filter(item => !embeddedFonts.get(item.fontName)).length;
+        if (fontFallbacks && !window.confirm("ASTRA could not recover the original embedded font for " + fontFallbacks + " replacement(s). A substitute may look different. Continue anyway?")) {
+          throw new Error("Export cancelled to avoid silently substituting the original font.");
+        }
         let appliedEdits = 0;
         for (const item of exportAnnotations) {
           const page = pdf.getPage(item.page - 1);
