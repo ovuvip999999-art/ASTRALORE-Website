@@ -1295,3 +1295,36 @@ body[data-theme="light"] .astra-attachment-preview span { color:#655b79; }
 .astra-attachment-preview > div { min-width: 0; }
 .astra-attachment-preview strong { overflow-wrap: anywhere; }
 .astra-attachment-preview span { display: block; opacity: .72; font-size: .78rem; margin-top: 3px; }
+
+
+/* Visible document attachment card inside sent chat messages */
+.astra-user-file-attachment {
+  display:flex;
+  align-items:center;
+  gap:11px;
+  width:min(100%,360px);
+  margin-top:10px;
+  padding:11px 13px;
+  border:1px solid rgba(177,146,242,.38);
+  border-radius:13px;
+  background:rgba(35,29,58,.62);
+  color:#f3edff;
+}
+.astra-user-file-icon {
+  display:grid;
+  place-items:center;
+  flex:0 0 43px;
+  height:43px;
+  border-radius:10px;
+  background:rgba(145,112,220,.25);
+  color:#d8c5ff;
+  font-size:11px;
+  font-weight:800;
+  letter-spacing:.04em;
+}
+.astra-user-file-details { display:flex; flex-direction:column; min-width:0; gap:4px; }
+.astra-user-file-details strong { overflow-wrap:anywhere; font-size:12px; }
+.astra-user-file-details small { color:#b5a9cf; font-size:11px; }
+body[data-theme="light"] .astra-user-file-attachment { background:#f5f1fc; color:#29243c; border-color:#d9cdee; }
+body[data-theme="light"] .astra-user-file-icon { background:#e9defb; color:#6849a9; }
+body[data-theme="light"] .astra-user-file-details small { color:#655b79; }
