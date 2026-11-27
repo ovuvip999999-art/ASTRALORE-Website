@@ -32,7 +32,7 @@ test("ASTRA exposes a cloud-backed extracted-document editor", async () => {
   assert.ok(editor.includes("Position and size are automatic."));
   assert.ok(editor.includes("previewFontSize"));
   assert.ok(editor.includes("ctx.measureText(String(item.text || \"\"))"));
-  assert.ok(editor.includes("PDF.js's actual loaded font-family name"));
+  assert.ok(editor.includes("Prefer PDF.js's registered face and actual font metadata over guessed CSS styles"));
   assert.ok(editor.includes('pdf.embedPng(textCanvas.toDataURL("image/png"))'));
   assert.ok(editor.includes("document.fonts?.ready"));
   assert.ok(editor.includes("ensureFontkit"));
