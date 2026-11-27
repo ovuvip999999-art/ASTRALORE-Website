@@ -10,6 +10,7 @@ create table if not exists public.astra_creative_usage (
   primary key (user_id, usage_date)
 );
 
+alter table public.astra_creative_usage add column if not exists videos_generated integer not null default 0 check (videos_generated >= 0);
 alter table public.astra_creative_usage enable row level security;
 revoke all on public.astra_creative_usage from anon, authenticated;
 
