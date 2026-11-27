@@ -188,6 +188,27 @@ async function loadEnabledSkills(env, authorization, userId) {
   }
 }
 
+
+async function consumeImageQuota(env, authorization, userId) {
+  const baseUrl = String(env.SUPABASE_URL || "").replace(/\/+$/, "");
+  if (!baseUrl || !env.SUPABASE_ANON_KEY) throw new Error("Image usage limits are not configured.");
+  const response = await fetch(baseUrl + "/rest/v1/rpc/astra_consume_image_generation", {
+    method: "POST",
+    headers: {
+      "apikey": env.SUPABASE_ANON_KEY,
+      "Authorization": authorization,
+      "Content-Type": "application/json",
+      "Accept": "application/json"
+    },
+    body: JSON.stringify({ p_user_id: userId })
+  });
+  if (!response.ok) throw new Error("Image usage limit could not be verified.");
+  const data = await response.json();
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row || typeof row.allowed !== "boolean") throw new Error("Image usage limit returned an invalid response.");
+  return { allowed: row.allowed, remaining: Number.isInteger(row.remaining) ? row.remaining : 0 };
+}
+
 export default {
   async fetch(request, env) {
     const origin = request.headers.get("Origin") || "";
@@ -223,6 +244,7 @@ export default {
     let document = body.document && typeof body.document === "object" ? body.document : null;
     const documentAction = body.documentAction && typeof body.documentAction === "object" ? body.documentAction : null;
     const documentToSave = documentAction?.operation === "save" ? documentAction.document : null;
+    const creativeAction = body.creativeAction && typeof body.creativeAction === "object" ? body.creativeAction : null;
     const conversationId = typeof body.conversationId === "string" ? body.conversationId : "";
     const validConversationId = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(conversationId);
     const validDocumentTypes = new Set([
@@ -273,7 +295,16 @@ export default {
       !/^[A-Za-z0-9+/]+={0,2}$/.test(image.data))) {
       return json({ error: "Unsupported or invalid image. Use a JPG, PNG or WEBP image up to 3 MB." }, 400, origin);
     }
-    if (!message && !image && !document && !documentAction) return json({ error: "Enter a message or attach a file." }, 400, origin);
+    if (creativeAction) {
+      const prompt = typeof creativeAction.prompt === "string" ? creativeAction.prompt.trim() : "";
+      const ratios = new Set(["1:1", "9:16", "16:9"]);
+      if (creativeAction.operation !== "generate-image" || prompt.length < 5 || prompt.length > 1000 || !ratios.has(creativeAction.aspectRatio)) {
+        return json({ error: "Provide a valid image prompt and supported aspect ratio." }, 400, origin);
+      }
+      if (body.costAcknowledged !== true) return json({ error: "Confirm AI usage before generating an image." }, 400, origin);
+      if (image || document || documentAction || message) return json({ error: "Send image generation as a separate request." }, 400, origin);
+    }
+    if (!message && !image && !document && !documentAction && !creativeAction) return json({ error: "Enter a message or attach a file." }, 400, origin);
 
     let authenticatedUser = null;
     let archiveRows = [];
@@ -293,6 +324,53 @@ export default {
       .filter(path => typeof path === "string");
     if (suppliedStoragePaths.some(path => path.split("/")[0] !== authenticatedUser.id)) {
       return json({ error: "The original PDF storage path does not belong to this account." }, 403, origin);
+    }
+
+    if (creativeAction) {
+      if (env.ASTRA_CREATIVE_ENABLED !== "true") {
+        return json({ error: "ASTRA Image Studio is not enabled on this preview Worker yet." }, 503, origin);
+      }
+      if (!env.AI) return json({ error: "ASTRA image generation is not configured on this Worker." }, 503, origin);
+      let quota;
+      try {
+        quota = await consumeImageQuota(env, authorization, authenticatedUser.id);
+      } catch (error) {
+        console.error("ASTRA image quota check failed", String(error?.message || error).slice(0, 140));
+        return json({ error: "ASTRA could not verify today's image allowance. Apply the image quota migration and retry." }, 503, origin);
+      }
+      if (!quota.allowed) return json({ error: "Daily image limit reached. You can generate up to 3 images per account each day." }, 429, origin);
+
+      const dimensions = {
+        "1:1": [1024, 1024],
+        "9:16": [768, 1365],
+        "16:9": [1365, 768]
+      };
+      const [width, height] = dimensions[creativeAction.aspectRatio];
+      try {
+        const form = new FormData();
+        form.append("prompt", creativeAction.prompt.trim());
+        form.append("width", String(width));
+        form.append("height", String(height));
+        const serialized = new Response(form);
+        const result = await env.AI.run("@cf/black-forest-labs/flux-2-klein-4b", {
+          multipart: {
+            body: serialized.body,
+            contentType: serialized.headers.get("content-type")
+          }
+        });
+        if (typeof result?.image !== "string" || !result.image) {
+          throw new Error("Image model returned no image data.");
+        }
+        return json({
+          image: result.image,
+          mimeType: "image/png",
+          model: "@cf/black-forest-labs/flux-2-klein-4b",
+          remainingToday: quota.remaining
+        }, 200, origin);
+      } catch (error) {
+        console.error("ASTRA image generation failed", String(error?.message || error).slice(0, 180));
+        return json({ error: "ASTRA could not generate that image. Try a different prompt or try again later." }, 503, origin);
+      }
     }
 
     if (documentAction) {
