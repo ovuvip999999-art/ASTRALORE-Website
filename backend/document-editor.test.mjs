@@ -31,6 +31,13 @@ test("ASTRA exposes a cloud-backed extracted-document editor", async () => {
   assert.ok(editor.includes("renderSelectableText"));
   assert.ok(editor.includes("TEXT SELECTED"));
   assert.ok(editor.includes("REPLACEMENT PREVIEW ADDED"));
+  assert.ok(editor.includes("ASTRA IS ANALYSING THIS PAGE"));
+  assert.ok(editor.includes("aiEditHandler"));
+  assert.ok(html.includes("astraPdfAiInstruction"));
+  assert.ok(html.includes("astraPdfAiApply"));
+  assert.ok(page.includes('sendDocumentAction("plan-edit"'));
+  assert.ok(worker.includes('"plan-edit"'));
+  assert.ok(worker.includes("ASTRA PDF edit planner"));
   assert.ok(html.includes("astraPdfTextLayer"));
   assert.ok(html.includes("value=\"replace\""));
   assert.ok(css.includes(".pdf-detected-text"));
