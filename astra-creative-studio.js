@@ -66,7 +66,7 @@
       if (!response.ok) throw new Error(data.error || "Image generation failed.");
       if (typeof data.image !== "string" || !data.image) throw new Error("The image service returned no image data.");
 
-      const encodedImage = data.image.replace(/^data:image\\/png;base64,/i, "");
+      const encodedImage = data.image.replace(/^data:image\/png;base64,/i, "");
       const binary = atob(encodedImage);
       const bytes = new Uint8Array(binary.length);
       for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
