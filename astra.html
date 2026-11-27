@@ -204,7 +204,7 @@
       <div><span class="memory-dialog-kicker">ASTRALORE DOCUMENT WORKSPACE</span><h2 id="astraDocumentTitle">DOCUMENT EDITOR</h2></div>
       <button type="button" class="memory-dialog-close" id="astraDocumentClose" aria-label="Close document editor">×</button>
     </div>
-    <p class="document-editor-note">To replace text, click it on the PDF page and type the new words. ASTRA automatically reuses the detected position, text size and approximate font style, then fits the replacement inside the same text box. Manual positioning is only for adding text or covering an area. The original PDF remains unchanged underneath the edit layer.</p>
+    <p class="document-editor-note">To replace text, click it on the PDF page and type the new words. ASTRA now attempts to extract and embed that text block’s original PDF font for the replacement, then fits the new words inside the same box. If the PDF does not expose an embeddable font, ASTRA will report that a fallback font was used. Manual positioning is only for adding text or covering an area. The original PDF remains unchanged underneath the edit layer.</p>
     <section id="astraPdfVisualEditor" class="astra-pdf-editor" hidden>
       <div class="pdf-page-toolbar">
         <button type="button" id="astraPdfPrev">← PREVIOUS</button>
