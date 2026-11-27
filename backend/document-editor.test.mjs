@@ -19,7 +19,7 @@ test("ASTRA exposes a cloud-backed extracted-document editor", async () => {
   assert.ok(page.includes('sendDocumentAction("load")'));
   assert.ok(page.includes('sendDocumentAction("save"'));
   assert.ok(worker.includes('documentAction.operation === "load"'));
-  assert.ok(worker.includes('documentAction.operation === "save"') || worker.includes('documentAction.operation !== "load"'));
+  assert.ok(worker.includes("await documentStore.save(conversationId, authenticatedUser.id, documentToSave)"));
   assert.ok(worker.includes('documentPersistenceStatus: savedDocument ? "RESTORED" : "NOT_FOUND"'));
   assert.ok(editor.includes("SAVE TO CLOUD"));
   assert.ok(editor.includes("EXPORT NEW PDF"));
