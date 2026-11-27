@@ -462,7 +462,8 @@ function renderAnswer(container, text) {
         image: attachment?.kind === "image" ? { name: attachment.name, mimeType: attachment.mimeType, data: attachment.dataUrl.split(",")[1] } : null,
         document: attachment?.kind === "document" ? { name: attachment.name, mimeType: attachment.mimeType, text: attachment.text } : null,
         history: history.slice(-9, -1),
-        memory: window.ASTRAMemory ? window.ASTRAMemory.getMemories().map(item => item.text) : []
+        memory: window.ASTRAMemory ? window.ASTRAMemory.getMemories().map(item => item.text) : [],
+        conversationId: cloudConversation?.id || null
       })
     });
 
@@ -498,7 +499,6 @@ function renderAnswer(container, text) {
     if (attachmentPreview) attachmentPreview.hidden = true;
     if (attachmentThumb) { attachmentThumb.hidden = true; attachmentThumb.removeAttribute("src"); }
   }
-
   function loadScriptOnce(src, globalName) {
     if (window[globalName]) return Promise.resolve(window[globalName]);
     return new Promise((resolve, reject) => {
@@ -997,8 +997,7 @@ function renderAnswer(container, text) {
           ]);
           await refreshCloudArchive();
         } catch (saveError) {
-          if (status) status.textContent = "CLOUD SAVE ISSUE · " + (saveError.message || "RETRY LATER");
-        }
+          if (status) status.textContent = "CLOUD SAVE ISSUE · " + (saveError.message || "RETRY LATER");        }
       }
       if (window.ASTRAMemory) {
         if (!cloudReady) {
