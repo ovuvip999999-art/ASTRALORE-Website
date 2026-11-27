@@ -19,25 +19,32 @@
   let history = window.ASTRAMemory ? window.ASTRAMemory.getCurrentMessages() : [];
   let cloudConversation = null;
   let cloudReady = false;
+  let cloudInitPromise = null;
   let busy = false;
 
   async function initializeCloudArchive() {
     if (!window.ASTRACloud || !window.ASTRASupabase) return;
-    try {
-      const user = await window.ASTRACloud.requireUser();
-      const conversations = await window.ASTRACloud.listConversations();
-      cloudConversation = conversations[0] || await window.ASTRACloud.createConversation("New conversation");
-      history = await window.ASTRACloud.loadMessages(cloudConversation.id);
-      chat.querySelectorAll(".astra-message").forEach(message => message.remove());
-      history.forEach(item => addMessage(item.content, item.role === "user" ? "user" : "bot"));
-      if (welcome) welcome.hidden = history.length > 0;
-      cloudReady = true;
-      await renderArchive();
-      if (status) status.textContent = "CLOUD SYNC · " + (user.email || "SIGNED IN");
-    } catch (error) {
-      cloudReady = false;
-      if (status) status.textContent = "LOCAL MODE · " + (error.message || "CLOUD UNAVAILABLE");
-    }
+    if (cloudInitPromise) return cloudInitPromise;
+    cloudInitPromise = (async () => {
+      try {
+        const user = await window.ASTRACloud.requireUser();
+        const conversations = await window.ASTRACloud.listConversations();
+        cloudConversation = conversations[0] || await window.ASTRACloud.createConversation("New conversation");
+        history = await window.ASTRACloud.loadMessages(cloudConversation.id);
+        chat.querySelectorAll(".astra-message").forEach(message => message.remove());
+        history.forEach(item => addMessage(item.content, item.role === "user" ? "user" : "bot"));
+        if (welcome) welcome.hidden = history.length > 0;
+        cloudReady = true;
+        await refreshCloudArchive();
+        if (status) status.textContent = "CLOUD SYNC · " + (user.email || "SIGNED IN");
+      } catch (error) {
+        cloudReady = false;
+        if (status) status.textContent = "LOCAL MODE · " + (error.message || "CLOUD UNAVAILABLE");
+      } finally {
+        cloudInitPromise = null;
+      }
+    })();
+    return cloudInitPromise;
   }
 
   async function refreshCloudArchive() {
@@ -418,11 +425,15 @@ function renderAnswer(container, text) {
         history.splice(0, history.length - 500);
       }
       if (window.ASTRACloud && cloudReady && cloudConversation) {
-        await window.ASTRACloud.appendMessages(
-          cloudConversation,
-          history.map((item, index) => ({ ...item, sequence_no: index }))
-        );
-        await refreshCloudArchive();
+        try {
+          await window.ASTRACloud.appendMessages(
+            cloudConversation,
+            history.map((item, index) => ({ ...item, sequence_no: index }))
+          );
+          await refreshCloudArchive();
+        } catch (saveError) {
+          if (status) status.textContent = "CLOUD SAVE ISSUE · " + (saveError.message || "RETRY LATER");
+        }
       }
       if (window.ASTRAMemory) {
         window.ASTRAMemory.saveCurrentMessages(history);
@@ -488,7 +499,14 @@ function renderAnswer(container, text) {
   const archiveList = document.getElementById("astraArchiveList");
 
   function renderArchive() {
-    if (!archiveList || !window.ASTRAMemory) return;
+    if (!archiveList) return;
+    if (cloudReady) {
+      refreshCloudArchive().catch(error => {
+        if (status) status.textContent = "CLOUD ARCHIVE ISSUE · " + (error.message || "RETRY LATER");
+      });
+      return;
+    }
+    if (!window.ASTRAMemory) return;
     const query = archiveSearch ? archiveSearch.value : "";
     const conversations = window.ASTRAMemory.searchConversations(query);
     archiveList.replaceChildren();
@@ -550,9 +568,6 @@ function renderAnswer(container, text) {
     input.focus();
   });
 
-  if (archiveSearch) archiveSearch.addEventListener("input", () => {
-    if (cloudReady) refreshCloudArchive().catch(() => {});
-  });
   window.addEventListener("astra-auth-ready", () => initializeCloudArchive());
   window.addEventListener("astra-auth-changed", event => {
     if (event.detail?.user) initializeCloudArchive();
@@ -562,7 +577,7 @@ function renderAnswer(container, text) {
       if (status) status.textContent = "SIGNED OUT · LOCAL MODE";
     }
   });
-  initializeCloudArchive();
+  // Authentication bootstrap emits astra-auth-ready after restoring the saved session.
 
   // User-controlled, device-only memory controls.
   const memoryButton = document.getElementById("astraMemoryButton");
