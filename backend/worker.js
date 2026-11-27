@@ -199,7 +199,16 @@ export default {
       typeof value.text === "string" && value.text.trim() && value.text.length <= 50000 &&
       (value.storagePath === undefined || value.storagePath === null ||
         (typeof value.storagePath === "string" && value.storagePath.length <= 700 &&
-          /^[0-9a-f-]{36}\\/[0-9a-f-]{36}\\//i.test(value.storagePath)));
+          /^[0-9a-f-]{36}\\/[0-9a-f-]{36}\\//i.test(value.storagePath))) &&
+      (value.editorState === undefined || value.editorState === null ||
+        (typeof value.editorState === "object" && !Array.isArray(value.editorState) &&
+          Array.isArray(value.editorState.annotations) && value.editorState.annotations.length <= 100 &&
+          value.editorState.annotations.every(item => item && typeof item === "object" &&
+            ["text", "cover"].includes(item.type) && Number.isInteger(item.page) &&
+            item.page >= 1 && item.page <= 500 &&
+            ["x", "y", "width", "height", "fontSize"].every(key =>
+              item[key] === undefined || (Number.isFinite(item[key]) && item[key] >= 0 && item[key] <= 1000)) &&
+            (item.text === undefined || (typeof item.text === "string" && item.text.length <= 2000)))));
     if (document && !validDocument(document)) {
       return json({ error: "Unsupported or invalid document. Upload a text-based PDF, DOCX, XLSX, XLS, CSV, TXT or MD file up to 10 MB." }, 400, origin);
     }
