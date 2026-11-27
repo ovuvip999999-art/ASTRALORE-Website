@@ -25,7 +25,7 @@
 
   const BUCKET = "astra-original-documents";
   let current = null, saveHandler = null, aiEditHandler = null, savedText = "", pdfBytes = null;
-  let pdfDocument = null, pageNumber = 1, annotations = [], pdfLibPromise = null, pdfJsPromise = null, selectedTextBox = null, detectedTextBlocks = [], renderScale = 1;
+  let pdfDocument = null, pageNumber = 1, annotations = [], pdfLibPromise = null, pdfJsPromise = null, fontkitPromise = null, selectedTextBox = null, detectedTextBlocks = [], renderScale = 1;
 
   function showStatus(message) { if (status) status.textContent = message; }
   function safeBaseName(name) {
@@ -75,6 +75,37 @@
       if (!window.PDFLib) throw last || new Error("PDF export engine unavailable.");
     })();
     try { await pdfLibPromise; } catch (e) { pdfLibPromise = null; throw e; }
+  }
+  async function ensureFontkit() {
+    if (window.fontkit) return;
+    if (!fontkitPromise) fontkitPromise = (async () => {
+      const urls = [
+        "https://cdn.jsdelivr.net/npm/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js",
+        "https://unpkg.com/@pdf-lib/fontkit@1.1.1/dist/fontkit.umd.min.js"
+      ];
+      let last;
+      for (const url of urls) {
+        try { await loadScript(url, () => !!window.fontkit, "Font embedding engine"); break; }
+        catch (error) { last = error; }
+      }
+      if (!window.fontkit) throw last || new Error("Font embedding engine unavailable.");
+    })();
+    try { await fontkitPromise; } catch (error) { fontkitPromise = null; throw error; }
+  }
+  async function getPdfJsFontBytes(pageNo, fontName) {
+    if (!pdfDocument || !fontName) return null;
+    const page = await pdfDocument.getPage(pageNo);
+    const objects = page.commonObjs;
+    if (!objects || typeof objects.get !== "function") return null;
+    try {
+      if (typeof objects.has === "function" && !objects.has(fontName)) return null;
+      const font = objects.get(fontName);
+      const data = font?.data;
+      if (data instanceof Uint8Array) return data;
+      if (data instanceof ArrayBuffer) return new Uint8Array(data);
+      if (ArrayBuffer.isView(data)) return new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
+    } catch (_) {}
+    return null;
   }
   async function getOriginalBytes(data) {
     if (data.originalFile instanceof Blob) return new Uint8Array(await data.originalFile.arrayBuffer());
@@ -161,7 +192,7 @@
         width: Math.max(1, Math.min(100, item.width * viewport.scale / viewport.width * 100 + 0.5)),
         height: Math.max(1, Math.min(100, fontHeight * 1.25 / viewport.height * 100 + 0.8)),
         fontSize: Math.max(4, Math.min(72, Number(item.height) || fontHeight / viewport.scale || 12)),
-        fontFamily, fontWeight, fontStyle,
+        fontFamily, fontWeight, fontStyle, fontName: item.fontName || null,
         fontAscent: Number.isFinite(style.ascent) ? style.ascent : null,
         fontDescent: Number.isFinite(style.descent) ? style.descent : null,
         textDirection: item.dir === "rtl" ? "rtl" : "ltr"
@@ -266,7 +297,7 @@
     if (type === "replace" && selectedTextBox) {
       const box = selectedTextBox;
       annotations.push({ type: "cover", page: pageNumber, x: box.x * 10, y: box.y * 10, width: box.width * 10, height: box.height * 10, fontSize: 0, text: "" });
-      annotations.push({ type: "text", page: pageNumber, x: box.x * 10, y: box.y * 10, width: box.width * 10, height: box.height * 10, fontSize: box.fontSize, fontFamily: box.fontFamily, fontWeight: box.fontWeight, fontStyle: box.fontStyle, fontAscent: box.fontAscent, fontDescent: box.fontDescent, textDirection: box.textDirection, text });
+      annotations.push({ type: "text", page: pageNumber, x: box.x * 10, y: box.y * 10, width: box.width * 10, height: box.height * 10, fontSize: box.fontSize, fontFamily: box.fontFamily, fontWeight: box.fontWeight, fontStyle: box.fontStyle, fontName: box.fontName, fontAscent: box.fontAscent, fontDescent: box.fontDescent, textDirection: box.textDirection, text });
       selectedTextBox = null;
       $("astraPdfOverlayText").value = "";
       renderAnnotations();
@@ -295,7 +326,7 @@
         const block = detectedTextBlocks[index];
         if (!block || block.text !== edit.sourceText || typeof edit.replacementText !== "string" || !edit.replacementText.trim()) continue;
         annotations.push({ type: "cover", page: pageNumber, x: block.x * 10, y: block.y * 10, width: block.width * 10, height: block.height * 10, fontSize: 0, text: "" });
-        annotations.push({ type: "text", page: pageNumber, x: block.x * 10, y: block.y * 10, width: block.width * 10, height: block.height * 10, fontSize: block.fontSize, fontFamily: block.fontFamily, fontWeight: block.fontWeight, fontStyle: block.fontStyle, fontAscent: block.fontAscent, fontDescent: block.fontDescent, textDirection: block.textDirection, text: edit.replacementText.slice(0, 500) });
+        annotations.push({ type: "text", page: pageNumber, x: block.x * 10, y: block.y * 10, width: block.width * 10, height: block.height * 10, fontSize: block.fontSize, fontFamily: block.fontFamily, fontWeight: block.fontWeight, fontStyle: block.fontStyle, fontName: block.fontName, fontAscent: block.fontAscent, fontDescent: block.fontDescent, textDirection: block.textDirection, text: edit.replacementText.slice(0, 500) });
         applied++;
       }
       renderAnnotations();
@@ -327,6 +358,27 @@
         await ensurePdfLib();
         const { PDFDocument, StandardFonts, rgb } = window.PDFLib;
         const pdf = await PDFDocument.load(pdfBytes);
+        const textEdits = annotations.filter(item => item.type === "text" && item.fontName);
+        const embeddedFonts = new Map();
+        let fontFallbacks = 0;
+        if (textEdits.length) {
+          try {
+            await ensureFontkit();
+            pdf.registerFontkit(window.fontkit);
+          } catch (_) {}
+          for (const item of textEdits) {
+            if (embeddedFonts.has(item.fontName)) continue;
+            try {
+              if (!window.fontkit) throw new Error("Fontkit unavailable");
+              const fontBytes = await getPdfJsFontBytes(item.page, item.fontName);
+              if (!fontBytes?.length) throw new Error("Original embedded font data unavailable");
+              const embedded = await pdf.embedFont(fontBytes, { subset: true });
+              embeddedFonts.set(item.fontName, embedded);
+            } catch (_) {
+              embeddedFonts.set(item.fontName, null);
+            }
+          }
+        }
         await (document.fonts?.ready || Promise.resolve());
         for (const item of annotations) {
           const page = pdf.getPage(item.page - 1);
@@ -339,8 +391,27 @@
           if (item.type === "cover") {
             page.drawRectangle({ x, y: size.height - top - height, width, height, color: rgb(1, 1, 1), borderWidth: 0 });
           } else {
-            // Rasterize only the replacement text using PDF.js's loaded font.
-            // This avoids replacing an embedded font with a generic PDF standard font.
+            const originalFont = item.fontName ? embeddedFonts.get(item.fontName) : null;
+            if (originalFont) {
+              const maxSize = Math.max(4, Math.min(72, Number(item.fontSize) || 12, height * 0.88));
+              let fontSize = maxSize;
+              const text = String(item.text || "");
+              const availableWidth = Math.max(2, width - 2);
+              const measuredWidth = originalFont.widthOfTextAtSize(text, fontSize);
+              if (measuredWidth > availableWidth) fontSize = Math.max(3, fontSize * availableWidth / measuredWidth);
+              const textHeight = originalFont.heightAtSize(fontSize);
+              const baseline = size.height - top - Math.max(0, (height - textHeight) / 2) - textHeight * 0.18;
+              const textWidth = originalFont.widthOfTextAtSize(text, fontSize);
+              const textX = item.textDirection === "rtl" ? x + width - textWidth : x;
+              page.drawText(text, {
+                x: textX, y: baseline, size: fontSize, font: originalFont,
+                color: rgb(0.05, 0.05, 0.08), maxWidth: availableWidth
+              });
+              continue;
+            }
+            fontFallbacks++;
+            // Fallback only when PDF.js cannot expose an embeddable copy of the source font.
+            // This keeps the editor usable, but this specific replacement may not match the PDF font.
             const density = 4;
             const textCanvas = document.createElement("canvas");
             textCanvas.width = Math.max(2, Math.ceil(width * density));
@@ -370,7 +441,7 @@
         }
         const bytes = await pdf.save();
         downloadBlob(new Blob([bytes], { type: "application/pdf" }), safeBaseName(current.name) + "-edited.pdf");
-        showStatus("EDITED PDF EXPORTED · ORIGINAL PAGE DESIGN PRESERVED");
+        showStatus(fontFallbacks ? "PDF EXPORTED · " + fontFallbacks + " REPLACEMENT(S) USED A FALLBACK FONT BECAUSE THE ORIGINAL FONT COULD NOT BE EMBEDDED." : "EDITED PDF EXPORTED · ORIGINAL EMBEDDED FONTS USED FOR REPLACEMENTS.");
       } else {
         showStatus("No original PDF loaded. Exporting extracted text as a new PDF…");
         await ensurePdfLib();
