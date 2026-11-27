@@ -363,7 +363,7 @@ function renderAnswer(container, text) {
 }
 
 
-  function addMessage(text, who, messageIndex = null) {
+  function addMessage(text, who, messageIndex = null, attachmentInfo = null) {
     const bubble = document.createElement("div");
     bubble.className = "astra-message astra-message-" + who;
     if (who === "user" && Number.isInteger(messageIndex)) {
@@ -381,13 +381,37 @@ function renderAnswer(container, text) {
     if (who === "bot") {
       renderAnswer(content, text);
     } else {
-      content.textContent = text;
-      if (who === "user" && messageIndex !== null && messageIndex === history.length && activeAttachment?.kind === "image") {
-        const image = document.createElement("img");
-        image.className = "astra-user-attachment";
-        image.src = activeAttachment.dataUrl;
-        image.alt = "Image attached: " + activeAttachment.name;
-        content.appendChild(image);
+      const archivedAttachment = String(text).match(/\[(Image|File) attached: ([^\]]+)\]$/);
+      const visibleText = archivedAttachment
+        ? String(text).slice(0, archivedAttachment.index).trim()
+        : String(text);
+      content.textContent = visibleText;
+      const attachment = attachmentInfo || (archivedAttachment
+        ? { kind: archivedAttachment[1].toLowerCase() === "image" ? "image" : "document", name: archivedAttachment[2] }
+        : null);
+      if (who === "user" && attachment) {
+        if (attachment.kind === "image" && attachment.dataUrl) {
+          const image = document.createElement("img");
+          image.className = "astra-user-attachment";
+          image.src = attachment.dataUrl;
+          image.alt = "Image attached: " + attachment.name;
+          content.appendChild(image);
+        } else {
+          const fileChip = document.createElement("div");
+          fileChip.className = "astra-user-file-attachment";
+          const fileIcon = document.createElement("span");
+          fileIcon.className = "astra-user-file-icon";
+          fileIcon.textContent = attachment.name.toLowerCase().endsWith(".pdf") ? "PDF" : "FILE";
+          const fileDetails = document.createElement("span");
+          fileDetails.className = "astra-user-file-details";
+          const fileName = document.createElement("strong");
+          fileName.textContent = attachment.name;
+          const fileType = document.createElement("small");
+          fileType.textContent = "Attached document";
+          fileDetails.append(fileName, fileType);
+          fileChip.append(fileIcon, fileDetails);
+          content.appendChild(fileChip);
+        }
       }
     }
 
@@ -508,7 +532,15 @@ function renderAnswer(container, text) {
         if (pages.join("\n").length >= MAX_EXTRACTED_CHARS) break;
       }
       if (pdf.numPages > pageLimit) pages.push("[Only the first " + pageLimit + " pages were extracted.]");
-      return pages.join("\n").slice(0, MAX_EXTRACTED_CHARS);
+      const extractedText = pages.join("\n").slice(0, MAX_EXTRACTED_CHARS);
+      const meaningful = extractedText.replace(/\[Page \d+\]/g, "").replace(/\s/g, "");
+      const readable = (meaningful.match(/[\p{L}\p{N}.,;:!?'"()\[\]{}%&+\-=/\\]/gu) || []).length;
+      const replacementChars = (meaningful.match(/\uFFFD/g) || []).length;
+      const readableRatio = meaningful.length ? readable / meaningful.length : 0;
+      if (meaningful.length < 40 || readableRatio < 0.58 || replacementChars / Math.max(1, meaningful.length) > 0.01) {
+        throw new Error("This PDF's text layer appears corrupted or unreadable. ASTRA stopped instead of guessing. Please upload a searchable/OCR PDF or a clearer export.");
+      }
+      return extractedText;
     }
     if (lower.endsWith(".docx")) {
       const mammoth = await loadScriptOnce("https://cdn.jsdelivr.net/npm/mammoth@1.9.0/mammoth.browser.min.js", "mammoth");
@@ -606,7 +638,7 @@ function renderAnswer(container, text) {
     const userSequence = history.length;
     const attachmentForSend = activeAttachment;
     const archivedMessage = message + (attachmentForSend ? (message ? "\n" : "") + "[" + (attachmentForSend.kind === "image" ? "Image" : "File") + " attached: " + attachmentForSend.name + "]" : "");
-    addMessage(message, "user", userSequence);
+    addMessage(message, "user", userSequence, attachmentForSend);
     input.value = "";
     clearAttachment();
     resizeComposer();
