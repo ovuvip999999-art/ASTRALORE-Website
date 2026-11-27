@@ -203,6 +203,40 @@ async function releaseImageQuota(env, authorization, userId) {
   });
 }
 
+async function consumeVideoQuota(env, authorization, userId) {
+  const baseUrl = String(env.SUPABASE_URL || "").replace(/\/+$/, "");
+  if (!baseUrl || !env.SUPABASE_ANON_KEY) throw new Error("Video usage limits are not configured.");
+  const response = await fetch(baseUrl + "/rest/v1/rpc/astra_consume_video_generation", {
+    method: "POST",
+    headers: {
+      "apikey": env.SUPABASE_ANON_KEY,
+      "Authorization": authorization,
+      "Content-Type": "application/json",
+      "Accept": "application/json"
+    },
+    body: JSON.stringify({ p_user_id: userId })
+  });
+  if (!response.ok) throw new Error("Video usage limit could not be verified.");
+  const data = await response.json();
+  const row = Array.isArray(data) ? data[0] : data;
+  if (!row || typeof row.allowed !== "boolean") throw new Error("Video usage limit returned an invalid response.");
+  return { allowed: row.allowed, remaining: Number.isInteger(row.remaining) ? row.remaining : 0 };
+}
+
+async function releaseVideoQuota(env, authorization, userId) {
+  const baseUrl = String(env.SUPABASE_URL || "").replace(/\/+$/, "");
+  if (!baseUrl || !env.SUPABASE_ANON_KEY) return;
+  await fetch(baseUrl + "/rest/v1/rpc/astra_release_video_generation", {
+    method: "POST",
+    headers: {
+      "apikey": env.SUPABASE_ANON_KEY,
+      "Authorization": authorization,
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ p_user_id: userId })
+  });
+}
+
 async function consumeImageQuota(env, authorization, userId) {
   const baseUrl = String(env.SUPABASE_URL || "").replace(/\/+$/, "");
   if (!baseUrl || !env.SUPABASE_ANON_KEY) throw new Error("Image usage limits are not configured.");
@@ -312,11 +346,11 @@ export default {
     if (creativeAction) {
       const prompt = typeof creativeAction.prompt === "string" ? creativeAction.prompt.trim() : "";
       const ratios = new Set(["1:1", "9:16", "16:9"]);
-      if (creativeAction.operation !== "generate-image" || prompt.length < 5 || prompt.length > 1000 || !ratios.has(creativeAction.aspectRatio)) {
-        return json({ error: "Provide a valid image prompt and supported aspect ratio." }, 400, origin);
+      if (!["generate-image", "generate-video"].includes(creativeAction.operation) || prompt.length < 5 || prompt.length > 1000 || !ratios.has(creativeAction.aspectRatio)) {
+        return json({ error: "Provide a valid creative prompt and supported aspect ratio." }, 400, origin);
       }
-      if (body.costAcknowledged !== true) return json({ error: "Confirm AI usage before generating an image." }, 400, origin);
-      if (image || document || documentAction || message) return json({ error: "Send image generation as a separate request." }, 400, origin);
+      if (body.costAcknowledged !== true) return json({ error: "Confirm AI usage before generation." }, 400, origin);
+      if (image || document || documentAction || message) return json({ error: "Send creative generation as a separate request." }, 400, origin);
     }
     if (!message && !image && !document && !documentAction && !creativeAction) return json({ error: "Enter a message or attach a file." }, 400, origin);
 
@@ -338,6 +372,46 @@ export default {
       .filter(path => typeof path === "string");
     if (suppliedStoragePaths.some(path => path.split("/")[0] !== authenticatedUser.id)) {
       return json({ error: "The original PDF storage path does not belong to this account." }, 403, origin);
+    }
+
+    if (creativeAction?.operation === "generate-video") {
+      if (env.ASTRA_VIDEO_ENABLED !== "true") {
+        return json({ error: "ASTRA Video Studio is disabled on this preview Worker. Review billing and enable it explicitly first." }, 503, origin);
+      }
+      if (!env.AI) return json({ error: "ASTRA video generation is not configured on this Worker." }, 503, origin);
+      let quota;
+      try {
+        quota = await consumeVideoQuota(env, authorization, authenticatedUser.id);
+      } catch (error) {
+        console.error("ASTRA video quota check failed", String(error?.message || error).slice(0, 140));
+        return json({ error: "ASTRA could not verify today's video allowance. Apply the video quota migration and retry." }, 503, origin);
+      }
+      if (!quota.allowed) return json({ error: "Daily video limit reached. You can generate one 5-second video per account each day." }, 429, origin);
+      try {
+        const result = await env.AI.run("xai/grok-imagine-video", {
+          prompt: creativeAction.prompt.trim(),
+          aspect_ratio: creativeAction.aspectRatio,
+          duration: 5,
+          resolution: "480p"
+        });
+        const videoUrl = typeof result?.result?.video === "string"
+          ? result.result.video
+          : typeof result?.video === "string" ? result.video : "";
+        if (!videoUrl || new URL(videoUrl).protocol !== "https:") {
+          throw new Error("Video model returned no valid HTTPS video URL.");
+        }
+        return json({
+          videoUrl,
+          durationSeconds: 5,
+          resolution: "480p",
+          estimatedCostUsd: 0.25,
+          remainingToday: quota.remaining
+        }, 200, origin);
+      } catch (error) {
+        try { await releaseVideoQuota(env, authorization, authenticatedUser.id); } catch {}
+        console.error("ASTRA video generation failed", String(error?.message || error).slice(0, 180));
+        return json({ error: "ASTRA could not generate that video. Try again later." }, 503, origin);
+      }
     }
 
     if (creativeAction) {
