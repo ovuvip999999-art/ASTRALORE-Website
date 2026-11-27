@@ -981,3 +981,97 @@ body[data-theme="light"] .astra-message-user { background:linear-gradient(120deg
   .astra-message-actions { right:9px; bottom:8px; }
   .astra-message-action { padding:6px 9px; font-size:9px; }
 }
+
+
+/* Sidebar controls moved out of the header for a calmer chat workspace. */
+.sidebar-controls {
+  display:grid;
+  grid-template-columns:1fr;
+  gap:8px;
+  margin-top:22px;
+  padding:14px 0 16px;
+  border-top:1px solid #ffffff18;
+  border-bottom:1px solid #ffffff18;
+}
+.sidebar-controls-label {
+  margin-bottom:3px;
+  color:#9388ad;
+  font:9px 'DM Mono',monospace;
+  letter-spacing:1.15px;
+}
+.sidebar-control-button {
+  width:100%;
+  min-height:38px;
+  justify-content:center;
+  text-align:center;
+  white-space:normal;
+  overflow-wrap:anywhere;
+}
+.sidebar-controls .install-app-button {
+  margin:0;
+  width:100%;
+  min-height:38px;
+}
+.topbar-actions { display:none !important; }
+
+@media(max-width:560px) {
+  .astra-sidebar {
+    grid-template-columns:1fr;
+    gap:8px;
+    max-height:46dvh;
+    overflow-y:auto;
+    align-items:stretch;
+  }
+  .sidebar-controls {
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:7px;
+    margin-top:5px;
+    padding:9px 0;
+  }
+  .sidebar-controls-label { grid-column:1/-1; }
+  .sidebar-control-button,.sidebar-controls .install-app-button {
+    min-height:34px;
+    padding:7px 8px;
+    font-size:9px;
+  }
+  .archive-heading { margin-top:5px; }
+  .archive-list { max-height:90px; }
+}
+
+/* Stronger light-theme contrast for previously muted labels and controls. */
+body[data-theme="light"] .topbar-kicker { color:#66528f; }
+body[data-theme="light"] .connection-status { color:#51466d; }
+body[data-theme="light"] .connection-status i { background:#7a58c8; box-shadow:0 0 10px #9879dc66; }
+body[data-theme="light"] .sidebar-controls { border-color:#ded8eb; }
+body[data-theme="light"] .sidebar-controls-label { color:#65577f; }
+body[data-theme="light"] .sidebar-section-label,
+body[data-theme="light"] .archive-heading { color:#655b7b; }
+body[data-theme="light"] .sidebar-item { color:#493a70; background:#eee9fa; border-color:#d5c8ed; }
+body[data-theme="light"] .sidebar-item span { color:#7355b4; }
+body[data-theme="light"] .archive-search::placeholder { color:#706783; opacity:1; }
+body[data-theme="light"] .archive-empty { color:#625873; }
+body[data-theme="light"] .archive-conversation small { color:#625873; }
+body[data-theme="light"] .install-app-button {
+  color:#49376f;
+  background:#eee9fa;
+  border-color:#cfc2e7;
+}
+body[data-theme="light"] .install-app-button:hover { color:#35244f; background:#e5dcf7; border-color:#9f86d1; }
+body[data-theme="light"] .memory-auto-status { color:#51406f; background:#f0ebfb; border-color:#d8cbed; }
+body[data-theme="light"] .memory-notice { color:#59477f; }
+body[data-theme="light"] .memory-empty { color:#625873; }
+body[data-theme="light"] .memory-add-form label { color:#51446e; }
+body[data-theme="light"] .memory-add-form input { background:#fbfaff; color:#29243c; border-color:#d4cbe5; }
+body[data-theme="light"] .memory-add-form button,
+body[data-theme="light"] .memory-clear-button { color:#44345f; background:#eee9fa; border-color:#d1c5e8; }
+body[data-theme="light"] .astra-memory-item span { color:#332d43; }
+body[data-theme="light"] .memory-dialog-kicker { color:#65518e; }
+body[data-theme="light"] .astra-auth-form label { color:#51446e; }
+body[data-theme="light"] .astra-auth-actions button { color:#3e3158; background:#eee9fa; border-color:#cfc2e7; }
+body[data-theme="light"] .memory-open-button { color:#44345f; background:#eee9fa; border-color:#cfc2e7; }
+body[data-theme="light"] .memory-open-button:hover { color:#302344; background:#e4dcf5; }
+body[data-theme="light"] .sidebar-bottom strong { color:#44365f; }
+body[data-theme="light"] .sidebar-bottom span { color:#625873; }
+body[data-theme="light"] .composer-note { color:#625873; }
+body[data-theme="light"] .astra-message-user .astra-message-label { color:#f0eaff; }
+body[data-theme="light"] .astra-message-action { color:#fff; border-color:#ffffff66; }
