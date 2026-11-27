@@ -222,6 +222,11 @@
         <label>FONT SIZE<input id="astraPdfFontSize" type="number" min="6" max="72" value="14"></label>
         <button type="button" id="astraPdfAddAnnotation">ADD TO PAGE</button>
       </div>
+      <div class="pdf-ai-edit-controls">
+        <label for="astraPdfAiInstruction">ASK ASTRA TO EDIT THIS PAGE</label>
+        <div><input id="astraPdfAiInstruction" type="text" maxlength="500" placeholder="e.g. Change the heading to Project Overview"><button type="button" id="astraPdfAiApply">ASK ASTRA</button></div>
+        <p>ASTRA matches your instruction against detected text on the current page. Review every proposed change before exporting.</p>
+      </div>
       <ol id="astraPdfAnnotationList" class="pdf-annotation-list"></ol>
     </section>
     <section id="astraTextEditorFallback">
