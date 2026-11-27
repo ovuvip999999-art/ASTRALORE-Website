@@ -26,7 +26,7 @@
 
   function showStatus(message) { if (status) status.textContent = message; }
   function safeBaseName(name) {
-    return String(name || "ASTRA-document").replace(/\\.[^.]+$/, "")
+    return String(name || "ASTRA-document").replace(/\.[^.]+$/, "")
       .replace(/[^a-z0-9_-]+/gi, "-").replace(/^-+|-+$/g, "").slice(0, 80) || "ASTRA-document";
   }
   function downloadBlob(blob, filename) {
@@ -147,7 +147,7 @@
     pdfBytes = null; pdfDocument = null; pageNumber = 1;
     title.textContent = current.name + " · DOCUMENT EDITOR";
     saveButton.disabled = !saveHandler;
-    const isPdf = current.mimeType === "application/pdf" || /\\.pdf$/i.test(current.name);
+    const isPdf = current.mimeType === "application/pdf" || /\.pdf$/i.test(current.name);
     visual.hidden = true; fallback.hidden = !(!isPdf);
     if (isPdf) {
       try {
@@ -240,8 +240,8 @@
         const font = await pdf.embedFont(StandardFonts.Helvetica);
         let page = pdf.addPage([595.28, 841.89]), y = 800;
         page.drawText(current.name.slice(0, 90), { x: 48, y, size: 14, font }); y -= 28;
-        for (const paragraph of String(editor.value).split(/\\r?\\n/)) {
-          const words = paragraph.split(/\\s+/); let line = "";
+        for (const paragraph of String(editor.value).split(/\r?\n/)) {
+          const words = paragraph.split(/\s+/); let line = "";
           for (const word of words) {
             const candidate = line ? line + " " + word : word;
             if (font.widthOfTextAtSize(candidate, 10) > 495 && line) {
