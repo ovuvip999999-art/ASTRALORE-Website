@@ -598,7 +598,9 @@ function renderAnswer(container, text) {
       const result = await sendDocumentAction("save", {
         name: updatedDocument.name,
         mimeType: updatedDocument.mimeType,
-        text: updatedDocument.text
+        text: updatedDocument.text,
+        storagePath: updatedDocument.storagePath || currentDocument?.storagePath || null,
+        editorState: updatedDocument.editorState || { annotations: [] }
       });
       if (result.documentPersistenceStatus !== "SAVED") throw new Error("Cloud storage did not confirm the save.");
       currentDocument = { ...updatedDocument, conversationId: cloudConversation.id };
