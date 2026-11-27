@@ -266,7 +266,7 @@
     if (type === "replace" && selectedTextBox) {
       const box = selectedTextBox;
       annotations.push({ type: "cover", page: pageNumber, x: box.x * 10, y: box.y * 10, width: box.width * 10, height: box.height * 10, fontSize: 0, text: "" });
-      annotations.push({ type: "text", page: pageNumber, x: box.x * 10, y: box.y * 10, width: box.width * 10, height: box.height * 10, fontSize: box.fontSize, fontFamily: box.fontFamily, fontWeight: box.fontWeight, fontStyle: box.fontStyle, text });
+      annotations.push({ type: "text", page: pageNumber, x: box.x * 10, y: box.y * 10, width: box.width * 10, height: box.height * 10, fontSize: box.fontSize, fontFamily: box.fontFamily, fontWeight: box.fontWeight, fontStyle: box.fontStyle, fontAscent: box.fontAscent, fontDescent: box.fontDescent, textDirection: box.textDirection, text });
       selectedTextBox = null;
       $("astraPdfOverlayText").value = "";
       renderAnnotations();
@@ -295,7 +295,7 @@
         const block = detectedTextBlocks[index];
         if (!block || block.text !== edit.sourceText || typeof edit.replacementText !== "string" || !edit.replacementText.trim()) continue;
         annotations.push({ type: "cover", page: pageNumber, x: block.x * 10, y: block.y * 10, width: block.width * 10, height: block.height * 10, fontSize: 0, text: "" });
-        annotations.push({ type: "text", page: pageNumber, x: block.x * 10, y: block.y * 10, width: block.width * 10, height: block.height * 10, fontSize: block.fontSize, fontFamily: block.fontFamily, fontWeight: block.fontWeight, fontStyle: block.fontStyle, text: edit.replacementText.slice(0, 500) });
+        annotations.push({ type: "text", page: pageNumber, x: block.x * 10, y: block.y * 10, width: block.width * 10, height: block.height * 10, fontSize: block.fontSize, fontFamily: block.fontFamily, fontWeight: block.fontWeight, fontStyle: block.fontStyle, fontAscent: block.fontAscent, fontDescent: block.fontDescent, textDirection: block.textDirection, text: edit.replacementText.slice(0, 500) });
         applied++;
       }
       renderAnnotations();
