@@ -80,9 +80,15 @@
           <i></i>
           <span id="astraStatus">CONNECTING</span>
         </div>
-        <button class="install-app-button" id="installAstra" type="button" hidden>↓ INSTALL APP</button>
-        <button class="memory-open-button" id="astraAccountButton" type="button">SIGN IN</button>
-        <button class="memory-open-button" id="astraMemoryButton" type="button">✦ MEMORY</button>
+        <div class="topbar-actions">
+          <button class="memory-open-button" id="astraCopyChat" type="button" title="Copy this conversation">COPY</button>
+          <button class="memory-open-button" id="astraShareChat" type="button" title="Share this conversation">SHARE</button>
+          <button class="memory-open-button danger-action" id="astraDeleteChat" type="button" title="Delete this conversation">DELETE</button>
+          <button class="memory-open-button" id="astraThemeToggle" type="button" aria-pressed="false" title="Switch theme">LIGHT MODE</button>
+          <button class="install-app-button" id="installAstra" type="button" hidden>↓ INSTALL APP</button>
+          <button class="memory-open-button" id="astraAccountButton" type="button">SIGN IN</button>
+          <button class="memory-open-button" id="astraMemoryButton" type="button">✦ MEMORY</button>
+        </div>
       </header>
 
       <section class="conversation" id="astraChat" aria-live="polite">
