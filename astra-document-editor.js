@@ -92,19 +92,22 @@
     })();
     try { await fontkitPromise; } catch (error) { fontkitPromise = null; throw error; }
   }
-  async function getPdfJsFontBytes(pageNo, fontName) {
+  async function getPdfJsFontObject(pageNo, fontName) {
     if (!pdfDocument || !fontName) return null;
     const page = await pdfDocument.getPage(pageNo);
     const objects = page.commonObjs;
     if (!objects || typeof objects.get !== "function") return null;
     try {
       if (typeof objects.has === "function" && !objects.has(fontName)) return null;
-      const font = objects.get(fontName);
-      const data = font?.data;
-      if (data instanceof Uint8Array) return data;
-      if (data instanceof ArrayBuffer) return new Uint8Array(data);
-      if (ArrayBuffer.isView(data)) return new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
-    } catch (_) {}
+      return objects.get(fontName) || null;
+    } catch (_) { return null; }
+  }
+  async function getPdfJsFontBytes(pageNo, fontName) {
+    const font = await getPdfJsFontObject(pageNo, fontName);
+    const data = font?.data;
+    if (data instanceof Uint8Array) return data;
+    if (data instanceof ArrayBuffer) return new Uint8Array(data);
+    if (ArrayBuffer.isView(data)) return new Uint8Array(data.buffer, data.byteOffset, data.byteLength);
     return null;
   }
   async function getOriginalBytes(data) {
@@ -179,12 +182,14 @@
       const fontHeight = Math.max(6, Math.hypot(tx[2], tx[3]));
       const style = content.styles?.[item.fontName] || {};
       const familyName = String(style.fontFamily || "").toLowerCase();
-      const sourceFontName = String(item.fontName || "");
-      // Keep PDF.js's actual loaded font-family name; collapsing it to generic CSS
-      // families discards the embedded font PDF.js has already made available.
-      const fontFamily = String(style.fontFamily || (/mono|courier/.test(familyName) ? "monospace" : /serif|times|georgia/.test(familyName) ? "serif" : "sans-serif"));
-      const fontWeight = /bold|black|heavy/i.test(sourceFontName) ? "bold" : "normal";
-      const fontStyle = /italic|oblique/i.test(sourceFontName) ? "italic" : "normal";
+      const pdfFont = await getPdfJsFontObject(pageNumber, item.fontName);
+      const sourceFontName = [item.fontName, pdfFont?.name, pdfFont?.loadedName].filter(Boolean).join(" ");
+      // Prefer PDF.js's registered face and actual font metadata over guessed CSS styles.
+      const fontFamily = String(style.fontFamily || pdfFont?.fallbackName ||
+        (/mono|courier/.test(familyName + " " + sourceFontName) ? "monospace" :
+         /serif|times|georgia/.test(familyName + " " + sourceFontName) ? "serif" : "sans-serif"));
+      const fontWeight = pdfFont?.bold || /bold|black|heavy/i.test(sourceFontName) ? "bold" : "normal";
+      const fontStyle = pdfFont?.italic || /italic|oblique/i.test(sourceFontName) ? "italic" : "normal";
       // Load PDF.js actual registered face before using it for replacement rendering.
       if (document.fonts?.load && fontFamily && !/^(serif|sans-serif|monospace)$/i.test(fontFamily)) {
         try { await document.fonts.load(fontHeight + 'px "' + fontFamily.replaceAll('"', "") + '"'); } catch (_) {}
@@ -375,32 +380,51 @@
         await ensurePdfLib();
         const { PDFDocument, StandardFonts, rgb } = window.PDFLib;
         const pdf = await PDFDocument.load(pdfBytes);
-        const textEdits = exportAnnotations.filter(item => item.type === "text" && item.fontName);
+        const textEdits = exportAnnotations.filter(item => item.type === "text");
         const embeddedFonts = new Map();
-        let fontFallbacks = 0;
+        const fallbackItems = new Set();
         if (textEdits.length) {
           try {
             await ensureFontkit();
             pdf.registerFontkit(window.fontkit);
           } catch (_) {}
           for (const item of textEdits) {
-            if (embeddedFonts.has(item.fontName)) continue;
-            try {
-              if (!window.fontkit) throw new Error("Fontkit unavailable");
-              const fontBytes = await getPdfJsFontBytes(item.page, item.fontName);
-              if (!fontBytes?.length) throw new Error("Original embedded font data unavailable");
-              const embedded = await pdf.embedFont(fontBytes, { subset: true });
-              if (!embedded || typeof embedded.widthOfTextAtSize !== "function") throw new Error("Original font metrics unavailable");
-              embeddedFonts.set(item.fontName, embedded);
-            } catch (_) {
-              embeddedFonts.set(item.fontName, null);
+            if (!item.fontName || !window.fontkit) {
+              fallbackItems.add(item);
+              continue;
             }
+            if (!embeddedFonts.has(item.fontName)) {
+              try {
+                const fontBytes = await getPdfJsFontBytes(item.page, item.fontName);
+                if (!fontBytes?.length) throw new Error("Original embedded font data unavailable");
+                const embedded = await pdf.embedFont(fontBytes, { subset: true });
+                if (!embedded || typeof embedded.widthOfTextAtSize !== "function") {
+                  throw new Error("Original font metrics unavailable");
+                }
+                embeddedFonts.set(item.fontName, embedded);
+              } catch (_) {
+                embeddedFonts.set(item.fontName, null);
+              }
+            }
+            const embedded = embeddedFonts.get(item.fontName);
+            if (!embedded) {
+              fallbackItems.add(item);
+              continue;
+            }
+            // PDF-embedded subsets often contain only glyphs used by the source page.
+            // Preflight each replacement so a missing character cannot break export midway.
+            try { embedded.encodeText(String(item.text || "")); }
+            catch (_) { fallbackItems.add(item); }
           }
         }
         await (document.fonts?.ready || Promise.resolve());
-        fontFallbacks = textEdits.filter(item => !embeddedFonts.get(item.fontName)).length;
-        if (fontFallbacks && !window.confirm("ASTRA could not recover the original embedded font for " + fontFallbacks + " replacement(s). A substitute may look different. Continue anyway?")) {
-          throw new Error("Export cancelled to avoid silently substituting the original font.");
+        const fontFallbacks = fallbackItems.size;
+        if (fontFallbacks && !window.confirm(
+          "ASTRA cannot use the original embedded font for " + fontFallbacks +
+          " replacement(s). The font may be subsetted or missing required characters. " +
+          "A substitute will be used for those replacements. Continue?"
+        )) {
+          throw new Error("Export cancelled because the original font cannot render every replacement character.");
         }
         let appliedEdits = 0;
         for (const item of exportAnnotations) {
@@ -418,16 +442,19 @@
             });
             appliedEdits++;
           } else {
-            const originalFont = item.fontName ? embeddedFonts.get(item.fontName) : null;
+            const originalFont = item.fontName && !fallbackItems.has(item) ? embeddedFonts.get(item.fontName) : null;
             if (originalFont) {
+              const text = String(item.text || "");
               const maxSize = Math.max(4, Math.min(72, Number(item.fontSize) || 12, height * 0.88));
               let fontSize = maxSize;
-              const text = String(item.text || "");
               const availableWidth = Math.max(2, width - 2);
               const measuredWidth = originalFont.widthOfTextAtSize(text, fontSize);
               if (measuredWidth > availableWidth) fontSize = Math.max(3, fontSize * availableWidth / measuredWidth);
               const textHeight = originalFont.heightAtSize(fontSize);
-              const baseline = size.height - top - Math.max(0, (height - textHeight) / 2) - textHeight * 0.18;
+              const ascent = Number(item.fontAscent);
+              const baseline = Number.isFinite(ascent) && ascent > 0 && ascent <= 2
+                ? size.height - top - (height / 1.25) * ascent
+                : size.height - top - Math.max(0, (height - textHeight) / 2) - textHeight * 0.18;
               const textWidth = originalFont.widthOfTextAtSize(text, fontSize);
               const textX = item.textDirection === "rtl" ? x + width - textWidth : x;
               page.drawText(text, {
@@ -437,9 +464,8 @@
               appliedEdits++;
               continue;
             }
-            fontFallbacks++;
-            // Fallback only when PDF.js cannot expose an embeddable copy of the source font.
-            // This keeps the editor usable, but this specific replacement may not match the PDF font.
+            // Only this specific replacement is rasterized when the original font
+            // program is unavailable or its embedded subset lacks one or more glyphs.
             const density = 4;
             const textCanvas = document.createElement("canvas");
             textCanvas.width = Math.max(2, Math.ceil(width * density));
@@ -475,7 +501,7 @@
         }
         downloadBlob(new Blob([bytes], { type: "application/pdf" }), safeBaseName(current.name) + "-edited.pdf");
         showStatus("EDITED PDF EXPORTED · " + appliedEdits + " EDIT LAYERS APPLIED." +
-          (fontFallbacks ? " " + fontFallbacks + " TEXT REPLACEMENT(S) USED A FALLBACK FONT." : ""));
+          (fontFallbacks ? " " + fontFallbacks + " REPLACEMENT(S) NEEDED A SUBSTITUTE FONT." : " ORIGINAL EMBEDDED FONTS WERE USED."));
       } else {
         showStatus("No original PDF loaded. Exporting extracted text as a new PDF…");
         await ensurePdfLib();
