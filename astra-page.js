@@ -477,6 +477,7 @@ function renderAnswer(container, text) {
     const userSequence = history.length;
     addMessage(message, "user", userSequence);
     input.value = "";
+    resizeComposer();
     history.push({ role: "user", content: message });
     if (window.ASTRAMemory && !cloudReady) window.ASTRAMemory.saveCurrentMessages(history);
     if (window.ASTRACloud && cloudReady && cloudConversation) {
@@ -545,7 +546,8 @@ function renderAnswer(container, text) {
         sendButton.textContent = "↑";
         sendButton.setAttribute("aria-label", "Send message");
       }
-      input.placeholder = "Ask ASTRA anything…";
+      input.placeholder = "Message ASTRA...";
+      resizeComposer();
       input.focus();
     }
   }
@@ -612,6 +614,21 @@ function renderAnswer(container, text) {
       } catch (error) {
         if (status) status.textContent = "DELETE FAILED · " + (error.message || "PLEASE RETRY");
       }
+    }
+  });
+
+  // ChatGPT-style composer: grow with the message and send on Enter.
+  function resizeComposer() {
+    input.style.height = "auto";
+    input.style.height = Math.min(input.scrollHeight, 168) + "px";
+    input.style.overflowY = input.scrollHeight > 168 ? "auto" : "hidden";
+  }
+
+  input.addEventListener("input", resizeComposer);
+  input.addEventListener("keydown", event => {
+    if (event.key === "Enter" && !event.shiftKey && !event.isComposing) {
+      event.preventDefault();
+      if (!busy && input.value.trim()) form.requestSubmit();
     }
   });
 
