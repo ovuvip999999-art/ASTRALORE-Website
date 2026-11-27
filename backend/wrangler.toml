@@ -8,3 +8,15 @@ binding = "AI"
 [vars]
 SUPABASE_URL = "https://zsmryvlnhjsrneuppsle.supabase.co"
 SUPABASE_ANON_KEY = "sb_publishable_m0h-9tkb8Y-lABu34mZJbQ_5MA1wEx8"
+
+
+# Isolated preview Worker. Deploy with: npx wrangler deploy --env preview
+[env.preview]
+name = "astralore-astra-api-preview"
+
+[env.preview.ai]
+binding = "AI"
+
+[env.preview.vars]
+SUPABASE_URL = "https://zsmryvlnhjsrneuppsle.supabase.co"
+SUPABASE_ANON_KEY = "sb_publishable_m0h-9tkb8Y-lABu34mZJbQ_5MA1wEx8"
