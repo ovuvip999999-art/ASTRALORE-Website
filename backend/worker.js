@@ -175,15 +175,18 @@ export default {
     let authenticatedUser = null;
     let archiveRows = [];
     const authorization = request.headers.get("Authorization") || "";
-    if (authorization) {
-      try {
-        authenticatedUser = await getAuthenticatedUser(request, env);
-      } catch (error) {
-        return json({ error: "Cloud account verification is temporarily unavailable. Please try again." }, 503, origin);
-      }
-      if (!authenticatedUser) return json({ error: "Your session is invalid or expired. Please sign in again." }, 401, origin);
-      archiveRows = await searchPriorMessages(env, authorization, authenticatedUser.id, message);
+    if (!authorization.startsWith("Bearer ")) {
+      return json({ error: "Sign in to your ASTRA account before using AI." }, 401, origin);
     }
+    try {
+      authenticatedUser = await getAuthenticatedUser(request, env);
+    } catch (error) {
+      return json({ error: "Cloud account verification is temporarily unavailable. Please try again." }, 503, origin);
+    }
+    if (!authenticatedUser) {
+      return json({ error: "Your session is invalid or expired. Please sign in again." }, 401, origin);
+    }
+    archiveRows = await searchPriorMessages(env, authorization, authenticatedUser.id, message);
 
     const history = Array.isArray(body.history) ? body.history.slice(-8) : [];
     const savedMemories = Array.isArray(body.memory)
