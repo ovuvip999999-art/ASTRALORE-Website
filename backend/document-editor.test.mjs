@@ -37,6 +37,9 @@ test("ASTRA exposes a cloud-backed extracted-document editor", async () => {
   assert.ok(editor.includes("document.fonts?.ready"));
   assert.ok(editor.includes("ensureFontkit"));
   assert.ok(editor.includes("getPdfJsFontBytes"));
+  assert.ok(editor.includes("getPdfJsFontObject"));
+  assert.ok(editor.includes("pdfFont?.bold"));
+  assert.ok(editor.includes("pdfFont?.italic"));
   assert.ok(editor.includes("pdf.registerFontkit(window.fontkit)"));
   assert.ok(editor.includes("pdf.embedFont(fontBytes, { subset: true })"));
   assert.ok(editor.includes("originalFont.widthOfTextAtSize(text, fontSize)"));
