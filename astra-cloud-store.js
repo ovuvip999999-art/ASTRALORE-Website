@@ -49,9 +49,10 @@
       .upsert(rows, { onConflict: "conversation_id,sequence_no", ignoreDuplicates: true });
     if (error) throw error;
     const firstUser = rows.find(row => row.role === "user");
-    const title = firstUser ? firstUser.content.replace(/\\s+/g, " ").slice(0,64) : "Conversation";
+    const updates = { updated_at: new Date().toISOString() };
+    if (firstUser) updates.title = firstUser.content.replace(/\\s+/g, " ").slice(0,64);
     const { error: updateError } = await client.from("astra_conversations")
-      .update({ title, updated_at: new Date().toISOString() })
+      .update(updates)
       .eq("id", conversation.id).eq("user_id", user.id);
     if (updateError) throw updateError;
   }
