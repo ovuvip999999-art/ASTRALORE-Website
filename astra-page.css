@@ -1345,3 +1345,21 @@ body[data-theme="light"] .astra-attachment-preview span { color:#655b79; }
 body[data-theme="light"] .astra-user-file-attachment { background:#f5f1fc; color:#29243c; border-color:#d9cdee; }
 body[data-theme="light"] .astra-user-file-icon { background:#e9defb; color:#6849a9; }
 body[data-theme="light"] .astra-user-file-details small { color:#655b79; }
+
+
+/* ASTRA document editor */
+.topbar-actions{display:flex;align-items:center;gap:16px}
+.document-editor-open{border:1px solid #a88bea66;border-radius:8px;padding:10px 13px;background:#8060c51c;color:#e6dcff;font:10px 'DM Mono',monospace;letter-spacing:.8px}
+.document-editor-open:hover{background:#8060c544;border-color:#c4aaff}
+.astra-document-dialog{width:min(920px,calc(100% - 28px));max-height:min(90vh,900px);padding:22px;border:1px solid #a88bea66;border-radius:16px;background:#101020;color:#f4f1ff;box-shadow:0 24px 90px #000b}
+.astra-document-dialog::backdrop{background:#03040ecc;backdrop-filter:blur(8px)}
+.document-editor-head{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.document-editor-head h2{margin:6px 0 0;font:800 20px 'Manrope',sans-serif;overflow-wrap:anywhere}
+.document-editor-note{color:#b9b6ca;font-size:12px;line-height:1.6}
+.document-editor-text{display:block;width:100%;min-height:min(55vh,560px);resize:vertical;padding:14px;border:1px solid #ffffff25;border-radius:10px;outline:none;background:#080914;color:#eeeaf9;font:12px/1.7 'DM Mono',monospace;white-space:pre;tab-size:2}
+.document-editor-text:focus{border-color:#a88bea}
+.document-editor-actions{display:flex;flex-wrap:wrap;gap:9px}
+.document-editor-actions button{border:1px solid #a88bea55;border-radius:8px;padding:11px 14px;background:#8060c533;color:#eee8ff;font:10px 'DM Mono',monospace;letter-spacing:.6px}
+.document-editor-actions button:hover{background:#8060c566}
+.document-editor-actions button:disabled{opacity:.5;cursor:wait}
+@media(max-width:560px){.topbar-actions{width:100%;justify-content:space-between}.document-editor-open{padding:8px 10px;font-size:8px}.astra-document-dialog{padding:15px}.document-editor-text{min-height:52vh;font-size:11px}}
