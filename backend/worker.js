@@ -136,7 +136,7 @@ function buildDocumentChunks(source, question) {
   if (current.length) chunks.push(current.join("\n"));
 
   const terms = [...new Set((String(question || "").toLowerCase().match(/[a-z]{2,}|\d+/g) || []))];
-  const range = String(question || "").match(/(?:test|tests)\s*(\d+)\s*(?:-|to|through)\s*(\d+)/i);
+  const range = String(question || "").match(/(?:test|tests)\s*(\d+)\s*(?:-|–|—|to|through)\s*(\d+)/i);
   const requested = range
     ? Array.from({ length: Math.min(30, Math.abs(Number(range[2]) - Number(range[1])) + 1) },
         (_, index) => Math.min(Number(range[1]), Number(range[2])) + index)
