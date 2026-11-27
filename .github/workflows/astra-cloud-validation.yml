@@ -1,0 +1,34 @@
+name: ASTRA Cloud Memory Validation
+
+on:
+  push:
+    branches:
+      - feature/astra-cloud-memory
+  pull_request:
+    paths:
+      - "backend/worker.js"
+      - "backend/migrations/**"
+      - "astra-page.js"
+      - "astra-cloud-*.js"
+      - ".github/workflows/astra-cloud-validation.yml"
+
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check Worker module syntax
+        run: node --input-type=module --check < backend/worker.js
+      - name: Check browser JavaScript syntax
+        run: |
+          node --check astra-page.js
+          node --check astra-cloud-auth.js
+          node --check astra-cloud-store.js
+          node --check astra-config.js
+      - name: Check patch whitespace
+        run: git diff --check
