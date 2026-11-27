@@ -12,6 +12,7 @@ on:
       - "backend/migrations/**"
       - "astra-page.js"
       - "astra-skills.js"
+      - "astra-creative-studio.js"
       - "astra-document-editor.js"
       - "astra.html"
       - "astra-page.css"
@@ -34,6 +35,7 @@ jobs:
         run: |
           node --check astra-page.js
           node --check astra-skills.js
+          node --check astra-creative-studio.js
           node --check astra-document-editor.js
           node --check astra-cloud-auth.js
           node --check astra-cloud-store.js
