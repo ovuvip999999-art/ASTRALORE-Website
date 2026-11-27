@@ -381,6 +381,13 @@ function renderAnswer(container, text) {
       renderAnswer(content, text);
     } else {
       content.textContent = text;
+      if (who === "user" && messageIndex !== null && messageIndex === history.length && activeAttachment) {
+        const image = document.createElement("img");
+        image.className = "astra-user-attachment";
+        image.src = activeAttachment.dataUrl;
+        image.alt = "Image attached: " + activeAttachment.name;
+        content.appendChild(image);
+      }
     }
 
     bubble.appendChild(content);
@@ -413,11 +420,9 @@ function renderAnswer(container, text) {
     if (welcome) welcome.hidden = true;
   }
 
-  async function askAstra(question) {
+  async function askAstra(question, attachment = null) {
     if (!signedIn) throw new Error("Sign in to use ASTRA.");
-    if (!API_URL) {
-      throw new Error("ASTRA's live connection is not configured.");
-    }
+    if (!API_URL) throw new Error("ASTRA's live connection is not configured.");
 
     const sessionResult = window.ASTRASupabase ? await window.ASTRASupabase.auth.getSession() : { data: { session: null } };
     const accessToken = sessionResult.data?.session?.access_token;
@@ -429,6 +434,7 @@ function renderAnswer(container, text) {
       },
       body: JSON.stringify({
         message: question,
+        image: attachment ? { name: attachment.name, mimeType: attachment.mimeType, data: attachment.dataUrl.split(",")[1] } : null,
         history: history.slice(-9, -1),
         memory: window.ASTRAMemory ? window.ASTRAMemory.getMemories().map(item => item.text) : []
       })
@@ -449,8 +455,53 @@ function renderAnswer(container, text) {
     return data;
   }
 
+  let activeAttachment = null;
+  const fileInput = document.getElementById("astraFileInput");
+  const attachButton = document.getElementById("astraAttachButton");
+  const attachmentPreview = document.getElementById("astraAttachmentPreview");
+  const attachmentThumb = document.getElementById("astraAttachmentThumb");
+  const attachmentName = document.getElementById("astraAttachmentName");
+  const removeAttachment = document.getElementById("astraRemoveAttachment");
+
+  function clearAttachment() {
+    activeAttachment = null;
+    if (fileInput) fileInput.value = "";
+    if (attachmentPreview) attachmentPreview.hidden = true;
+    if (attachmentThumb) attachmentThumb.removeAttribute("src");
+  }
+
+  if (attachButton && fileInput) {
+    attachButton.addEventListener("click", () => fileInput.click());
+    fileInput.addEventListener("change", () => {
+      const file = fileInput.files && fileInput.files[0];
+      if (!file) return;
+      const allowed = ["image/jpeg", "image/png", "image/webp"];
+      if (!allowed.includes(file.type)) {
+        if (status) status.textContent = "SUPPORTED IMAGES: JPG, PNG OR WEBP";
+        clearAttachment();
+        return;
+      }
+      if (file.size > 3 * 1024 * 1024) {
+        if (status) status.textContent = "IMAGE TOO LARGE · MAXIMUM 3 MB";
+        clearAttachment();
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        activeAttachment = { name: file.name, mimeType: file.type, dataUrl: String(reader.result) };
+        if (attachmentThumb) attachmentThumb.src = activeAttachment.dataUrl;
+        if (attachmentName) attachmentName.textContent = file.name;
+        if (attachmentPreview) attachmentPreview.hidden = false;
+        if (status) status.textContent = "IMAGE READY · ASTRA CAN ANALYSE IT";
+      };
+      reader.onerror = () => { if (status) status.textContent = "COULD NOT READ THIS IMAGE"; };
+      reader.readAsDataURL(file);
+    });
+  }
+  if (removeAttachment) removeAttachment.addEventListener("click", clearAttachment);
+
   async function send(text) {
-    const message = text.trim();
+    const message = text.trim() || (activeAttachment ? "Please analyse the attached image and describe what you can see." : "");
 
     if (!signedIn) {
       const accountDialog = document.getElementById("astraAccountDialog");
@@ -458,7 +509,7 @@ function renderAnswer(container, text) {
       if (status) status.textContent = "SIGN IN REQUIRED";
       return;
     }
-    if (!message || busy) return;
+    if ((!message && !activeAttachment) || busy) return;
 
     busy = true;
     input.disabled = true;
@@ -475,15 +526,18 @@ function renderAnswer(container, text) {
     if (welcome) welcome.hidden = true;
 
     const userSequence = history.length;
+    const attachmentForSend = activeAttachment;
+    const archivedMessage = message + (attachmentForSend ? (message ? "\n" : "") + "[Image attached: " + attachmentForSend.name + "]" : "");
     addMessage(message, "user", userSequence);
     input.value = "";
+    clearAttachment();
     resizeComposer();
-    history.push({ role: "user", content: message });
+    history.push({ role: "user", content: archivedMessage });
     if (window.ASTRAMemory && !cloudReady) window.ASTRAMemory.saveCurrentMessages(history);
     if (window.ASTRACloud && cloudReady && cloudConversation) {
       try {
         await window.ASTRACloud.appendMessages(cloudConversation, [
-          { role: "user", content: message, sequence_no: userSequence }
+          { role: "user", content: archivedMessage, sequence_no: userSequence }
         ]);
       } catch (saveError) {
         if (status) status.textContent = "CLOUD SAVE ISSUE · " + (saveError.message || "RETRY LATER");
@@ -494,7 +548,7 @@ function renderAnswer(container, text) {
     typing.classList.add("astra-message-loading");
 
     try {
-      const data = await askAstra(message);
+      const data = await askAstra(message, attachmentForSend);
       const reply = data.reply;
       if (status) status.textContent = "ONLINE";
 
@@ -664,6 +718,7 @@ function renderAnswer(container, text) {
         chat.querySelectorAll(".astra-message").forEach(message => message.remove());
         if (welcome) welcome.hidden = false;
         input.value = "";
+        clearAttachment();
         renderArchive();
         input.focus();
       } catch (error) {
