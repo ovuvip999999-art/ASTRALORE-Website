@@ -78,7 +78,10 @@
     try {
       const { data, error } = await client.auth.signUp({
         email: email.value.trim(),
-        password: password.value
+        password: password.value,
+        options: {
+          emailRedirectTo: window.location.origin + "/astra.html"
+        }
       });
       if (error) throw error;
       password.value = "";
