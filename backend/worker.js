@@ -199,7 +199,8 @@ export default {
       typeof value.text === "string" && value.text.trim() && value.text.length <= 50000 &&
       (value.storagePath === undefined || value.storagePath === null ||
         (typeof value.storagePath === "string" && value.storagePath.length <= 700 &&
-          /^[0-9a-f-]{36}\\/[0-9a-f-]{36}\\//i.test(value.storagePath))) &&
+          value.storagePath.split("/").length === 3 &&
+          value.storagePath.split("/")[0].length === 36 && value.storagePath.split("/")[1].length === 36)) &&
       (value.editorState === undefined || value.editorState === null ||
         (typeof value.editorState === "object" && !Array.isArray(value.editorState) &&
           Array.isArray(value.editorState.annotations) && value.editorState.annotations.length <= 100 &&
