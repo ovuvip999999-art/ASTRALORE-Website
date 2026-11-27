@@ -1191,3 +1191,62 @@ body[data-theme="light"] .astra-message-loading .astra-message-content { color:#
   .astra-composer textarea { min-height:42px; padding-top:10px; font-size:14px; }
   .astra-composer button { width:41px; height:41px; }
 }
+
+
+/* ASTRA V18 — full-width lavender composer */
+.composer-area {
+  width:100%;
+  max-width:none;
+  min-width:0;
+  box-sizing:border-box;
+  padding:0 clamp(16px,4.5vw,64px) max(18px,env(safe-area-inset-bottom));
+}
+.astra-composer {
+  display:flex;
+  width:100%;
+  max-width:none;
+  min-width:0;
+  box-sizing:border-box;
+  gap:12px;
+  padding:11px 12px 11px 20px;
+  border:1px solid rgba(177,146,242,.58);
+  border-radius:24px;
+  background:linear-gradient(115deg,rgba(91,66,143,.42),rgba(52,55,112,.42));
+  box-shadow:0 12px 38px rgba(8,5,24,.22),0 0 28px rgba(145,112,220,.14),inset 0 1px rgba(255,255,255,.07);
+}
+.astra-composer textarea {
+  flex:1 1 auto;
+  width:100%;
+  min-width:0;
+  box-sizing:border-box;
+  min-height:48px;
+  max-height:168px;
+  padding:12px 4px 10px;
+  color:#f6f0ff;
+}
+.astra-composer button {
+  flex:0 0 46px;
+  width:46px;
+  height:46px;
+  border-radius:15px;
+  background:linear-gradient(135deg,#ad8cff 0%,#8968e9 52%,#6869e8 100%);
+  color:#fff;
+  box-shadow:0 5px 18px rgba(126,91,211,.38),inset 0 1px rgba(255,255,255,.28);
+}
+.astra-composer button:hover:not(:disabled) {
+  filter:brightness(1.1);
+  box-shadow:0 8px 24px rgba(126,91,211,.48),inset 0 1px rgba(255,255,255,.3);
+}
+body[data-theme="light"] .astra-composer {
+  background:linear-gradient(115deg,rgba(238,229,255,.98),rgba(226,232,255,.98));
+  border-color:#c8b5ec;
+  box-shadow:0 10px 30px rgba(85,63,135,.12),inset 0 1px rgba(255,255,255,.9);
+}
+body[data-theme="light"] .astra-composer textarea { color:#29243c; }
+body[data-theme="light"] .astra-composer textarea::placeholder { color:#77708a; }
+@media(max-width:560px) {
+  .composer-area { padding:0 14px max(12px,env(safe-area-inset-bottom)); }
+  .astra-composer { width:100%; padding:8px 9px 8px 14px; gap:8px; border-radius:21px; }
+  .astra-composer textarea { min-height:44px; padding:10px 2px 8px; }
+  .astra-composer button { flex-basis:42px; width:42px; height:42px; border-radius:14px; }
+}
