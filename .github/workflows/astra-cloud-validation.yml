@@ -31,6 +31,6 @@ jobs:
           node --check astra-cloud-store.js
           node --check astra-config.js
       - name: Test document retrieval
-        run: node --test backend/document-utils.test.mjs
+        run: node --test backend/*.test.mjs
       - name: Check patch whitespace
         run: git diff --check
