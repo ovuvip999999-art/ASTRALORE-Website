@@ -812,7 +812,7 @@ function renderAnswer(container, text) {
           if (id === action.closest(".archive-row")?.querySelector("[data-conversation-id]")?.dataset.conversationId) {
             history = window.ASTRAMemory.getCurrentMessages();
             chat.querySelectorAll(".astra-message").forEach(message => message.remove());
-            history.forEach(entry => addMessage(entry.content, entry.role === "user" ? "user" : "bot"));
+            history.forEach((entry, index) => addMessage(entry.content, entry.role === "user" ? "user" : "bot", index));
             if (welcome) welcome.hidden = history.length > 0;
           }
           renderArchive();
