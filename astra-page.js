@@ -587,7 +587,7 @@ function renderAnswer(container, text) {
         const report = {
           pdfjs: { status: "READY", version: pdfjs.version || "unknown", pageCount: pdf.numPages },
           textLayer: { status: "LOW_QUALITY", charCount: meaningful.length, readableRatio: Number(readableRatio.toFixed(3)), replacementChars },
-          ocr: { library: "Tesseract.js", status: "PENDING", language: "eng", pagesRendered: 0, pagesProcessed: 0, pages: [] },
+          ocr: { library: "Tesseract.js", status: "PENDING", language: "eng", renderScale: 2.5, passes: ["AUTO", "SPARSE_TEXT_THRESHOLD"], pagesRendered: 0, pagesProcessed: 0, pages: [] },
           failureStage: null,
           error: null
         };
@@ -601,10 +601,79 @@ function renderAnswer(container, text) {
           worker = await Tesseract.createWorker("eng");
           report.ocr.status = "READY";
           const ocrLimit = Math.min(pdf.numPages, 12);
+
+          // Build a high-contrast black-and-white variant for documents with faint
+          // text, coloured backgrounds, or thin table lines. Otsu thresholding
+          // chooses the cutoff from the page's own grayscale histogram.
+          const makeThresholdCanvas = sourceCanvas => {
+            const width = sourceCanvas.width;
+            const height = sourceCanvas.height;
+            const sourceContext = sourceCanvas.getContext("2d", { willReadFrequently: true });
+            const source = sourceContext.getImageData(0, 0, width, height);
+            const gray = new Uint8Array(width * height);
+            const histogram = new Uint32Array(256);
+            for (let i = 0, p = 0; i < source.data.length; i += 4, p++) {
+              const value = Math.round(
+                0.299 * source.data[i] + 0.587 * source.data[i + 1] + 0.114 * source.data[i + 2]
+              );
+              gray[p] = value;
+              histogram[value]++;
+            }
+
+            const total = gray.length;
+            let sum = 0;
+            for (let i = 0; i < 256; i++) sum += i * histogram[i];
+            let backgroundWeight = 0;
+            let backgroundSum = 0;
+            let bestVariance = -1;
+            let threshold = 180;
+            for (let i = 0; i < 256; i++) {
+              backgroundWeight += histogram[i];
+              if (!backgroundWeight) continue;
+              const foregroundWeight = total - backgroundWeight;
+              if (!foregroundWeight) break;
+              backgroundSum += i * histogram[i];
+              const meanBackground = backgroundSum / backgroundWeight;
+              const meanForeground = (sum - backgroundSum) / foregroundWeight;
+              const variance = backgroundWeight * foregroundWeight *
+                (meanBackground - meanForeground) * (meanBackground - meanForeground);
+              if (variance > bestVariance) {
+                bestVariance = variance;
+                threshold = i;
+              }
+            }
+
+            const processed = document.createElement("canvas");
+            processed.width = width;
+            processed.height = height;
+            const processedContext = processed.getContext("2d");
+            if (!processedContext) throw new Error("Preprocessing canvas unavailable");
+            const output = processedContext.createImageData(width, height);
+            for (let p = 0; p < total; p++) {
+              const value = gray[p] > threshold ? 255 : 0;
+              const offset = p * 4;
+              output.data[offset] = value;
+              output.data[offset + 1] = value;
+              output.data[offset + 2] = value;
+              output.data[offset + 3] = 255;
+            }
+            processedContext.putImageData(output, 0, 0);
+            return processed;
+          };
+
+          const confidenceOf = result =>
+            Number.isFinite(result?.data?.confidence) ? result.data.confidence : null;
+          const textOf = result => String(result?.data?.text || "").trim();
+          const scoreOf = result => {
+            if (!result) return -1;
+            const confidence = confidenceOf(result);
+            return confidence === null ? (textOf(result).length ? 0 : -1) : confidence;
+          };
+
           for (let pageNo = 1; pageNo <= ocrLimit; pageNo++) {
             if (status) status.textContent = "OCR READING PAGE " + pageNo + " OF " + ocrLimit;
             const page = await pdf.getPage(pageNo);
-            const viewport = page.getViewport({ scale: 2.0 });
+            const viewport = page.getViewport({ scale: 2.5 });
             const canvas = document.createElement("canvas");
             canvas.width = Math.ceil(viewport.width);
             canvas.height = Math.ceil(viewport.height);
@@ -613,18 +682,66 @@ function renderAnswer(container, text) {
             activeStage = "PAGE_RENDER";
             await page.render({ canvasContext: context, viewport }).promise;
             report.ocr.pagesRendered++;
+
+            const attempts = [];
+            let standardResult = null;
+            let standardError = null;
             activeStage = "OCR_RECOGNITION";
-            const result = await worker.recognize(canvas);
+            try {
+              await worker.setParameters({ tessedit_pageseg_mode: "3" });
+              standardResult = await worker.recognize(canvas);
+              attempts.push({
+                mode: "AUTO",
+                charCount: textOf(standardResult).length,
+                confidence: confidenceOf(standardResult)
+              });
+            } catch (error) {
+              standardError = String(error?.message || error).slice(0, 180);
+              attempts.push({ mode: "AUTO", error: standardError });
+            }
+
+            let enhancedResult = null;
+            let enhancedError = null;
+            let thresholdCanvas = null;
+            try {
+              thresholdCanvas = makeThresholdCanvas(canvas);
+              await worker.setParameters({ tessedit_pageseg_mode: "11" });
+              enhancedResult = await worker.recognize(thresholdCanvas);
+              attempts.push({
+                mode: "SPARSE_TEXT_THRESHOLD",
+                charCount: textOf(enhancedResult).length,
+                confidence: confidenceOf(enhancedResult)
+              });
+            } catch (error) {
+              enhancedError = String(error?.message || error).slice(0, 180);
+              attempts.push({ mode: "SPARSE_TEXT_THRESHOLD", error: enhancedError });
+            }
+
+            if (!standardResult && !enhancedResult) {
+              throw new Error("OCR failed on page " + pageNo +
+                " (AUTO: " + (standardError || "no result") +
+                "; SPARSE_TEXT_THRESHOLD: " + (enhancedError || "no result") + ")");
+            }
+
+            const selected = scoreOf(enhancedResult) > scoreOf(standardResult)
+              ? enhancedResult
+              : standardResult;
+            const pageText = textOf(selected);
+            const confidence = confidenceOf(selected);
             report.ocr.pagesProcessed++;
-            activeStage = "PAGE_RENDER";
-            const pageText = String(result.data?.text || "").trim();
-            const confidence = Number.isFinite(result.data?.confidence) ? result.data.confidence : null;
             report.ocr.pages.push({
               page: pageNo,
               charCount: pageText.length,
-              confidence
+              confidence,
+              selectedPass: selected === enhancedResult ? "SPARSE_TEXT_THRESHOLD" : "AUTO",
+              attempts
             });
             if (pageText) ocrPages.push("[Page " + pageNo + " · OCR]\n" + pageText);
+
+            if (thresholdCanvas) {
+              thresholdCanvas.width = 0;
+              thresholdCanvas.height = 0;
+            }
             canvas.width = 0;
             canvas.height = 0;
           }
