@@ -1381,3 +1381,9 @@ body[data-theme="light"] .astra-user-file-details small { color:#655b79; }
 .pdf-annotation-list li{padding:5px 0}
 .pdf-annotation-list button{margin-left:10px;border:0;background:transparent;color:#d2bfff;font:9px 'DM Mono',monospace}
 @media(max-width:600px){.pdf-annotation-controls{grid-template-columns:repeat(2,minmax(0,1fr))}.pdf-page-stage{max-width:100%;overflow:hidden}}
+
+/* PDF text selection layer */
+.pdf-text-layer{position:absolute;inset:0;z-index:2;pointer-events:none;overflow:hidden}
+.pdf-detected-text{position:absolute;display:block;overflow:hidden;white-space:pre;opacity:0;color:transparent;pointer-events:auto;cursor:text;border:1px solid transparent;box-sizing:border-box}
+.pdf-detected-text:hover{opacity:.22;background:#a88bea;border-color:#8d6bd0}
+.pdf-overlay-layer{z-index:3}
