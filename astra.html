@@ -84,9 +84,12 @@
           <h1>ASTRA <span>AI</span></h1>
         </div>
 
-        <div class="connection-status">
-          <i></i>
-          <span id="astraStatus">CONNECTING</span>
+        <div class="topbar-actions">
+          <button type="button" id="astraDocumentEditorButton" class="document-editor-open">EDIT DOCUMENT</button>
+          <div class="connection-status">
+            <i></i>
+            <span id="astraStatus">CONNECTING</span>
+          </div>
         </div>
       </header>
 
@@ -196,12 +199,32 @@
     </form>
   </dialog>
 
+  <dialog class="astra-document-dialog" id="astraDocumentDialog" aria-labelledby="astraDocumentTitle">
+    <div class="document-editor-head">
+      <div>
+        <span class="memory-dialog-kicker">ASTRALORE DOCUMENT WORKSPACE</span>
+        <h2 id="astraDocumentTitle">DOCUMENT EDITOR</h2>
+      </div>
+      <button type="button" class="memory-dialog-close" id="astraDocumentClose" aria-label="Close document editor">×</button>
+    </div>
+    <p class="document-editor-note">This editor changes the extracted text, not the original PDF/DOCX page layout. Saving updates the cloud copy for this conversation. Export creates a new file; your original remains unchanged.</p>
+    <label class="sr-only" for="astraDocumentText">Edit extracted document text</label>
+    <textarea id="astraDocumentText" class="document-editor-text" maxlength="50000" spellcheck="false"></textarea>
+    <p id="astraDocumentEditorStatus" class="memory-notice" aria-live="polite"></p>
+    <div class="document-editor-actions">
+      <button type="button" id="astraDocumentSave">SAVE TO CLOUD</button>
+      <button type="button" id="astraDocumentExportPdf">EXPORT NEW PDF</button>
+      <button type="button" id="astraDocumentExportText">EXPORT TXT</button>
+    </div>
+  </dialog>
+
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="astra-config.js"></script>
   <script src="astra-cloud-auth.js"></script>
   <script src="astra-cloud-store.js"></script>
   <script src="astra-memory.js"></script>
   <script src="astra-page.js"></script>
+  <script src="astra-document-editor.js"></script>
   <script src="astra-pwa.js"></script>
 </body>
 </html>
