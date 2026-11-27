@@ -493,16 +493,26 @@ function renderAnswer(container, text) {
     newChat.addEventListener("click", async () => {
       if (busy) return;
 
-      history = [];
-      if (window.ASTRACloud && cloudReady) {
-        cloudConversation = await window.ASTRACloud.createConversation("New conversation");
+      newChat.disabled = true;
+      try {
+        let nextCloudConversation = null;
+        if (window.ASTRACloud && cloudReady) {
+          nextCloudConversation = await window.ASTRACloud.createConversation("New conversation");
+        }
+
+        history = [];
+        cloudConversation = nextCloudConversation;
+        if (window.ASTRAMemory && !cloudReady) window.ASTRAMemory.createConversation();
+        chat.querySelectorAll(".astra-message").forEach(message => message.remove());
+        if (welcome) welcome.hidden = false;
+        input.value = "";
+        renderArchive();
+        input.focus();
+      } catch (error) {
+        if (status) status.textContent = "NEW CHAT ISSUE · " + (error.message || "PLEASE TRY AGAIN");
+      } finally {
+        newChat.disabled = false;
       }
-      if (window.ASTRAMemory) window.ASTRAMemory.createConversation();
-      chat.querySelectorAll(".astra-message").forEach(message => message.remove());
-      if (welcome) welcome.hidden = false;
-      input.value = "";
-      renderArchive();
-      input.focus();
     });
   }
 
