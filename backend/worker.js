@@ -199,7 +199,7 @@ export default {
       typeof value.text === "string" && value.text.trim() && value.text.length <= 50000 &&
       (value.storagePath === undefined || value.storagePath === null ||
         (typeof value.storagePath === "string" && value.storagePath.length <= 700 &&
-          value.storagePath.startsWith(authenticatedUser?.id + "/")));
+          /^[0-9a-f-]{36}\\/[0-9a-f-]{36}\\//i.test(value.storagePath)));
     if (document && !validDocument(document)) {
       return json({ error: "Unsupported or invalid document. Upload a text-based PDF, DOCX, XLSX, XLS, CSV, TXT or MD file up to 10 MB." }, 400, origin);
     }
