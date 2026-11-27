@@ -1074,7 +1074,7 @@ function renderAnswer(container, text) {
         if (status) status.textContent = "READING DOCUMENT · PLEASE WAIT";
         const extracted = await extractDocument(file);
         if (!extracted.trim()) throw new Error("No readable text was found. Scanned PDFs and image-only documents need OCR, which is not available yet.");
-        activeAttachment = { kind: "document", name: file.name, mimeType: file.type || "application/octet-stream", text: extracted, ...(file.type === "application/pdf" ? { originalFile: file } : {}) };
+        activeAttachment = { kind: "document", name: file.name, mimeType: file.type || "application/octet-stream", text: extracted, ...(lower.endsWith(".pdf") ? { originalFile: file } : {}) };
         currentDocument = { ...activeAttachment, conversationId: cloudConversation?.id || null };
         if (lastPdfDiagnostic) {
           addMessage(
