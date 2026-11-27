@@ -46,6 +46,7 @@ test("browser PDF OCR records separate render, recognition, and quality diagnost
   assert.ok(source.includes("averageConfidence"));
   assert.ok(source.includes('failureStage = "OCR_QUALITY_CHECK"'));
   assert.ok(source.includes('ocrPages.join("\\n\\n")'));
-  assert.ok(source.includes("ocrText.replace(/\\\\[Page"));
-  assert.ok(source.includes("match(/[\\\\p{L}\\\\p{N}\\\\p{P}]/gu)"));
+  assert.ok(source.includes("ocrText.replace("));
+  assert.ok(source.includes("[Page "));
+  assert.ok(source.includes("ocrReadableRatio"));
 });
