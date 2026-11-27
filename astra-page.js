@@ -584,39 +584,85 @@ function renderAnswer(container, text) {
       const replacementChars = (meaningful.match(/\uFFFD/g) || []).length;
       const readableRatio = meaningful.length ? readable / meaningful.length : 0;
       if (meaningful.length < 40 || readableRatio < 0.58 || replacementChars / Math.max(1, meaningful.length) > 0.01) {
-        if (status) status.textContent = "PDF TEXT LAYER UNREADABLE · TRYING OCR";
-        const Tesseract = await loadScriptOnce("https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js", "Tesseract");
-        const worker = await Tesseract.createWorker("eng");
+        const report = {
+          pdfjs: { status: "READY", version: pdfjs.version || "unknown", pageCount: pdf.numPages },
+          textLayer: { status: "LOW_QUALITY", charCount: meaningful.length, readableRatio: Number(readableRatio.toFixed(3)), replacementChars },
+          ocr: { library: "Tesseract.js", status: "PENDING", language: "eng", pagesRendered: 0, pagesProcessed: 0, pages: [] },
+          failureStage: null,
+          error: null
+        };
+        if (status) status.textContent = "PDF TEXT LAYER UNREADABLE · STARTING OCR";
+        let worker = null;
         const ocrPages = [];
         try {
+          const Tesseract = await loadScriptOnce("https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js", "Tesseract");
+          report.ocr.status = "LIBRARY_LOADED";
+          worker = await Tesseract.createWorker("eng");
+          report.ocr.status = "READY";
           const ocrLimit = Math.min(pdf.numPages, 12);
           for (let pageNo = 1; pageNo <= ocrLimit; pageNo++) {
             if (status) status.textContent = "OCR READING PAGE " + pageNo + " OF " + ocrLimit;
             const page = await pdf.getPage(pageNo);
-            const viewport = page.getViewport({ scale: 1.6 });
+            const viewport = page.getViewport({ scale: 2.0 });
             const canvas = document.createElement("canvas");
             canvas.width = Math.ceil(viewport.width);
             canvas.height = Math.ceil(viewport.height);
             const context = canvas.getContext("2d", { willReadFrequently: true });
+            if (!context) throw new Error("Canvas 2D context unavailable on page " + pageNo);
             await page.render({ canvasContext: context, viewport }).promise;
+            report.ocr.pagesRendered++;
             const result = await worker.recognize(canvas);
+            report.ocr.pagesProcessed++;
             const pageText = String(result.data?.text || "").trim();
-            if (pageText) ocrPages.push("[Page " + pageNo + " · OCR]\\n" + pageText);
+            const confidence = Number.isFinite(result.data?.confidence) ? result.data.confidence : null;
+            report.ocr.pages.push({
+              page: pageNo,
+              charCount: pageText.length,
+              confidence
+            });
+            if (pageText) ocrPages.push("[Page " + pageNo + " · OCR]\n" + pageText);
             canvas.width = 0;
             canvas.height = 0;
           }
+          report.ocr.status = "COMPLETED";
+        } catch (error) {
+          report.failureStage = report.ocr.status === "PENDING" ? "TESSERACT_LOAD_OR_INIT" :
+            (report.ocr.pagesRendered > report.ocr.pagesProcessed ? "OCR_RECOGNITION" : "PAGE_RENDER_OR_OCR");
+          report.error = String(error?.message || error).slice(0, 300);
         } finally {
-          await worker.terminate();
+          if (worker) {
+            try { await worker.terminate(); }
+            catch (error) {
+              if (!report.error) report.error = "Tesseract worker termination: " + String(error?.message || error).slice(0, 200);
+            }
+          }
         }
 
-        const ocrText = ocrPages.join("\\n\\n").slice(0, MAX_EXTRACTED_CHARS);
-        const ocrMeaningful = ocrText.replace(/\\[Page [^\\]]+\\]/g, "").replace(/\\s/g, "");
-        const ocrReadable = (ocrMeaningful.match(/[\\p{L}\\p{N}\\p{P}]/gu) || []).length;
-        if (ocrMeaningful.length < 40 || ocrReadable / Math.max(1, ocrMeaningful.length) < 0.58) {
-          throw new Error("This PDF's text layer is unreadable and OCR could not recover enough text. Please upload clearer page images or a searchable PDF.");
+        const ocrText = ocrPages.join("\n\n").slice(0, MAX_EXTRACTED_CHARS);
+        const ocrMeaningful = ocrText.replace(/\[Page [^\]]+\]/g, "").replace(/\s/g, "");
+        const ocrReadable = (ocrMeaningful.match(/[\p{L}\p{N}\p{P}]/gu) || []).length;
+        const ocrReadableRatio = ocrMeaningful.length ? ocrReadable / ocrMeaningful.length : 0;
+        const confidences = report.ocr.pages.map(item => item.confidence).filter(Number.isFinite);
+        report.ocr.averageConfidence = confidences.length
+          ? Number((confidences.reduce((sum, value) => sum + value, 0) / confidences.length).toFixed(1))
+          : null;
+        report.ocr.totalCharacters = ocrMeaningful.length;
+        report.ocr.readableRatio = Number(ocrReadableRatio.toFixed(3));
+        report.ocr.pagesNotProcessed = Math.max(0, pdf.numPages - report.ocr.pagesProcessed);
+
+        if (!report.failureStage && (ocrMeaningful.length < 40 || ocrReadableRatio < 0.70 ||
+            (report.ocr.averageConfidence !== null && report.ocr.averageConfidence < 45))) {
+          report.failureStage = "OCR_QUALITY_CHECK";
+          report.error = "OCR completed but the extracted text did not meet readability thresholds.";
         }
-        if (pdf.numPages > 12) ocrPages.push("[OCR processed only the first 12 of " + pdf.numPages + " pages. Split the PDF to process the remaining pages.]");
-        return ocrPages.join("\\n\\n").slice(0, MAX_EXTRACTED_CHARS);
+        if (report.failureStage) {
+          const diagnostic = JSON.stringify(report);
+          throw new Error("PDF extraction failed. Diagnostic report: " + diagnostic);
+        }
+        if (pdf.numPages > report.ocr.pagesProcessed) {
+          ocrPages.push("[OCR processed " + report.ocr.pagesProcessed + " of " + pdf.numPages + " pages. Remaining pages were not processed.]");
+        }
+        return ocrPages.join("\n\n").slice(0, MAX_EXTRACTED_CHARS);
       }
       return extractedText;
     }
