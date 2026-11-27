@@ -204,16 +204,16 @@
       <div><span class="memory-dialog-kicker">ASTRALORE DOCUMENT WORKSPACE</span><h2 id="astraDocumentTitle">DOCUMENT EDITOR</h2></div>
       <button type="button" class="memory-dialog-close" id="astraDocumentClose" aria-label="Close document editor">×</button>
     </div>
-    <p class="document-editor-note">PDF visual mode keeps the original page design. Add text or cover an area, then export a new PDF. Existing PDF text is not directly rewritten; the original stays unchanged.</p>
+    <p class="document-editor-note">PDF visual mode detects selectable text blocks. Select a block to create a replacement overlay, or add text and cover areas. Complex fonts and layouts may need alignment adjustments; the original PDF remains unchanged.</p>
     <section id="astraPdfVisualEditor" class="astra-pdf-editor" hidden>
       <div class="pdf-page-toolbar">
         <button type="button" id="astraPdfPrev">← PREVIOUS</button>
         <span id="astraPdfPageLabel">PAGE 1</span>
         <button type="button" id="astraPdfNext">NEXT →</button>
       </div>
-      <div id="astraPdfPageStage" class="pdf-page-stage"><canvas id="astraPdfCanvas"></canvas><div id="astraPdfOverlayLayer" class="pdf-overlay-layer"></div></div>
+      <div id="astraPdfPageStage" class="pdf-page-stage"><canvas id="astraPdfCanvas"></canvas><div id="astraPdfTextLayer" class="pdf-text-layer"></div><div id="astraPdfOverlayLayer" class="pdf-overlay-layer"></div></div>
       <div class="pdf-annotation-controls">
-        <label>TOOL<select id="astraPdfTool"><option value="text">Add text</option><option value="cover">Cover area</option></select></label>
+        <label>TOOL<select id="astraPdfTool"><option value="replace">Replace selected text</option><option value="text">Add text</option><option value="cover">Cover area</option></select></label>
         <label>TEXT<input id="astraPdfOverlayText" type="text" maxlength="500" placeholder="Enter text to add"></label>
         <label>X %<input id="astraPdfX" type="number" min="0" max="100" value="10"></label>
         <label>Y %<input id="astraPdfY" type="number" min="0" max="100" value="15"></label>
