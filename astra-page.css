@@ -972,6 +972,23 @@ body[data-theme="light"] .archive-menu .archive-menu-danger { color:#b34360; }
 }
 .astra-message-action:hover { background:rgba(15,13,35,.55); border-color:rgba(255,255,255,.55); }
 .astra-message-action-delete { color:#ffe0e6; }
+.astra-message-export {
+  display:inline-flex;
+  align-items:center;
+  margin-top:12px;
+  border:1px solid rgba(180,160,255,.32);
+  border-radius:7px;
+  padding:7px 10px;
+  background:rgba(100,75,170,.12);
+  color:#cfc2ff;
+  font:10px 'DM Mono',monospace;
+  letter-spacing:.5px;
+  cursor:pointer;
+}
+.astra-message-export:hover { background:rgba(100,75,170,.24); border-color:rgba(180,160,255,.65); }
+.astra-message-export:disabled { opacity:.6; cursor:wait; }
+body[data-theme="light"] .astra-message-export { color:#51417f; border-color:#bdb0e5; background:#f4f0ff; }
+
 @media(hover:none) {
   .astra-message-actions { opacity:1; transform:none; }
 }
