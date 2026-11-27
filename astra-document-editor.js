@@ -1,189 +1,274 @@
-/* ASTRA extracted-document editor.
- * Edits the extracted text representation and exports a newly generated copy.
- * It does not modify the original PDF/DOCX page layout or retain original binaries.
+/* ASTRA visual PDF annotation editor.
+ * Original PDF pages are preserved; annotations are layered on top in the exported copy.
+ * Existing PDF text is not rewritten in place.
  */
 (() => {
   "use strict";
-  const dialog = document.getElementById("astraDocumentDialog");
-  const title = document.getElementById("astraDocumentTitle");
-  const editor = document.getElementById("astraDocumentText");
-  const status = document.getElementById("astraDocumentEditorStatus");
-  const saveButton = document.getElementById("astraDocumentSave");
-  const pdfButton = document.getElementById("astraDocumentExportPdf");
-  const textButton = document.getElementById("astraDocumentExportText");
-  const closeButton = document.getElementById("astraDocumentClose");
+  const $ = id => document.getElementById(id);
+  const dialog = $("astraDocumentDialog");
+  const title = $("astraDocumentTitle");
+  const editor = $("astraDocumentText");
+  const status = $("astraDocumentEditorStatus");
+  const saveButton = $("astraDocumentSave");
+  const pdfButton = $("astraDocumentExportPdf");
+  const textButton = $("astraDocumentExportText");
+  const closeButton = $("astraDocumentClose");
+  const visual = $("astraPdfVisualEditor");
+  const fallback = $("astraTextEditorFallback");
+  const canvas = $("astraPdfCanvas");
+  const stage = $("astraPdfPageStage");
+  const overlayLayer = $("astraPdfOverlayLayer");
   if (!dialog || !editor || !saveButton || !pdfButton || !textButton) return;
 
-  let current = null;
-  let saveHandler = null;
-  let savedText = "";
+  const BUCKET = "astra-original-documents";
+  let current = null, saveHandler = null, savedText = "", pdfBytes = null;
+  let pdfDocument = null, pageNumber = 1, annotations = [], pdfLibPromise = null, pdfJsPromise = null;
 
-  function showStatus(message) {
-    if (status) status.textContent = message;
-  }
-
+  function showStatus(message) { if (status) status.textContent = message; }
   function safeBaseName(name) {
-    return String(name || "ASTRA-document")
-      .replace(/\.[^.]+$/, "")
-      .replace(/[^a-z0-9_-]+/gi, "-")
-      .replace(/^-+|-+$/g, "")
-      .slice(0, 80) || "ASTRA-document";
+    return String(name || "ASTRA-document").replace(/\\.[^.]+$/, "")
+      .replace(/[^a-z0-9_-]+/gi, "-").replace(/^-+|-+$/g, "").slice(0, 80) || "ASTRA-document";
   }
-
   function downloadBlob(blob, filename) {
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    const url = URL.createObjectURL(blob), link = document.createElement("a");
+    link.href = url; link.download = filename; document.body.appendChild(link); link.click(); link.remove();
+    window.setTimeout(() => URL.revokeObjectURL(url), 1200);
   }
-
-  function open(documentData, onSave) {
-    if (!documentData || typeof documentData.text !== "string") {
-      throw new Error("No saved document is available in this conversation.");
+  function loadScript(url, test, label) {
+    if (test()) return Promise.resolve();
+    return new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      const timeout = window.setTimeout(() => { script.remove(); reject(new Error(label + " load timed out.")); }, 18000);
+      script.src = url; script.async = true;
+      script.onload = () => { window.clearTimeout(timeout); test() ? resolve() : reject(new Error(label + " did not initialize.")); };
+      script.onerror = () => { window.clearTimeout(timeout); script.remove(); reject(new Error(label + " could not be loaded.")); };
+      document.head.appendChild(script);
+    });
+  }
+  async function ensurePdfJs() {
+    if (window.pdfjsLib) return;
+    if (!pdfJsPromise) pdfJsPromise = (async () => {
+      const urls = [
+        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js",
+        "https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/build/pdf.min.js"
+      ];
+      let last;
+      for (const url of urls) { try { await loadScript(url, () => !!window.pdfjsLib, "PDF viewer"); break; } catch (e) { last = e; } }
+      if (!window.pdfjsLib) throw last || new Error("PDF viewer unavailable.");
+      window.pdfjsLib.GlobalWorkerOptions.workerSrc =
+        "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+    })();
+    return pdfJsPromise;
+  }
+  async function ensurePdfLib() {
+    if (window.PDFLib) return;
+    if (!pdfLibPromise) pdfLibPromise = (async () => {
+      const urls = [
+        "https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js",
+        "https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"
+      ];
+      let last;
+      for (const url of urls) { try { await loadScript(url, () => !!window.PDFLib, "PDF export engine"); break; } catch (e) { last = e; } }
+      if (!window.PDFLib) throw last || new Error("PDF export engine unavailable.");
+    })();
+    try { await pdfLibPromise; } catch (e) { pdfLibPromise = null; throw e; }
+  }
+  async function getOriginalBytes(data) {
+    if (data.originalFile instanceof Blob) return new Uint8Array(await data.originalFile.arrayBuffer());
+    if (data.storagePath && window.ASTRASupabase) {
+      const result = await window.ASTRASupabase.storage.from(BUCKET).download(data.storagePath);
+      if (result.error) throw new Error("Could not restore original PDF from cloud storage. " + result.error.message);
+      return new Uint8Array(await result.data.arrayBuffer());
     }
+    return null;
+  }
+  function numberValue(id, min, max, fallbackValue) {
+    const value = Number($(id)?.value);
+    return Number.isFinite(value) ? Math.min(max, Math.max(min, value)) : fallbackValue;
+  }
+  function pageAnnotations() { return annotations.filter(item => item.page === pageNumber); }
+  function renderAnnotations() {
+    overlayLayer.replaceChildren();
+    const page = pdfDocument?.getPage ? pdfDocument.getPage(pageNumber) : null;
+    if (!page || !canvas.width) return;
+    for (const item of pageAnnotations()) {
+      const el = document.createElement("div");
+      el.className = item.type === "cover" ? "pdf-preview-cover" : "pdf-preview-text";
+      el.style.left = item.x / 1000 * 100 + "%";
+      el.style.top = item.y / 1000 * 100 + "%";
+      el.style.width = item.width / 1000 * 100 + "%";
+      el.style.minHeight = Math.max(2, item.height / 1000 * 100) + "%";
+      if (item.type === "text") { el.textContent = item.text; el.style.fontSize = Math.max(8, item.fontSize * canvas.width / 600) + "px"; }
+      overlayLayer.appendChild(el);
+    }
+    const list = $("astraPdfAnnotationList");
+    if (list) {
+      list.replaceChildren();
+      annotations.forEach((item, index) => {
+        const li = document.createElement("li");
+        li.textContent = "Page " + item.page + " · " + (item.type === "cover" ? "Covered area" : "Text: " + item.text.slice(0, 55));
+        const remove = document.createElement("button");
+        remove.type = "button"; remove.textContent = "REMOVE";
+        remove.addEventListener("click", () => { annotations.splice(index, 1); renderAnnotations(); });
+        li.appendChild(remove); list.appendChild(li);
+      });
+    }
+  }
+  async function renderPage() {
+    if (!pdfDocument) return;
+    const page = await pdfDocument.getPage(pageNumber);
+    const base = page.getViewport({ scale: 1 });
+    const maxWidth = Math.min(760, Math.max(300, stage.clientWidth || 700));
+    const scale = maxWidth / base.width;
+    const viewport = page.getViewport({ scale });
+    const context = canvas.getContext("2d", { alpha: false });
+    canvas.width = Math.ceil(viewport.width); canvas.height = Math.ceil(viewport.height);
+    canvas.style.width = viewport.width + "px"; canvas.style.height = viewport.height + "px";
+    stage.style.width = viewport.width + "px"; stage.style.height = viewport.height + "px";
+    overlayLayer.style.width = viewport.width + "px"; overlayLayer.style.height = viewport.height + "px";
+    await page.render({ canvasContext: context, viewport }).promise;
+    $("astraPdfPageLabel").textContent = "PAGE " + pageNumber + " / " + pdfDocument.numPages;
+    $("astraPdfPrev").disabled = pageNumber <= 1;
+    $("astraPdfNext").disabled = pageNumber >= pdfDocument.numPages;
+    renderAnnotations();
+  }
+  async function open(data, onSave) {
+    if (!data || typeof data.text !== "string") throw new Error("No saved document is available.");
     current = {
-      name: String(documentData.name || "document.txt"),
-      mimeType: String(documentData.mimeType || "text/plain"),
-      text: documentData.text.slice(0, 50000)
+      name: String(data.name || "document.txt"),
+      mimeType: String(data.mimeType || "text/plain"),
+      text: data.text.slice(0, 50000),
+      storagePath: data.storagePath || null,
+      editorState: data.editorState || { annotations: [] }
     };
     saveHandler = typeof onSave === "function" ? onSave : null;
-    savedText = current.text;
-    title.textContent = current.name + " · EXTRACTED TEXT";
-    editor.value = current.text;
-    editor.disabled = false;
+    savedText = current.text; editor.value = current.text; editor.disabled = false;
+    annotations = Array.isArray(current.editorState.annotations) ? current.editorState.annotations.slice(0, 100) : [];
+    pdfBytes = null; pdfDocument = null; pageNumber = 1;
+    title.textContent = current.name + " · DOCUMENT EDITOR";
     saveButton.disabled = !saveHandler;
-    showStatus(saveHandler ? "Edit the extracted text, then save to cloud." : "Read-only document preview.");
+    const isPdf = current.mimeType === "application/pdf" || /\\.pdf$/i.test(current.name);
+    visual.hidden = true; fallback.hidden = !(!isPdf);
+    if (isPdf) {
+      try {
+        const bytes = await getOriginalBytes(data);
+        if (!bytes) throw new Error("The original PDF is not stored yet. Apply the PDF storage setup, then upload this PDF again.");
+        await ensurePdfJs();
+        pdfBytes = bytes;
+        pdfDocument = await window.pdfjsLib.getDocument({ data: bytes.slice() }).promise;
+        visual.hidden = false; fallback.hidden = true;
+        await renderPage();
+        showStatus("VISUAL PDF READY · Add text or cover an area. Original layout is preserved.");
+      } catch (error) {
+        visual.hidden = true; fallback.hidden = false;
+        showStatus("VISUAL PDF UNAVAILABLE · " + String(error?.message || error).slice(0, 170) + " · Extracted-text mode is available below.");
+      }
+    } else {
+      showStatus("Extracted-text mode · Export creates a new text-based file.");
+    }
     if (!dialog.open) dialog.showModal();
   }
 
-  let pdfLibraryPromise = null;
-  async function loadPdfLibrary() {
-    if (window.jspdf?.jsPDF || window.jsPDF) return;
-    if (pdfLibraryPromise) return pdfLibraryPromise;
-
-    pdfLibraryPromise = (async () => {
-      const sources = [
-        "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js",
-        "https://cdn.jsdelivr.net/npm/jspdf@2.5.2/dist/jspdf.umd.min.js",
-        "https://unpkg.com/jspdf@2.5.2/dist/jspdf.umd.min.js"
-      ];
-      const previous = document.querySelector('script[data-astra-document-pdf="true"]');
-      if (previous) previous.remove();
-
-      let lastError = null;
-      for (const src of sources) {
-        try {
-          await new Promise((resolve, reject) => {
-            const script = document.createElement("script");
-            const timeout = window.setTimeout(() => {
-              script.remove();
-              reject(new Error("PDF library request timed out."));
-            }, 15000);
-            script.src = src;
-            script.async = true;
-            script.dataset.astraDocumentPdf = "true";
-            script.onload = () => {
-              window.clearTimeout(timeout);
-              resolve();
-            };
-            script.onerror = () => {
-              window.clearTimeout(timeout);
-              script.remove();
-              reject(new Error("PDF library source failed."));
-            };
-            document.head.appendChild(script);
-          });
-          if (window.jspdf?.jsPDF || window.jsPDF) return;
-          throw new Error("PDF library loaded without its export API.");
-        } catch (error) {
-          lastError = error;
-        }
-      }
-      throw new Error("PDF export library could not be loaded from the available sources. " +
-        String(lastError?.message || ""));
-    })();
-
-    try { await pdfLibraryPromise; }
-    catch (error) { pdfLibraryPromise = null; throw error; }
-  }
+  $("astraPdfPrev")?.addEventListener("click", async () => { if (pageNumber > 1) { pageNumber--; await renderPage(); } });
+  $("astraPdfNext")?.addEventListener("click", async () => { if (pdfDocument && pageNumber < pdfDocument.numPages) { pageNumber++; await renderPage(); } });
+  $("astraPdfAddAnnotation")?.addEventListener("click", () => {
+    if (!pdfDocument) return;
+    const type = $("astraPdfTool").value;
+    const text = $("astraPdfOverlayText").value.trim();
+    if (type === "text" && !text) { showStatus("Enter the text you want to add."); return; }
+    if (annotations.length >= 100) { showStatus("Maximum of 100 annotations per document."); return; }
+    const x = numberValue("astraPdfX", 0, 100, 10) * 10;
+    const y = numberValue("astraPdfY", 0, 100, 15) * 10;
+    const width = numberValue("astraPdfW", 1, 100, 35) * 10;
+    const height = numberValue("astraPdfH", 1, 100, 8) * 10;
+    annotations.push({ type, page: pageNumber, x, y, width, height, fontSize: numberValue("astraPdfFontSize", 6, 72, 14), text: type === "text" ? text : "" });
+    renderAnnotations();
+    showStatus(type === "cover" ? "COVER AREA ADDED · Save or export to apply it." : "TEXT ADDED · Save or export to apply it.");
+  });
 
   saveButton.addEventListener("click", async () => {
     if (!current || !saveHandler) return;
     const text = editor.value;
-    if (!text.trim()) {
-      showStatus("A document cannot be saved empty.");
-      return;
-    }
-    if (text.length > 50000) {
-      showStatus("Document text exceeds the 50,000-character limit.");
-      return;
-    }
-    saveButton.disabled = true;
-    showStatus("Saving edited document to cloud…");
+    if (!text.trim()) { showStatus("A document cannot be saved empty."); return; }
+    if (text.length > 50000) { showStatus("Document text exceeds the 50,000-character limit."); return; }
+    saveButton.disabled = true; showStatus("Saving document and editor changes to cloud…");
     try {
-      await saveHandler({ ...current, text });
-      current.text = text;
-      savedText = text;
+      const editorState = { annotations: annotations.slice(0, 100) };
+      await saveHandler({ ...current, text, editorState });
+      current.text = text; current.editorState = editorState; savedText = text;
       showStatus("SAVED TO CLOUD · " + current.name);
-    } catch (error) {
-      showStatus("SAVE FAILED · " + String(error?.message || error).slice(0, 160));
-    } finally {
-      saveButton.disabled = false;
-    }
+    } catch (error) { showStatus("SAVE FAILED · " + String(error?.message || error).slice(0, 160)); }
+    finally { saveButton.disabled = false; }
   });
 
   pdfButton.addEventListener("click", async () => {
     if (!current) return;
-    pdfButton.disabled = true;
-    showStatus("Preparing a new PDF copy…");
+    pdfButton.disabled = true; showStatus("Preparing PDF export…");
     try {
-      await loadPdfLibrary();
-      const JsPDF = window.jspdf?.jsPDF || window.jsPDF;
-      if (!JsPDF) throw new Error("PDF export library is unavailable.");
-      const pdf = new JsPDF({ unit: "mm", format: "a4" });
-      const margin = 16;
-      const width = 210 - margin * 2;
-      const lines = String(editor.value).replace(/\r\n?/g, "\n").split("\n");
-      let y = margin;
-      pdf.setFont("helvetica", "bold");
-      pdf.setFontSize(13);
-      pdf.text(current.name.slice(0, 90), margin, y);
-      y += 9;
-      pdf.setFont("helvetica", "normal");
-      pdf.setFontSize(9.5);
-      for (const paragraph of lines) {
-        const wrapped = pdf.splitTextToSize(paragraph || " ", width);
-        for (const line of wrapped) {
-          if (y > 281) { pdf.addPage(); y = margin; }
-          pdf.text(line, margin, y);
-          y += 4.8;
+      if (pdfBytes && pdfDocument) {
+        await ensurePdfLib();
+        const { PDFDocument, StandardFonts, rgb } = window.PDFLib;
+        const pdf = await PDFDocument.load(pdfBytes);
+        const font = await pdf.embedFont(StandardFonts.Helvetica);
+        for (const item of annotations) {
+          const page = pdf.getPage(item.page - 1);
+          if (!page) continue;
+          const size = page.getSize();
+          const x = item.x / 1000 * size.width;
+          const top = item.y / 1000 * size.height;
+          const width = item.width / 1000 * size.width;
+          const height = item.height / 1000 * size.height;
+          if (item.type === "cover") {
+            page.drawRectangle({ x, y: size.height - top - height, width, height, color: rgb(1, 1, 1), borderWidth: 0 });
+          } else {
+            const fontSize = Math.max(6, Math.min(72, item.fontSize));
+            page.drawText(item.text, {
+              x, y: size.height - top - fontSize, size: fontSize, font,
+              color: rgb(0.05, 0.05, 0.08), maxWidth: Math.max(20, width),
+              lineHeight: fontSize * 1.25
+            });
+          }
         }
-        y += 1.8;
+        const bytes = await pdf.save();
+        downloadBlob(new Blob([bytes], { type: "application/pdf" }), safeBaseName(current.name) + "-edited.pdf");
+        showStatus("EDITED PDF EXPORTED · ORIGINAL PAGE DESIGN PRESERVED");
+      } else {
+        showStatus("No original PDF loaded. Exporting extracted text as a new PDF…");
+        await ensurePdfLib();
+        const { PDFDocument, StandardFonts } = window.PDFLib;
+        const pdf = await PDFDocument.create();
+        const font = await pdf.embedFont(StandardFonts.Helvetica);
+        let page = pdf.addPage([595.28, 841.89]), y = 800;
+        page.drawText(current.name.slice(0, 90), { x: 48, y, size: 14, font }); y -= 28;
+        for (const paragraph of String(editor.value).split(/\\r?\\n/)) {
+          const words = paragraph.split(/\\s+/); let line = "";
+          for (const word of words) {
+            const candidate = line ? line + " " + word : word;
+            if (font.widthOfTextAtSize(candidate, 10) > 495 && line) {
+              if (y < 45) { page = pdf.addPage([595.28, 841.89]); y = 800; }
+              page.drawText(line, { x: 48, y, size: 10, font }); y -= 14; line = word;
+            } else line = candidate;
+          }
+          if (y < 45) { page = pdf.addPage([595.28, 841.89]); y = 800; }
+          if (line) { page.drawText(line, { x: 48, y, size: 10, font }); y -= 17; }
+        }
+        const bytes = await pdf.save();
+        downloadBlob(new Blob([bytes], { type: "application/pdf" }), safeBaseName(current.name) + "-text-copy.pdf");
+        showStatus("TEXT-BASED PDF EXPORTED · ORIGINAL LAYOUT NOT AVAILABLE");
       }
-      pdf.save(safeBaseName(current.name) + "-edited.pdf");
-      showStatus("NEW PDF EXPORTED · ORIGINAL FILE UNCHANGED");
-    } catch (error) {
-      showStatus("PDF EXPORT FAILED · " + String(error?.message || error).slice(0, 140));
-    } finally {
-      pdfButton.disabled = false;
-    }
+    } catch (error) { showStatus("PDF EXPORT FAILED · " + String(error?.message || error).slice(0, 160)); }
+    finally { pdfButton.disabled = false; }
   });
 
   textButton.addEventListener("click", () => {
     if (!current) return;
-    const blob = new Blob([editor.value], { type: "text/plain;charset=utf-8" });
-    downloadBlob(blob, safeBaseName(current.name) + "-edited.txt");
+    downloadBlob(new Blob([editor.value], { type: "text/plain;charset=utf-8" }), safeBaseName(current.name) + "-edited.txt");
     showStatus("TEXT COPY EXPORTED");
   });
-
   if (closeButton) closeButton.addEventListener("click", () => dialog.close());
   dialog.addEventListener("cancel", event => {
-    if (editor.value !== savedText && !window.confirm("Discard unsaved document edits?")) event.preventDefault();
+    const hasChanges = editor.value !== savedText || annotations.length !== (current?.editorState?.annotations?.length || 0);
+    if (hasChanges && !window.confirm("Close the editor? Unsaved changes will be lost.")) event.preventDefault();
   });
-
   window.ASTRADocumentEditor = Object.freeze({ open });
 })();
