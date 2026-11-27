@@ -81,6 +81,9 @@
 
   async function updateSkill(id, changes) {
     try {
+      if (changes.enabled === true && skills.filter(skill => skill.enabled).length >= 5) {
+        throw new Error("Only 5 skills can be enabled at once. Disable another skill first.");
+      }
       const { error } = await client.from("astra_skills")
         .update({ ...changes, updated_at: new Date().toISOString() })
         .eq("id", id);
