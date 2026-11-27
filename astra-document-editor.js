@@ -12,6 +12,8 @@
   const saveButton = $("astraDocumentSave");
   const pdfButton = $("astraDocumentExportPdf");
   const textButton = $("astraDocumentExportText");
+  const aiInstruction = $("astraPdfAiInstruction");
+  const aiButton = $("astraPdfAiApply");
   const closeButton = $("astraDocumentClose");
   const visual = $("astraPdfVisualEditor");
   const fallback = $("astraTextEditorFallback");
@@ -22,8 +24,8 @@
   if (!dialog || !editor || !saveButton || !pdfButton || !textButton) return;
 
   const BUCKET = "astra-original-documents";
-  let current = null, saveHandler = null, savedText = "", pdfBytes = null;
-  let pdfDocument = null, pageNumber = 1, annotations = [], pdfLibPromise = null, pdfJsPromise = null, selectedTextBox = null;
+  let current = null, saveHandler = null, aiEditHandler = null, savedText = "", pdfBytes = null;
+  let pdfDocument = null, pageNumber = 1, annotations = [], pdfLibPromise = null, pdfJsPromise = null, selectedTextBox = null, detectedTextBlocks = [];
 
   function showStatus(message) { if (status) status.textContent = message; }
   function safeBaseName(name) {
@@ -121,6 +123,7 @@
     textLayer.style.width = viewport.width + "px";
     textLayer.style.height = viewport.height + "px";
     const content = await page.getTextContent();
+    detectedTextBlocks = [];
     for (const item of content.items || []) {
       const value = String(item.str || "").trim();
       if (!value || !item.width) continue;
@@ -135,6 +138,8 @@
       span.style.width = Math.max(fontHeight * 0.6, item.width * viewport.scale) + "px";
       span.style.height = Math.max(fontHeight * 1.25, 8) + "px";
       span.style.fontSize = fontHeight + "px";
+      const block = { text: value, x: Math.max(0, Math.min(99, tx[4] / viewport.width * 100)), y: Math.max(0, Math.min(99, (tx[5] - fontHeight) / viewport.height * 100)), width: Math.max(1, Math.min(100, item.width * viewport.scale / viewport.width * 100 + 0.5)), height: Math.max(1, Math.min(100, fontHeight * 1.25 / viewport.height * 100 + 0.8)), fontSize: Math.max(6, Math.min(72, fontHeight * 0.75)) };
+      detectedTextBlocks.push(block);
       span.addEventListener("click", event => {
         event.stopPropagation();
         const rect = span.getBoundingClientRect();
@@ -176,7 +181,7 @@
     $("astraPdfNext").disabled = pageNumber >= pdfDocument.numPages;
     renderAnnotations();
   }
-  async function open(data, onSave) {
+  async function open(data, onSave, onAiEdit) {
     if (!data || typeof data.text !== "string") throw new Error("No saved document is available.");
     current = {
       name: String(data.name || "document.txt"),
@@ -186,6 +191,7 @@
       editorState: data.editorState || { annotations: [] }
     };
     saveHandler = typeof onSave === "function" ? onSave : null;
+    aiEditHandler = typeof onAiEdit === "function" ? onAiEdit : null;
     savedText = current.text; editor.value = current.text; editor.disabled = false;
     annotations = Array.isArray(current.editorState.annotations) ? current.editorState.annotations.slice(0, 100) : [];
     pdfBytes = null; pdfDocument = null; pageNumber = 1; selectedTextBox = null;
@@ -239,6 +245,32 @@
     annotations.push({ type, page: pageNumber, x, y, width, height, fontSize: numberValue("astraPdfFontSize", 6, 72, 14), text: type === "text" ? text : "" });
     renderAnnotations();
     showStatus(type === "cover" ? "COVER AREA ADDED · Save or export to apply it." : "TEXT ADDED · Save or export to apply it.");
+  });
+
+  if (aiButton) aiButton.addEventListener("click", async () => {
+    const instruction = String(aiInstruction?.value || "").trim();
+    if (!instruction) { showStatus("Describe the change you want ASTRA to make."); return; }
+    if (!aiEditHandler) { showStatus("ASTRA AI editing is not connected yet."); return; }
+    if (!detectedTextBlocks.length) { showStatus("No selectable text was detected on this page. Try a text-based PDF page."); return; }
+    aiButton.disabled = true;
+    showStatus("ASTRA IS ANALYSING THIS PAGE AND YOUR INSTRUCTION…");
+    try {
+      const result = await aiEditHandler(instruction, detectedTextBlocks.map(item => ({ text: item.text })), pageNumber);
+      const edits = Array.isArray(result?.plannedEdits) ? result.plannedEdits : [];
+      if (!edits.length) { showStatus("ASTRA COULD NOT MATCH THAT INSTRUCTION TO TEXT ON THIS PAGE. Try naming the exact words."); return; }
+      let applied = 0;
+      for (const edit of edits) {
+        const index = Number(edit.blockIndex);
+        const block = detectedTextBlocks[index];
+        if (!block || block.text !== edit.sourceText || typeof edit.replacementText !== "string" || !edit.replacementText.trim()) continue;
+        annotations.push({ type: "cover", page: pageNumber, x: block.x * 10, y: block.y * 10, width: block.width * 10, height: block.height * 10, fontSize: 0, text: "" });
+        annotations.push({ type: "text", page: pageNumber, x: block.x * 10, y: block.y * 10, width: block.width * 10, height: block.height * 10, fontSize: block.fontSize, text: edit.replacementText.slice(0, 500) });
+        applied++;
+      }
+      renderAnnotations();
+      showStatus(applied ? "ASTRA PREPARED " + applied + " EDIT(S) · REVIEW THE PAGE BEFORE SAVING OR EXPORTING." : "ASTRA COULD NOT SAFELY APPLY THE PROPOSED EDITS.");
+    } catch (error) { showStatus("ASTRA AI EDIT FAILED · " + String(error?.message || error).slice(0, 150)); }
+    finally { aiButton.disabled = false; }
   });
 
   saveButton.addEventListener("click", async () => {
