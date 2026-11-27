@@ -6,14 +6,15 @@ const root = new URL("../", import.meta.url);
 const read = path => readFile(new URL(path, root), "utf8");
 
 test("ASTRA exposes a cloud-backed extracted-document editor", async () => {
-  const [html, page, editor, worker, serviceWorker, migration, editorMigration] = await Promise.all([
+  const [html, page, editor, worker, serviceWorker, migration, editorMigration, css] = await Promise.all([
     read("astra.html"),
     read("astra-page.js"),
     read("astra-document-editor.js"),
     read("backend/worker.js"),
     read("astra-sw.js"),
     read("backend/migrations/0004_astra_original_pdf_storage.sql"),
-    read("backend/migrations/0005_astra_pdf_editor_state.sql")
+    read("backend/migrations/0005_astra_pdf_editor_state.sql"),
+    read("astra-page.css")
   ]);
   assert.ok(html.includes('id="astraDocumentEditorButton"'));
   assert.ok(html.includes('id="astraDocumentDialog"'));
@@ -27,6 +28,12 @@ test("ASTRA exposes a cloud-backed extracted-document editor", async () => {
   assert.ok(html.includes('id="astraDocumentExportPdf"'));
   assert.ok(editor.includes("SAVED TO CLOUD"));
   assert.ok(editor.includes("Original layout is preserved"));
+  assert.ok(editor.includes("renderSelectableText"));
+  assert.ok(editor.includes("TEXT SELECTED"));
+  assert.ok(editor.includes("REPLACEMENT PREVIEW ADDED"));
+  assert.ok(html.includes("astraPdfTextLayer"));
+  assert.ok(html.includes("value=\"replace\""));
+  assert.ok(css.includes(".pdf-detected-text"));
   assert.ok(editor.includes("PDFDocument.load(pdfBytes)"));
   assert.ok(html.includes("astraPdfVisualEditor"));
   assert.ok(migration.includes("astra-original-documents"));
