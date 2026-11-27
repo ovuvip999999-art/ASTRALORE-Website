@@ -584,7 +584,39 @@ function renderAnswer(container, text) {
       const replacementChars = (meaningful.match(/\uFFFD/g) || []).length;
       const readableRatio = meaningful.length ? readable / meaningful.length : 0;
       if (meaningful.length < 40 || readableRatio < 0.58 || replacementChars / Math.max(1, meaningful.length) > 0.01) {
-        throw new Error("This PDF's text layer appears corrupted or unreadable. ASTRA stopped instead of guessing. Please upload a searchable/OCR PDF or a clearer export.");
+        if (status) status.textContent = "PDF TEXT LAYER UNREADABLE · TRYING OCR";
+        const Tesseract = await loadScriptOnce("https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js", "Tesseract");
+        const worker = await Tesseract.createWorker("eng");
+        const ocrPages = [];
+        try {
+          const ocrLimit = Math.min(pdf.numPages, 12);
+          for (let pageNo = 1; pageNo <= ocrLimit; pageNo++) {
+            if (status) status.textContent = "OCR READING PAGE " + pageNo + " OF " + ocrLimit;
+            const page = await pdf.getPage(pageNo);
+            const viewport = page.getViewport({ scale: 1.6 });
+            const canvas = document.createElement("canvas");
+            canvas.width = Math.ceil(viewport.width);
+            canvas.height = Math.ceil(viewport.height);
+            const context = canvas.getContext("2d", { willReadFrequently: true });
+            await page.render({ canvasContext: context, viewport }).promise;
+            const result = await worker.recognize(canvas);
+            const pageText = String(result.data?.text || "").trim();
+            if (pageText) ocrPages.push("[Page " + pageNo + " · OCR]\\n" + pageText);
+            canvas.width = 0;
+            canvas.height = 0;
+          }
+        } finally {
+          await worker.terminate();
+        }
+
+        const ocrText = ocrPages.join("\\n\\n").slice(0, MAX_EXTRACTED_CHARS);
+        const ocrMeaningful = ocrText.replace(/\\[Page [^\\]]+\\]/g, "").replace(/\\s/g, "");
+        const ocrReadable = (ocrMeaningful.match(/[\\p{L}\\p{N}\\p{P}]/gu) || []).length;
+        if (ocrMeaningful.length < 40 || ocrReadable / Math.max(1, ocrMeaningful.length) < 0.58) {
+          throw new Error("This PDF's text layer is unreadable and OCR could not recover enough text. Please upload clearer page images or a searchable PDF.");
+        }
+        if (pdf.numPages > 12) ocrPages.push("[OCR processed only the first 12 of " + pdf.numPages + " pages. Split the PDF to process the remaining pages.]");
+        return ocrPages.join("\\n\\n").slice(0, MAX_EXTRACTED_CHARS);
       }
       return extractedText;
     }
