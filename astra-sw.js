@@ -1,4 +1,4 @@
-const CACHE_NAME = "astra-ai-shell-v11";
+const CACHE_NAME = "astra-ai-shell-v12";
 const APP_FILES = [
   "/astra.html",
   "/astra-page.css",
