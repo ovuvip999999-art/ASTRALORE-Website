@@ -53,4 +53,9 @@ test("browser PDF OCR records separate render, recognition, and quality diagnost
   assert.ok(source.includes("makeThresholdCanvas"), "OCR should create a contrast-normalized threshold image");
   assert.ok(source.includes("tessedit_pageseg_mode: \"11\""), "OCR should retry using sparse-text segmentation");
   assert.ok(source.includes("selectedPass"), "Diagnostics should report which OCR pass was selected");
+  assert.ok(source.includes("word.bbox"), "OCR should preserve word coordinates for table columns");
+  assert.ok(source.includes("LOW OCR CONFIDENCE"), "Low-confidence OCR pages should be visibly flagged");
+  assert.ok(source.includes("DOWNLOAD AS PDF"), "ASTRA replies should be exportable as an edited PDF draft");
+  assert.ok(source.includes("documentPersistenceStatus"), "The UI should display document save/restore state");
+
 });
