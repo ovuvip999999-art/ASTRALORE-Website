@@ -500,6 +500,29 @@ function renderAnswer(container, text) {
 
     const sessionResult = window.ASTRASupabase ? await window.ASTRASupabase.auth.getSession() : { data: { session: null } };
     const accessToken = sessionResult.data?.session?.access_token;
+    let storedOriginalPath = attachment?.storagePath || null;
+    if (attachment?.kind === "document" && attachment.originalFile &&
+        attachment.mimeType === "application/pdf" && window.ASTRASupabase && cloudConversation?.id) {
+      try {
+        const userResult = await window.ASTRASupabase.auth.getUser();
+        const userId = userResult.data?.user?.id;
+        if (userId) {
+          const safeName = attachment.name.replace(/[^a-z0-9._-]+/gi, "-").slice(-100);
+          storedOriginalPath = userId + "/" + cloudConversation.id + "/" + crypto.randomUUID() + "-" + safeName;
+          const upload = await window.ASTRASupabase.storage
+            .from("astra-original-documents")
+            .upload(storedOriginalPath, attachment.originalFile, {
+              contentType: "application/pdf", upsert: false
+            });
+          if (upload.error) throw upload.error;
+          attachment.storagePath = storedOriginalPath;
+          if (currentDocument?.name === attachment.name) currentDocument.storagePath = storedOriginalPath;
+        }
+      } catch (storageError) {
+        storedOriginalPath = null;
+        if (status) status.textContent = "PDF ORIGINAL NOT CLOUD-SAVED · APPLY STORAGE SETUP";
+      }
+    }
     const response = await fetch(API_URL, {
       method: "POST",
       headers: {
@@ -509,7 +532,7 @@ function renderAnswer(container, text) {
       body: JSON.stringify({
         message: question,
         image: attachment?.kind === "image" ? { name: attachment.name, mimeType: attachment.mimeType, data: attachment.dataUrl.split(",")[1] } : null,
-        document: attachment?.kind === "document" ? { name: attachment.name, mimeType: attachment.mimeType, text: attachment.text } : null,
+        document: attachment?.kind === "document" ? { name: attachment.name, mimeType: attachment.mimeType, text: attachment.text, ...(storedOriginalPath ? { storagePath: storedOriginalPath } : {}) } : null,
         history: history.slice(-9, -1),
         memory: window.ASTRAMemory ? window.ASTRAMemory.getMemories().map(item => item.text) : [],
         conversationId: cloudConversation?.id || null
@@ -571,7 +594,7 @@ function renderAnswer(container, text) {
       if (status) status.textContent = "DOCUMENT RESTORED · " + String(documentData.name).slice(0, 48);
     }
     if (!window.ASTRADocumentEditor) throw new Error("The document editor did not load. Refresh and try again.");
-    window.ASTRADocumentEditor.open(documentData, async updatedDocument => {
+    window.ASTRADocumentEditor.open({ ...documentData, originalFile: currentDocument?.originalFile || null }, async updatedDocument => {
       const result = await sendDocumentAction("save", {
         name: updatedDocument.name,
         mimeType: updatedDocument.mimeType,
@@ -1049,7 +1072,7 @@ function renderAnswer(container, text) {
         if (status) status.textContent = "READING DOCUMENT · PLEASE WAIT";
         const extracted = await extractDocument(file);
         if (!extracted.trim()) throw new Error("No readable text was found. Scanned PDFs and image-only documents need OCR, which is not available yet.");
-        activeAttachment = { kind: "document", name: file.name, mimeType: file.type || "application/octet-stream", text: extracted };
+        activeAttachment = { kind: "document", name: file.name, mimeType: file.type || "application/octet-stream", text: extracted, ...(file.type === "application/pdf" ? { originalFile: file } : {}) };
         currentDocument = { ...activeAttachment, conversationId: cloudConversation?.id || null };
         if (lastPdfDiagnostic) {
           addMessage(
