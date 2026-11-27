@@ -382,7 +382,7 @@ function renderAnswer(container, text) {
       renderAnswer(content, text);
     } else {
       content.textContent = text;
-      if (who === "user" && messageIndex !== null && messageIndex === history.length && activeAttachment) {
+      if (who === "user" && messageIndex !== null && messageIndex === history.length && activeAttachment?.kind === "image") {
         const image = document.createElement("img");
         image.className = "astra-user-attachment";
         image.src = activeAttachment.dataUrl;
@@ -435,7 +435,8 @@ function renderAnswer(container, text) {
       },
       body: JSON.stringify({
         message: question,
-        image: attachment ? { name: attachment.name, mimeType: attachment.mimeType, data: attachment.dataUrl.split(",")[1] } : null,
+        image: attachment?.kind === "image" ? { name: attachment.name, mimeType: attachment.mimeType, data: attachment.dataUrl.split(",")[1] } : null,
+        document: attachment?.kind === "document" ? { name: attachment.name, mimeType: attachment.mimeType, text: attachment.text } : null,
         history: history.slice(-9, -1),
         memory: window.ASTRAMemory ? window.ASTRAMemory.getMemories().map(item => item.text) : []
       })
@@ -461,47 +462,124 @@ function renderAnswer(container, text) {
   const attachmentPreview = document.getElementById("astraAttachmentPreview");
   const attachmentThumb = document.getElementById("astraAttachmentThumb");
   const attachmentName = document.getElementById("astraAttachmentName");
+  const attachmentKind = document.getElementById("astraAttachmentKind");
   const removeAttachment = document.getElementById("astraRemoveAttachment");
+  const MAX_FILE_BYTES = 10 * 1024 * 1024;
+  const MAX_EXTRACTED_CHARS = 50000;
 
   function clearAttachment() {
     activeAttachment = null;
     if (fileInput) fileInput.value = "";
     if (attachmentPreview) attachmentPreview.hidden = true;
-    if (attachmentThumb) attachmentThumb.removeAttribute("src");
+    if (attachmentThumb) { attachmentThumb.hidden = true; attachmentThumb.removeAttribute("src"); }
+  }
+
+  function loadScriptOnce(src, globalName) {
+    if (window[globalName]) return Promise.resolve(window[globalName]);
+    return new Promise((resolve, reject) => {
+      const existing = document.querySelector('script[data-astra-lib="' + globalName + '"]');
+      const script = existing || document.createElement("script");
+      if (!existing) {
+        script.src = src;
+        script.async = true;
+        script.dataset.astraLib = globalName;
+        document.head.appendChild(script);
+      }
+      script.addEventListener("load", () => window[globalName] ? resolve(window[globalName]) : reject(new Error("Document library failed to initialise.")), { once: true });
+      script.addEventListener("error", () => reject(new Error("Could not load the document reader. Check your internet connection.")), { once: true });
+    });
+  }
+
+  async function extractDocument(file) {
+    const lower = file.name.toLowerCase();
+    if (lower.endsWith(".txt") || lower.endsWith(".md") || lower.endsWith(".csv")) {
+      return await file.text();
+    }
+    if (lower.endsWith(".pdf") || file.type === "application/pdf") {
+      const pdfjs = await loadScriptOnce("https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js", "pdfjsLib");
+      pdfjs.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+      const pdf = await pdfjs.getDocument({ data: await file.arrayBuffer() }).promise;
+      const pageLimit = Math.min(pdf.numPages, 40);
+      const pages = [];
+      for (let pageNo = 1; pageNo <= pageLimit; pageNo++) {
+        const page = await pdf.getPage(pageNo);
+        const content = await page.getTextContent();
+        pages.push("[Page " + pageNo + "] " + content.items.map(item => item.str || "").join(" "));
+        if (pages.join("\n").length >= MAX_EXTRACTED_CHARS) break;
+      }
+      if (pdf.numPages > pageLimit) pages.push("[Only the first " + pageLimit + " pages were extracted.]");
+      return pages.join("\n").slice(0, MAX_EXTRACTED_CHARS);
+    }
+    if (lower.endsWith(".docx")) {
+      const mammoth = await loadScriptOnce("https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.9.0/mammoth.browser.min.js", "mammoth");
+      const result = await mammoth.extractRawText({ arrayBuffer: await file.arrayBuffer() });
+      return String(result.value || "").slice(0, MAX_EXTRACTED_CHARS);
+    }
+    if (lower.endsWith(".xlsx") || lower.endsWith(".xls")) {
+      const XLSX = await loadScriptOnce("https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js", "XLSX");
+      const workbook = XLSX.read(await file.arrayBuffer(), { type: "array" });
+      const output = [];
+      for (const sheetName of workbook.SheetNames) {
+        output.push("SHEET: " + sheetName);
+        output.push(XLSX.utils.sheet_to_csv(workbook.Sheets[sheetName]));
+        if (output.join("\n").length >= MAX_EXTRACTED_CHARS) break;
+      }
+      return output.join("\n").slice(0, MAX_EXTRACTED_CHARS);
+    }
+    throw new Error("Supported files: PDF, DOCX, XLSX, XLS, CSV, TXT and MD.");
   }
 
   if (attachButton && fileInput) {
     attachButton.addEventListener("click", () => fileInput.click());
-    fileInput.addEventListener("change", () => {
+    fileInput.addEventListener("change", async () => {
       const file = fileInput.files && fileInput.files[0];
       if (!file) return;
-      const allowed = ["image/jpeg", "image/png", "image/webp"];
-      if (!allowed.includes(file.type)) {
-        if (status) status.textContent = "SUPPORTED IMAGES: JPG, PNG OR WEBP";
+      if (file.size > MAX_FILE_BYTES) {
+        if (status) status.textContent = "FILE TOO LARGE · MAXIMUM 10 MB";
         clearAttachment();
         return;
       }
-      if (file.size > 3 * 1024 * 1024) {
+      const lower = file.name.toLowerCase();
+      const isImage = ["image/jpeg", "image/png", "image/webp"].includes(file.type);
+      if (isImage && file.size > 3 * 1024 * 1024) {
         if (status) status.textContent = "IMAGE TOO LARGE · MAXIMUM 3 MB";
         clearAttachment();
         return;
       }
-      const reader = new FileReader();
-      reader.onload = () => {
-        activeAttachment = { name: file.name, mimeType: file.type, dataUrl: String(reader.result) };
-        if (attachmentThumb) attachmentThumb.src = activeAttachment.dataUrl;
+      try {
+        if (isImage) {
+          const reader = new FileReader();
+          reader.onload = () => {
+            activeAttachment = { kind: "image", name: file.name, mimeType: file.type, dataUrl: String(reader.result) };
+            if (attachmentThumb) { attachmentThumb.src = activeAttachment.dataUrl; attachmentThumb.hidden = false; }
+            if (attachmentName) attachmentName.textContent = file.name;
+            if (attachmentKind) attachmentKind.textContent = "Image ready · ASTRA can analyse it";
+            if (attachmentPreview) attachmentPreview.hidden = false;
+            if (status) status.textContent = "IMAGE READY · ASTRA CAN ANALYSE IT";
+          };
+          reader.onerror = () => { if (status) status.textContent = "COULD NOT READ THIS IMAGE"; };
+          reader.readAsDataURL(file);
+          return;
+        }
+        if (status) status.textContent = "READING DOCUMENT · PLEASE WAIT";
+        const extracted = await extractDocument(file);
+        if (!extracted.trim()) throw new Error("No readable text was found. Scanned PDFs and image-only documents need OCR, which is not available yet.");
+        activeAttachment = { kind: "document", name: file.name, mimeType: file.type || "application/octet-stream", text: extracted };
+        if (attachmentThumb) { attachmentThumb.hidden = true; attachmentThumb.removeAttribute("src"); }
         if (attachmentName) attachmentName.textContent = file.name;
+        if (attachmentKind) attachmentKind.textContent = "Text extracted · up to " + MAX_EXTRACTED_CHARS.toLocaleString() + " characters";
         if (attachmentPreview) attachmentPreview.hidden = false;
-        if (status) status.textContent = "IMAGE READY · ASTRA CAN ANALYSE IT";
-      };
-      reader.onerror = () => { if (status) status.textContent = "COULD NOT READ THIS IMAGE"; };
-      reader.readAsDataURL(file);
+        if (status) status.textContent = "DOCUMENT READY · ASTRA CAN READ IT";
+      } catch (error) {
+        clearAttachment();
+        if (status) status.textContent = (error.message || "COULD NOT READ THIS FILE").slice(0, 120);
+      }
     });
   }
   if (removeAttachment) removeAttachment.addEventListener("click", clearAttachment);
 
   async function send(text) {
-    const message = text.trim() || (activeAttachment ? "Please analyse the attached image and describe what you can see." : "");
+    const message = text.trim() || (activeAttachment?.kind === "image" ? "Please analyse the attached image and describe what you can see." : activeAttachment?.kind === "document" ? "Please read the attached document and summarise its contents." : "");
 
     if (!signedIn) {
       const accountDialog = document.getElementById("astraAccountDialog");
@@ -527,7 +605,7 @@ function renderAnswer(container, text) {
 
     const userSequence = history.length;
     const attachmentForSend = activeAttachment;
-    const archivedMessage = message + (attachmentForSend ? (message ? "\n" : "") + "[Image attached: " + attachmentForSend.name + "]" : "");
+    const archivedMessage = message + (attachmentForSend ? (message ? "\n" : "") + "[" + (attachmentForSend.kind === "image" ? "Image" : "File") + " attached: " + attachmentForSend.name + "]" : "");
     addMessage(message, "user", userSequence);
     input.value = "";
     clearAttachment();
