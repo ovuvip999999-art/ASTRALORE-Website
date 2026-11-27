@@ -29,6 +29,10 @@ test("ASTRA exposes a cloud-backed extracted-document editor", async () => {
   assert.ok(editor.includes("SAVED TO CLOUD"));
   assert.ok(editor.includes("Original layout is preserved"));
   assert.ok(editor.includes("renderSelectableText"));
+  assert.ok(editor.includes("Position and size are automatic."));
+  assert.ok(editor.includes("previewFontSize"));
+  assert.ok(editor.includes("font.widthOfTextAtSize(item.text, 1)"));
+  assert.ok(editor.includes("resolveFontKey"));
   assert.ok(editor.includes("TEXT SELECTED"));
   assert.ok(editor.includes("REPLACEMENT PREVIEW ADDED"));
   assert.ok(editor.includes("ASTRA IS ANALYSING THIS PAGE"));
@@ -39,6 +43,7 @@ test("ASTRA exposes a cloud-backed extracted-document editor", async () => {
   assert.ok(worker.includes('"plan-edit"'));
   assert.ok(worker.includes("ASTRA PDF edit planner"));
   assert.ok(html.includes("astraPdfTextLayer"));
+  assert.ok(html.includes("pdf-manual-geometry"));
   assert.ok(html.includes("value=\"replace\""));
   assert.ok(css.includes(".pdf-detected-text"));
   assert.ok(editor.includes("PDFDocument.load(pdfBytes)"));
