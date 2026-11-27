@@ -556,6 +556,9 @@ function renderAnswer(container, text) {
     if (!signedIn) throw new Error("Sign in to edit cloud documents.");
     if (!cloudReady) await initializeCloudArchive();
     if (!cloudConversation?.id) throw new Error("No active cloud conversation is available.");
+    if (currentDocument && !currentDocument.conversationId) {
+      currentDocument = { ...currentDocument, conversationId: cloudConversation.id };
+    }
     let documentData = currentDocument?.conversationId === cloudConversation.id ? currentDocument : null;
     if (!documentData) {
       const result = await sendDocumentAction("load");
