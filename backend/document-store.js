@@ -1,5 +1,5 @@
 export function createDocumentStore({ baseUrl, anonKey, authorization, fetchImpl = fetch }) {
-  const root = String(baseUrl || "").replace(/\\/+$/, "");
+  const root = String(baseUrl || "").replace(/\/+$/, "");
   if (!root || !anonKey || !authorization) {
     throw new Error("ASTRA document storage is not configured.");
   }
