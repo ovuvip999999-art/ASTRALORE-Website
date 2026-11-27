@@ -29,12 +29,20 @@
   }
 
   function updateAccount(user) {
-    button.textContent = user ? "ACCOUNT · " + (user.email || "SIGNED IN") : "SIGN IN";
-    signIn.hidden = !!user;
-    signUp.hidden = !!user;
-    signOut.hidden = !user;
-    password.autocomplete = user ? "off" : "current-password";
+    const authenticated = !!user;
+    document.body.dataset.authenticated = authenticated ? "true" : "false";
+    document.body.classList.toggle("astra-auth-required", !authenticated);
+    button.textContent = authenticated ? "ACCOUNT · " + (user.email || "SIGNED IN") : "SIGN IN";
+    signIn.hidden = authenticated;
+    signUp.hidden = authenticated;
+    signOut.hidden = !authenticated;
+    password.autocomplete = authenticated ? "off" : "current-password";
     if (user) email.value = user.email || "";
+    if (authenticated && dialog.open) dialog.close();
+    if (!authenticated && !dialog.open && typeof dialog.showModal === "function") {
+      showStatus("Sign in or create an account before using ASTRA.");
+      dialog.showModal();
+    }
   }
 
   button.addEventListener("click", async () => {
@@ -105,7 +113,7 @@
       return;
     }
     updateAccount(null);
-    showStatus("Signed out.");
+    showStatus("You have been signed out. Sign in to use ASTRA again.");
   });
 
   client.auth.onAuthStateChange((_event, session) => {
