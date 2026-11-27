@@ -878,9 +878,9 @@ function renderAnswer(container, text) {
         activeAttachment = { kind: "document", name: file.name, mimeType: file.type || "application/octet-stream", text: extracted };
         if (lastPdfDiagnostic) {
           addMessage(
-            "PDF OCR completed. Here are the extraction diagnostics, including confidence and both recognition passes. Use Copy code to share this report for troubleshooting.\\n\\n```json\\n" +
+            "PDF OCR completed. Here are the extraction diagnostics, including confidence and both recognition passes. Use Copy code to share this report for troubleshooting.\n\n```json\n" +
               JSON.stringify(lastPdfDiagnostic, null, 2) +
-              "\\n```",
+              "\n```",
             "bot"
           );
         }
@@ -1233,7 +1233,7 @@ function renderAnswer(container, text) {
 
   // Conversation actions live inside each archive row's contextual menu.
   function messagesToText(messages) {
-    return (messages || []).map(item => (item.role === "user" ? "YOU" : "ASTRA") + ":\\n" + item.content).join("\\n\\n");
+    return (messages || []).map(item => (item.role === "user" ? "YOU" : "ASTRA") + ":\n" + item.content).join("\n\n");
   }
 
   if (archiveList) archiveList.addEventListener("click", async event => {
