@@ -38,7 +38,7 @@
     document.body.appendChild(link);
     link.click();
     link.remove();
-    URL.revokeObjectURL(url);
+    window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   }
 
   function open(documentData, onSave) {
@@ -60,20 +60,24 @@
     if (!dialog.open) dialog.showModal();
   }
 
+  let pdfLibraryPromise = null;
   async function loadPdfLibrary() {
     if (window.jspdf?.jsPDF || window.jsPDF) return;
-    await new Promise((resolve, reject) => {
+    if (pdfLibraryPromise) return pdfLibraryPromise;
+    pdfLibraryPromise = new Promise((resolve, reject) => {
       const existing = document.querySelector('script[data-astra-document-pdf="true"]');
       const script = existing || document.createElement("script");
+      script.addEventListener("load", resolve, { once: true });
+      script.addEventListener("error", () => reject(new Error("PDF export library could not be loaded.")), { once: true });
       if (!existing) {
         script.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js";
         script.async = true;
         script.dataset.astraDocumentPdf = "true";
         document.head.appendChild(script);
       }
-      script.addEventListener("load", resolve, { once: true });
-      script.addEventListener("error", () => reject(new Error("PDF export library could not be loaded.")), { once: true });
     });
+    try { await pdfLibraryPromise; }
+    catch (error) { pdfLibraryPromise = null; throw error; }
   }
 
   saveButton.addEventListener("click", async () => {
