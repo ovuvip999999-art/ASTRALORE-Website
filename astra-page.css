@@ -1401,3 +1401,31 @@ body[data-theme="light"] .astra-user-file-details small { color:#655b79; }
 /* ASTRA text replacement: keep replacement text inside the detected source box */
 .pdf-preview-text{overflow:hidden;overflow-wrap:normal;white-space:nowrap;line-height:1;box-sizing:border-box}
 .pdf-manual-geometry[hidden]{display:none!important}
+
+
+/* ASTRA V2 — Markdown skills workspace */
+.astra-skills-dialog { max-width: min(680px, calc(100% - 28px)); }
+.astra-skill-upload { display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:14px 0 6px; }
+.astra-skill-upload input { flex:1; min-width:180px; color:#d9d1ec; font:11px 'DM Mono',monospace; }
+.astra-skill-upload button,.astra-skill-delete { border:1px solid #a88bea66; border-radius:8px; padding:10px 13px; background:#8060c533; color:#eee8ff; font:10px 'DM Mono',monospace; cursor:pointer; }
+.astra-skill-upload button:disabled { opacity:.5; cursor:wait; }
+.astra-skills-limits { color:#a99fbd; font-size:10px; }
+.astra-skills-list { display:grid; gap:8px; max-height:42vh; overflow:auto; }
+.astra-skill-row { display:flex; align-items:center; justify-content:space-between; gap:14px; padding:12px; border:1px solid #ffffff1b; border-radius:10px; background:#ffffff08; }
+.astra-skill-details { display:grid; gap:4px; min-width:0; }
+.astra-skill-details strong { overflow-wrap:anywhere; font-size:12px; }
+.astra-skill-details small { color:#aaa0bd; font-size:10px; }
+.astra-skill-actions { display:flex; align-items:center; gap:12px; flex:none; }
+.astra-skill-toggle { display:flex; align-items:center; gap:6px; color:#cbb8f1; font:10px 'DM Mono',monospace; }
+.astra-skill-toggle input { accent-color:#a88bea; }
+.astra-skill-delete { padding:7px 9px; color:#e0a5b3; border-color:#e0a5b344; }
+.astra-skills-empty { color:#aaa0bd; font-size:12px; line-height:1.6; }
+body[data-theme="light"] .astra-skill-row { background:#f8f5fd; border-color:#ded5ee; }
+body[data-theme="light"] .astra-skill-details small,body[data-theme="light"] .astra-skills-limits,body[data-theme="light"] .astra-skills-empty { color:#655b79; }
+body[data-theme="light"] .astra-skill-toggle { color:#51417f; }
+@media(max-width:560px) {
+  .astra-skill-row { align-items:flex-start; flex-direction:column; }
+  .astra-skill-actions { width:100%; justify-content:space-between; }
+  .astra-skill-upload { align-items:stretch; flex-direction:column; }
+  .astra-skill-upload input { width:100%; }
+}
