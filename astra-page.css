@@ -1091,3 +1091,103 @@ body[data-theme="light"] .new-chat-button:hover {
   background:linear-gradient(120deg,#ded1f6,#d1daf8);
   border-color:#9e84d0;
 }
+
+
+/* ASTRA V17 — ChatGPT-inspired message composer and send interaction */
+.astra-composer {
+  align-items:flex-end;
+  gap:10px;
+  padding:10px 11px 10px 18px;
+  border:1px solid rgba(164,143,220,.34);
+  border-radius:25px;
+  background:rgba(22,20,39,.94);
+  box-shadow:0 14px 44px rgba(0,0,0,.24),0 0 0 1px rgba(255,255,255,.025) inset;
+  backdrop-filter:blur(18px);
+  transition:border-color .2s ease,box-shadow .2s ease,background .2s ease;
+}
+.astra-composer:focus-within {
+  border-color:rgba(174,150,244,.78);
+  box-shadow:0 14px 48px rgba(0,0,0,.28),0 0 0 3px rgba(139,105,218,.12);
+}
+.astra-composer textarea {
+  display:block;
+  flex:1;
+  min-width:0;
+  min-height:44px;
+  max-height:168px;
+  resize:none;
+  overflow-y:hidden;
+  padding:11px 0 9px;
+  border:0;
+  outline:0;
+  background:transparent;
+  color:#f4f0ff;
+  font:15px/1.55 'Manrope',sans-serif;
+  cursor:text;
+  scrollbar-width:thin;
+}
+.astra-composer textarea::placeholder { color:#918aa6; opacity:1; }
+.astra-composer textarea:disabled { opacity:.58; cursor:wait; }
+.astra-composer button {
+  flex:none;
+  display:grid;
+  place-items:center;
+  width:43px;
+  height:43px;
+  border:0;
+  border-radius:50%;
+  background:linear-gradient(145deg,#a88bea,#6655c7);
+  color:#fff;
+  font:700 25px/1 'Manrope',sans-serif;
+  box-shadow:0 4px 15px rgba(111,83,190,.32);
+  transition:transform .18s ease,filter .18s ease,opacity .18s ease,box-shadow .18s ease;
+}
+.astra-composer button:hover:not(:disabled) {
+  filter:brightness(1.12);
+  transform:translateY(-2px);
+  box-shadow:0 7px 20px rgba(111,83,190,.42);
+}
+.astra-composer button:active:not(:disabled) { transform:scale(.94); }
+.astra-composer button:disabled { opacity:.55; cursor:wait; filter:saturate(.7); }
+.composer-note { margin-top:11px; letter-spacing:.045em; }
+.astra-message { animation:astra-message-enter .22s ease both; }
+@keyframes astra-message-enter {
+  from { opacity:0; transform:translateY(7px); }
+  to { opacity:1; transform:translateY(0); }
+}
+.astra-message-loading {
+  opacity:1;
+  border-color:rgba(166,139,231,.24);
+  background:rgba(125,102,184,.10);
+  animation:none;
+}
+.astra-message-loading .astra-message-label { color:#bda5f3; }
+.astra-message-loading .astra-message-content { color:#aaa1bf; font-size:13px; }
+.astra-message-loading .astra-message-content::after {
+  width:25px;
+  height:7px;
+  margin-left:9px;
+  background:radial-gradient(circle,#c8b4ff 2px,transparent 2.5px) 0 50%/8px 7px repeat-x;
+  animation:astra-thinking 1s steps(3,end) infinite;
+}
+body[data-theme="light"] .astra-composer {
+  background:rgba(255,255,255,.96);
+  border-color:#d5c9e9;
+  box-shadow:0 14px 38px rgba(63,48,99,.12),0 0 0 1px rgba(255,255,255,.8) inset;
+}
+body[data-theme="light"] .astra-composer:focus-within {
+  border-color:#9878d2;
+  box-shadow:0 14px 38px rgba(63,48,99,.14),0 0 0 3px rgba(139,105,218,.13);
+}
+body[data-theme="light"] .astra-composer textarea { color:#29243c; }
+body[data-theme="light"] .astra-composer textarea::placeholder { color:#77708a; }
+body[data-theme="light"] .astra-message-loading {
+  background:#f4f0fc;
+  border-color:#e0d7f0;
+}
+body[data-theme="light"] .astra-message-loading .astra-message-content { color:#655b79; }
+@media(max-width:560px) {
+  .astra-composer { padding:8px 9px 8px 15px; gap:8px; border-radius:22px; }
+  .astra-composer textarea { min-height:42px; padding-top:10px; font-size:14px; }
+  .astra-composer button { width:41px; height:41px; }
+}
