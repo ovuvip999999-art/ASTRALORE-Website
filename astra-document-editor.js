@@ -24,7 +24,7 @@
 
   function safeBaseName(name) {
     return String(name || "ASTRA-document")
-      .replace(/\\.[^.]+$/, "")
+      .replace(/\.[^.]+$/, "")
       .replace(/[^a-z0-9_-]+/gi, "-")
       .replace(/^-+|-+$/g, "")
       .slice(0, 80) || "ASTRA-document";
