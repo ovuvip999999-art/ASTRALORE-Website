@@ -789,6 +789,20 @@ function renderAnswer(container, text) {
         }
         return ocrPages.join("\n\n").slice(0, MAX_EXTRACTED_CHARS);
       }
+      // Surface diagnostics for the normal embedded-text path too. Previously,
+      // successful PDFs that bypassed OCR produced no report in the chat.
+      lastPdfDiagnostic = {
+        pdfjs: { status: "READY", version: pdfjs.version || "unknown", pageCount: pdf.numPages },
+        textLayer: {
+          status: "USED",
+          charCount: meaningful.length,
+          readableRatio: Number(readableRatio.toFixed(3)),
+          replacementChars
+        },
+        ocr: { status: "NOT_RUN", reason: "Embedded PDF text passed the existing readability gate." },
+        extractionPath: "PDF_TEXT_LAYER",
+        totalCharacters: extractedText.length
+      };
       return extractedText;
     }
     if (lower.endsWith(".docx")) {
@@ -878,7 +892,7 @@ function renderAnswer(container, text) {
         activeAttachment = { kind: "document", name: file.name, mimeType: file.type || "application/octet-stream", text: extracted };
         if (lastPdfDiagnostic) {
           addMessage(
-            "PDF OCR completed. Here are the extraction diagnostics, including confidence and both recognition passes. Use Copy code to share this report for troubleshooting.\n\n```json\n" +
+            "PDF extraction diagnostics (text-layer or OCR path). Use Copy code to share this report for troubleshooting.\n\n```json\n" +
               JSON.stringify(lastPdfDiagnostic, null, 2) +
               "\n```",
             "bot"
