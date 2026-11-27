@@ -1387,3 +1387,12 @@ body[data-theme="light"] .astra-user-file-details small { color:#655b79; }
 .pdf-detected-text{position:absolute;display:block;overflow:hidden;white-space:pre;opacity:0;color:transparent;pointer-events:auto;cursor:text;border:1px solid transparent;box-sizing:border-box}
 .pdf-detected-text:hover{opacity:.22;background:#a88bea;border-color:#8d6bd0}
 .pdf-overlay-layer{z-index:3}
+
+.pdf-ai-edit-controls{margin:12px 0;padding:12px;border:1px solid #a88bea55;border-radius:10px;background:#8060c51a}
+.pdf-ai-edit-controls label{display:block;margin-bottom:8px;color:#cbb8f1;font:10px 'DM Mono',monospace;letter-spacing:.6px}
+.pdf-ai-edit-controls div{display:flex;gap:8px}
+.pdf-ai-edit-controls input{flex:1;min-width:0;padding:10px;border:1px solid #ffffff25;border-radius:7px;background:#080914;color:#f3edff;font:12px 'Manrope',sans-serif}
+.pdf-ai-edit-controls button{border:1px solid #a88bea66;border-radius:7px;padding:9px 13px;background:#8060c544;color:#eee8ff;font:10px 'DM Mono',monospace}
+.pdf-ai-edit-controls button:disabled{opacity:.5;cursor:wait}
+.pdf-ai-edit-controls p{margin:8px 0 0;color:#aaa0bd;font-size:10px;line-height:1.5}
+@media(max-width:560px){.pdf-ai-edit-controls div{flex-direction:column}}
