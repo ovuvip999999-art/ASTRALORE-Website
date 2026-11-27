@@ -76,8 +76,8 @@ create policy "Users can delete their own ASTRA messages"
   on public.astra_messages for delete
   to authenticated using (auth.uid() = user_id);
 
--- Server-only full-text retrieval. The Worker must authenticate the caller first,
--- then call this RPC using the server-side service-role key and the verified user ID.
+-- Authenticated full-text retrieval. The function independently checks auth.uid(),
+-- so a user can search only their own messages even if they alter the RPC arguments.
 create or replace function public.astra_search_messages(
   p_user_id uuid,
   p_query text,
@@ -104,15 +104,16 @@ as $$
     m.created_at,
     ts_rank(m.search_document, websearch_to_tsquery('simple', left(coalesce(p_query, ''), 300))) as rank
   from public.astra_messages m
-  where m.user_id = p_user_id
+  where auth.uid() = p_user_id
+    and m.user_id = p_user_id
     and length(trim(coalesce(p_query, ''))) > 0
     and m.search_document @@ websearch_to_tsquery('simple', left(p_query, 300))
   order by rank desc, m.created_at desc
   limit greatest(1, least(coalesce(p_limit, 12), 30));
 $$;
 
-revoke all on function public.astra_search_messages(uuid, text, integer) from public, anon, authenticated;
-grant execute on function public.astra_search_messages(uuid, text, integer) to service_role;
+revoke all on function public.astra_search_messages(uuid, text, integer) from public, anon;
+grant execute on function public.astra_search_messages(uuid, text, integer) to authenticated;
 
--- Do not expose the embedding column or service-role key to browser clients.
--- All browser access is subject to the per-user RLS policies above.
+-- The RPC is safe for authenticated clients because auth.uid() must match p_user_id.
+-- All table access remains subject to the per-user RLS policies above.
