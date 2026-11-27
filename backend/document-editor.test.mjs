@@ -56,6 +56,11 @@ test("ASTRA exposes a cloud-backed extracted-document editor", async () => {
   assert.ok(html.includes("value=\"replace\""));
   assert.ok(css.includes(".pdf-detected-text"));
   assert.ok(editor.includes("PDFDocument.load(pdfBytes)"));
+  assert.ok(editor.includes("No PDF edits are available to export"));
+  assert.ok(editor.includes("Applying \" + exportAnnotations.length + \" saved edit layers"));
+  assert.ok(editor.includes("EDIT LAYERS APPLIED"));
+  assert.ok(editor.includes("Always paint all cover rectangles before replacement text"));
+  assert.ok(editor.includes("No valid edit layers to apply"));
   assert.ok(html.includes("astraPdfVisualEditor"));
   assert.ok(migration.includes("astra-original-documents"));
   assert.ok(migration.includes("auth.uid()::text"));
