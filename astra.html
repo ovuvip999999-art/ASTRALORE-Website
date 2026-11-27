@@ -204,7 +204,7 @@
       <div><span class="memory-dialog-kicker">ASTRALORE DOCUMENT WORKSPACE</span><h2 id="astraDocumentTitle">DOCUMENT EDITOR</h2></div>
       <button type="button" class="memory-dialog-close" id="astraDocumentClose" aria-label="Close document editor">×</button>
     </div>
-    <p class="document-editor-note">PDF visual mode detects selectable text blocks. Select a block to create a replacement overlay, or add text and cover areas. Complex fonts and layouts may need alignment adjustments; the original PDF remains unchanged.</p>
+    <p class="document-editor-note">To replace text, click it on the PDF page and type the new words. ASTRA automatically reuses the detected position, text size and approximate font style, then fits the replacement inside the same text box. Manual positioning is only for adding text or covering an area. The original PDF remains unchanged underneath the edit layer.</p>
     <section id="astraPdfVisualEditor" class="astra-pdf-editor" hidden>
       <div class="pdf-page-toolbar">
         <button type="button" id="astraPdfPrev">← PREVIOUS</button>
@@ -215,11 +215,11 @@
       <div class="pdf-annotation-controls">
         <label>TOOL<select id="astraPdfTool"><option value="replace">Replace selected text</option><option value="text">Add text</option><option value="cover">Cover area</option></select></label>
         <label>TEXT<input id="astraPdfOverlayText" type="text" maxlength="500" placeholder="Enter text to add"></label>
-        <label>X %<input id="astraPdfX" type="number" min="0" max="100" value="10"></label>
-        <label>Y %<input id="astraPdfY" type="number" min="0" max="100" value="15"></label>
-        <label>WIDTH %<input id="astraPdfW" type="number" min="1" max="100" value="35"></label>
-        <label>HEIGHT %<input id="astraPdfH" type="number" min="1" max="100" value="8"></label>
-        <label>FONT SIZE<input id="astraPdfFontSize" type="number" min="6" max="72" value="14"></label>
+        <label class="pdf-manual-geometry">X %<input id="astraPdfX" type="number" min="0" max="100" value="10"></label>
+        <label class="pdf-manual-geometry">Y %<input id="astraPdfY" type="number" min="0" max="100" value="15"></label>
+        <label class="pdf-manual-geometry">WIDTH %<input id="astraPdfW" type="number" min="1" max="100" value="35"></label>
+        <label class="pdf-manual-geometry">HEIGHT %<input id="astraPdfH" type="number" min="1" max="100" value="8"></label>
+        <label class="pdf-manual-geometry">FONT SIZE<input id="astraPdfFontSize" type="number" min="6" max="72" value="14"></label>
         <button type="button" id="astraPdfAddAnnotation">ADD TO PAGE</button>
       </div>
       <div class="pdf-ai-edit-controls">
