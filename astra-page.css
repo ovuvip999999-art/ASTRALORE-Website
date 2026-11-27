@@ -1429,3 +1429,20 @@ body[data-theme="light"] .astra-skill-toggle { color:#51417f; }
   .astra-skill-upload { align-items:stretch; flex-direction:column; }
   .astra-skill-upload input { width:100%; }
 }
+
+
+/* ASTRA V2 — image studio */
+.astra-image-studio-dialog { max-width:min(760px,calc(100% - 28px)); }
+.astra-image-label { display:block; margin:14px 0 7px; color:#cbb8f1; font:10px 'DM Mono',monospace; letter-spacing:.7px; }
+.astra-image-prompt { display:block; width:100%; min-height:112px; resize:vertical; padding:12px; border:1px solid #ffffff25; border-radius:9px; outline:none; background:#080914; color:#eeeaf9; font:12px/1.6 'Manrope',sans-serif; }
+.astra-image-ratio { width:100%; padding:10px; border:1px solid #ffffff25; border-radius:8px; background:#080914; color:#eeeaf9; }
+.astra-image-cost-ack { display:flex; align-items:flex-start; gap:9px; margin:15px 0; color:#b9b6ca; font-size:11px; line-height:1.5; }
+.astra-image-cost-ack input { margin-top:2px; accent-color:#a88bea; flex:none; }
+.astra-image-generate,.astra-image-download { border:1px solid #a88bea66; border-radius:8px; padding:11px 15px; background:#8060c544; color:#eee8ff; font:10px 'DM Mono',monospace; letter-spacing:.7px; cursor:pointer; }
+.astra-image-generate:disabled { opacity:.5; cursor:wait; }
+.astra-image-preview { display:block; width:100%; max-height:62vh; object-fit:contain; margin:14px auto; border:1px solid #ffffff22; border-radius:10px; background:#080914; }
+.astra-image-download[hidden],.astra-image-preview[hidden] { display:none; }
+body[data-theme="light"] .astra-image-prompt,body[data-theme="light"] .astra-image-ratio { background:#fff; color:#29243c; border-color:#d8cde9; }
+body[data-theme="light"] .astra-image-label { color:#51417f; }
+body[data-theme="light"] .astra-image-cost-ack { color:#655b79; }
+@media(max-width:560px) { .astra-image-studio-dialog { padding:15px; } .astra-image-preview { max-height:48vh; } }
