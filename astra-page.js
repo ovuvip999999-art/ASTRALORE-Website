@@ -940,6 +940,16 @@ function renderAnswer(container, text) {
     }
     if ((!message && !activeAttachment) || busy) return;
 
+    // Do not send a document request until the authenticated cloud conversation is ready.
+    // The auth-ready event and cloud archive initialization are asynchronous.
+    if (window.ASTRACloud && window.ASTRASupabase && !cloudReady) {
+      await initializeCloudArchive();
+    }
+    if (activeAttachment?.kind === "document" && (!cloudReady || !cloudConversation?.id)) {
+      if (status) status.textContent = "CLOUD CONVERSATION NOT READY · DOCUMENT NOT SENT";
+      return;
+    }
+
     busy = true;
     input.disabled = true;
 
