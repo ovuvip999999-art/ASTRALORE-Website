@@ -69,7 +69,13 @@ create policy "Users can read their own ASTRA messages"
 drop policy if exists "Users can insert their own ASTRA messages" on public.astra_messages;
 create policy "Users can insert their own ASTRA messages"
   on public.astra_messages for insert
-  to authenticated with check (auth.uid() = user_id);
+  to authenticated with check (
+    auth.uid() = user_id
+    and exists (
+      select 1 from public.astra_conversations c
+      where c.id = conversation_id and c.user_id = auth.uid()
+    )
+  );
 
 drop policy if exists "Users can delete their own ASTRA messages" on public.astra_messages;
 create policy "Users can delete their own ASTRA messages"
