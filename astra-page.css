@@ -844,3 +844,80 @@ button, a {
 .astra-auth-actions button { border:1px solid #8065b5; border-radius:6px; padding:10px 13px; background:#211936; color:#eee7ff; font:10px 'DM Mono',monospace; cursor:pointer; }
 .astra-auth-actions button:disabled { opacity:.5; cursor:wait; }
 .astra-auth-actions button[hidden] { display:none; }
+
+
+/* ASTRA V16 — fixed workspace: conversation scrolls, composer stays visible */
+html, body { height:100%; overflow:hidden; }
+.astra-app { height:100dvh; min-height:0; overflow:hidden; }
+.astra-main { height:100%; min-height:0; overflow:hidden; }
+.conversation { min-height:0; overscroll-behavior:contain; }
+.composer-area { flex:none; position:relative; z-index:2; padding-bottom:max(18px, env(safe-area-inset-bottom)); }
+.topbar { flex:none; gap:18px; }
+.topbar-actions { display:flex; align-items:center; justify-content:flex-end; flex-wrap:wrap; gap:8px; }
+.topbar-actions .memory-open-button { padding:9px 12px; font-size:9px; white-space:nowrap; }
+.danger-action { border-color:rgba(226,139,157,.4)!important; color:#efb0bd!important; }
+.danger-action:hover { background:rgba(190,72,100,.18)!important; }
+.astra-auth-required .astra-app { filter:blur(2px); pointer-events:none; user-select:none; }
+.astra-auth-required .astra-memory-dialog[open] { pointer-events:auto; }
+.astra-auth-required .astra-memory-dialog[open]::backdrop { background:rgba(3,4,14,.88); backdrop-filter:blur(10px); }
+.astra-auth-form button:focus-visible,.memory-open-button:focus-visible,.astra-composer button:focus-visible { outline:2px solid #c6b4ff; outline-offset:3px; }
+.astra-composer button { min-width:53px; }
+.astra-message-loading { position:relative; }
+.astra-message-loading .astra-message-content::after { content:""; display:inline-block; width:20px; height:5px; margin-left:7px; background:radial-gradient(circle,#c7b2ff 1.5px,transparent 2px) 0 50%/7px 5px repeat-x; animation:astra-thinking 1s steps(3,end) infinite; }
+@keyframes astra-thinking { to { background-position:21px 50%; } }
+
+@media(max-width:900px) {
+  .topbar { align-items:flex-start; flex-wrap:wrap; }
+  .topbar-actions { width:100%; justify-content:flex-start; }
+}
+@media(max-width:560px) {
+  html, body { overflow:hidden; }
+  .astra-app { display:flex; flex-direction:column; }
+  .astra-sidebar { flex:none; }
+  .astra-main { flex:1; min-height:0; }
+  .topbar { min-height:auto; padding:10px 14px; }
+  .topbar-actions { gap:6px; }
+  .topbar-actions .memory-open-button { padding:8px 9px; font-size:8px; }
+  .conversation { padding:18px 4% 24px; }
+  .composer-area { padding:0 4% max(12px,env(safe-area-inset-bottom)); }
+}
+
+/* ASTRA V16 — soft, readable light theme */
+body[data-theme="light"] { background:#f4f2fb; color:#252238; }
+body[data-theme="light"] .astra-background { background:radial-gradient(ellipse at 70% 10%,#d9ccff,transparent 45%),radial-gradient(ellipse at 30% 90%,#dce9ff,transparent 45%),#f4f2fb; }
+body[data-theme="light"] .astra-sidebar { background:rgba(250,249,255,.94); border-color:#ded9ec; }
+body[data-theme="light"] .astra-logo,body[data-theme="light"] .topbar h1 { color:#29243c; }
+body[data-theme="light"] .topbar { background:rgba(250,249,255,.88); border-color:#ded9ec; }
+body[data-theme="light"] .connection-status { color:#655d7d; }
+body[data-theme="light"] .conversation { color:#29243c; }
+body[data-theme="light"] .welcome-screen h2 { color:#29243c; }
+body[data-theme="light"] .welcome-screen > p { color:#625d72; }
+body[data-theme="light"] .suggestion-grid button { background:#ffffffb8; border-color:#dcd5ed; color:#38324d; }
+body[data-theme="light"] .suggestion-grid button:hover { background:#eee9fb; border-color:#9d83dc; }
+body[data-theme="light"] .astra-message-bot { background:#fff; border-color:#e0dced; color:#302b40; box-shadow:0 5px 22px #43356b0d; }
+body[data-theme="light"] .astra-message-bot .astra-message-label { color:#7758bd; }
+body[data-theme="light"] .astra-message-content strong { color:#29243c; }
+body[data-theme="light"] .astra-message-content h4 { color:#4e3d78; }
+body[data-theme="light"] .astra-message-content em { color:#66528e; }
+body[data-theme="light"] .astra-message-content code { background:#eeeaf6; color:#5c438c; }
+body[data-theme="light"] .astra-message-content td { border-color:#dcd6e8; }
+body[data-theme="light"] .astra-message-content tr:first-child td { background:#eee8fb; color:#34284e; }
+body[data-theme="light"] .composer-area { background:linear-gradient(180deg,transparent,#f4f2fb 25%); }
+body[data-theme="light"] .astra-composer { background:#fff; border-color:#d2c8e8; box-shadow:0 8px 30px #45356b12; }
+body[data-theme="light"] .astra-composer input { color:#29243c; }
+body[data-theme="light"] .composer-note { color:#77718a; }
+body[data-theme="light"] .archive-heading,body[data-theme="light"] .sidebar-section-label { color:#817a96; }
+body[data-theme="light"] .archive-search { background:#fff; color:#302b40; border-color:#ded8eb; }
+body[data-theme="light"] .archive-conversation { color:#514966; }
+body[data-theme="light"] .archive-conversation:hover,body[data-theme="light"] .archive-conversation.active { background:#eee9fa; border-color:#d6c9ef; }
+body[data-theme="light"] .sidebar-bottom { border-color:#e0dbea; }
+body[data-theme="light"] .sidebar-bottom strong { color:#51466d; }
+body[data-theme="light"] .sidebar-bottom span { color:#77718a; }
+body[data-theme="light"] .memory-open-button { color:#554477; background:#eee9fa; border-color:#d2c6e8; }
+body[data-theme="light"] .astra-memory-dialog { background:#fff; color:#29243c; border-color:#d9d1e8; }
+body[data-theme="light"] .memory-privacy-note { color:#625d72; }
+body[data-theme="light"] .astra-auth-form label { color:#65577f; }
+body[data-theme="light"] .astra-auth-form input { background:#f8f7fc; color:#29243c; border-color:#d7d0e5; }
+body[data-theme="light"] .astra-auth-actions button { background:#eee9fa; color:#43355f; border-color:#d1c5e8; }
+body[data-theme="light"] .astra-memory-item { background:#f8f7fc; border-color:#e6e1ef; }
+body[data-theme="light"] .memory-dialog-close { color:#4b455c; }
