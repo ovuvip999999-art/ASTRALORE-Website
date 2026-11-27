@@ -1396,3 +1396,8 @@ body[data-theme="light"] .astra-user-file-details small { color:#655b79; }
 .pdf-ai-edit-controls button:disabled{opacity:.5;cursor:wait}
 .pdf-ai-edit-controls p{margin:8px 0 0;color:#aaa0bd;font-size:10px;line-height:1.5}
 @media(max-width:560px){.pdf-ai-edit-controls div{flex-direction:column}}
+
+
+/* ASTRA text replacement: keep replacement text inside the detected source box */
+.pdf-preview-text{overflow:hidden;overflow-wrap:normal;white-space:nowrap;line-height:1;box-sizing:border-box}
+.pdf-manual-geometry[hidden]{display:none!important}
