@@ -10,6 +10,7 @@ on:
     paths:
       - "backend/worker.js"
       - "backend/migrations/**"
+      - "backend/wrangler.toml"
       - "astra-page.js"
       - "astra-skills.js"
       - "astra-creative-studio.js"
