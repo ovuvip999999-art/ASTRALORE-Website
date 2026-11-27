@@ -461,8 +461,8 @@
         }
         if (!appliedEdits) throw new Error("ASTRA found no valid edit layers to apply. Nothing was downloaded.");
         const bytes = await pdf.save();
-        if (!(bytes instanceof Uint8Array) || bytes.length <= pdfBytes.length * 0.8) {
-          throw new Error("The edited PDF could not be generated safely. The original file was not downloaded as an edited copy.");
+        if (!(bytes instanceof Uint8Array) || bytes.length < 100) {
+          throw new Error("The edited PDF could not be generated. The original file was not downloaded as an edited copy.");
         }
         downloadBlob(new Blob([bytes], { type: "application/pdf" }), safeBaseName(current.name) + "-edited.pdf");
         showStatus("EDITED PDF EXPORTED · " + appliedEdits + " EDIT LAYERS APPLIED." +
