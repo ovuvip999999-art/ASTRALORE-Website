@@ -102,7 +102,7 @@
     if (!context) return base;
     const family = String(item.fontFamily || "sans-serif").replace(/["\\]/g, "");
     const size = base;
-    context.font = (item.fontWeight || "normal") + " " + (item.fontStyle || "normal") + " " + size + 'px "' + family + '";
+    context.font = (item.fontWeight || "normal") + " " + (item.fontStyle || "normal") + " " + size + 'px "' + family + '"';
     const measured = context.measureText(String(item.text || "")).width;
     if (measured > Math.max(2, widthPx - 2)) return Math.max(4, size * Math.max(0.35, (widthPx - 2) / measured));
     return size;
