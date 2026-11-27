@@ -593,6 +593,7 @@ function renderAnswer(container, text) {
         };
         if (status) status.textContent = "PDF TEXT LAYER UNREADABLE · STARTING OCR";
         let worker = null;
+        let activeStage = "TESSERACT_LOAD_OR_INIT";
         const ocrPages = [];
         try {
           const Tesseract = await loadScriptOnce("https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js", "Tesseract");
@@ -609,10 +610,13 @@ function renderAnswer(container, text) {
             canvas.height = Math.ceil(viewport.height);
             const context = canvas.getContext("2d", { willReadFrequently: true });
             if (!context) throw new Error("Canvas 2D context unavailable on page " + pageNo);
+            activeStage = "PAGE_RENDER";
             await page.render({ canvasContext: context, viewport }).promise;
             report.ocr.pagesRendered++;
+            activeStage = "OCR_RECOGNITION";
             const result = await worker.recognize(canvas);
             report.ocr.pagesProcessed++;
+            activeStage = "PAGE_RENDER";
             const pageText = String(result.data?.text || "").trim();
             const confidence = Number.isFinite(result.data?.confidence) ? result.data.confidence : null;
             report.ocr.pages.push({
@@ -626,8 +630,7 @@ function renderAnswer(container, text) {
           }
           report.ocr.status = "COMPLETED";
         } catch (error) {
-          report.failureStage = report.ocr.status === "PENDING" ? "TESSERACT_LOAD_OR_INIT" :
-            (report.ocr.pagesRendered > report.ocr.pagesProcessed ? "OCR_RECOGNITION" : "PAGE_RENDER_OR_OCR");
+          report.failureStage = activeStage;
           report.error = String(error?.message || error).slice(0, 300);
         } finally {
           if (worker) {
