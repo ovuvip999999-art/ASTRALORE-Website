@@ -8,6 +8,7 @@
   const suggestions = document.getElementById("astraSuggestions");
   const status = document.getElementById("astraStatus");
   const newChat = document.getElementById("newChat");
+  const documentEditorButton = document.getElementById("astraDocumentEditorButton");
 
   const API_URL = typeof window.ASTRA_API_URL === "string"
     ? window.ASTRA_API_URL.trim()
@@ -22,6 +23,7 @@
   let cloudInitPromise = null;
   let busy = false;
   let activeAttachment = null;
+  let currentDocument = null;
   let signedIn = document.body.dataset.authenticated === "true";
 
   async function initializeCloudArchive() {
@@ -529,6 +531,71 @@ function renderAnswer(container, text) {
     return data;
   }
 
+  async function sendDocumentAction(operation, documentData = null) {
+    if (!signedIn || !cloudReady || !cloudConversation?.id) {
+      await initializeCloudArchive();
+    }
+    if (!cloudConversation?.id || !API_URL) throw new Error("Open a signed-in cloud conversation first.");
+    const sessionResult = await window.ASTRASupabase.auth.getSession();
+    const accessToken = sessionResult.data?.session?.access_token;
+    if (!accessToken) throw new Error("Your session expired. Sign in again.");
+    const response = await fetch(API_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", "Authorization": "Bearer " + accessToken },
+      body: JSON.stringify({
+        conversationId: cloudConversation.id,
+        documentAction: { operation, ...(documentData ? { document: documentData } : {}) }
+      })
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) throw new Error(data.error || "Document storage request failed.");
+    return data;
+  }
+
+  async function openDocumentEditor() {
+    if (!signedIn) throw new Error("Sign in to edit cloud documents.");
+    if (!cloudReady) await initializeCloudArchive();
+    if (!cloudConversation?.id) throw new Error("No active cloud conversation is available.");
+    let documentData = currentDocument?.conversationId === cloudConversation.id ? currentDocument : null;
+    if (!documentData) {
+      const result = await sendDocumentAction("load");
+      documentData = result.document;
+      if (!documentData) {
+        if (status) status.textContent = "NO SAVED DOCUMENT IN THIS CONVERSATION";
+        return;
+      }
+      currentDocument = { ...documentData, conversationId: cloudConversation.id };
+      if (status) status.textContent = "DOCUMENT RESTORED · " + String(documentData.name).slice(0, 48);
+    }
+    if (!window.ASTRADocumentEditor) throw new Error("The document editor did not load. Refresh and try again.");
+    window.ASTRADocumentEditor.open(documentData, async updatedDocument => {
+      const result = await sendDocumentAction("save", {
+        name: updatedDocument.name,
+        mimeType: updatedDocument.mimeType,
+        text: updatedDocument.text
+      });
+      if (result.documentPersistenceStatus !== "SAVED") throw new Error("Cloud storage did not confirm the save.");
+      currentDocument = { ...updatedDocument, conversationId: cloudConversation.id };
+      if (activeAttachment?.kind === "document" && activeAttachment.name === updatedDocument.name) {
+        activeAttachment.text = updatedDocument.text;
+      }
+      if (status) status.textContent = "DOCUMENT SAVED · " + String(updatedDocument.name).slice(0, 48);
+    });
+  }
+
+  if (documentEditorButton) {
+    documentEditorButton.addEventListener("click", async () => {
+      documentEditorButton.disabled = true;
+      try {
+        await openDocumentEditor();
+      } catch (error) {
+        if (status) status.textContent = "DOCUMENT EDITOR · " + String(error?.message || error).slice(0, 100);
+      } finally {
+        documentEditorButton.disabled = false;
+      }
+    });
+  }
+
   const fileInput = document.getElementById("astraFileInput");
   const attachButton = document.getElementById("astraAttachButton");
   const attachmentPreview = document.getElementById("astraAttachmentPreview");
@@ -980,6 +1047,7 @@ function renderAnswer(container, text) {
         const extracted = await extractDocument(file);
         if (!extracted.trim()) throw new Error("No readable text was found. Scanned PDFs and image-only documents need OCR, which is not available yet.");
         activeAttachment = { kind: "document", name: file.name, mimeType: file.type || "application/octet-stream", text: extracted };
+        currentDocument = { ...activeAttachment, conversationId: cloudConversation?.id || null };
         if (lastPdfDiagnostic) {
           addMessage(
             "PDF extraction diagnostics (text-layer or OCR path). Use Copy code to share this report for troubleshooting.\n\n```json\n" +
@@ -1056,6 +1124,9 @@ function renderAnswer(container, text) {
 
     const userSequence = history.length;
     const attachmentForSend = activeAttachment;
+    if (attachmentForSend?.kind === "document") {
+      currentDocument = { ...attachmentForSend, conversationId: cloudConversation?.id || null };
+    }
     const archivedMessage = message + (attachmentForSend ? (message ? "\n" : "") + "[" + (attachmentForSend.kind === "image" ? "Image" : "File") + " attached: " + attachmentForSend.name + "]" : "");
     addMessage(message, "user", userSequence, attachmentForSend);
     input.value = "";
@@ -1251,6 +1322,7 @@ function renderAnswer(container, text) {
         }
 
         history = [];
+        currentDocument = null;
         cloudConversation = nextCloudConversation;
         if (window.ASTRAMemory && !cloudReady) window.ASTRAMemory.createConversation();
         chat.querySelectorAll(".astra-message").forEach(message => message.remove());
@@ -1322,6 +1394,7 @@ function renderAnswer(container, text) {
       cloudConversation = (await window.ASTRACloud.listConversations())
         .find(item => item.id === button.dataset.cloudConversationId) || null;
       if (!cloudConversation) return;
+      currentDocument = null;
       history = await window.ASTRACloud.loadMessages(cloudConversation.id);
       chat.querySelectorAll(".astra-message").forEach(message => message.remove());
       history.slice(-100).forEach((item, offset) => {
