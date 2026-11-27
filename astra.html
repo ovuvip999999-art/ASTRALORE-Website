@@ -64,6 +64,7 @@
         <button class="memory-open-button sidebar-control-button" id="astraThemeToggle" type="button" aria-pressed="false" title="Switch theme">LIGHT MODE</button>
         <button class="install-app-button sidebar-control-button" id="installAstra" type="button" hidden>↓ INSTALL APP</button>
         <button class="memory-open-button sidebar-control-button" id="astraAccountButton" type="button">SIGN IN</button>
+        <button class="memory-open-button sidebar-control-button" id="astraSkillsButton" type="button">✧ SKILLS</button>
         <button class="memory-open-button sidebar-control-button" id="astraMemoryButton" type="button">✦ MEMORY</button>
       </div>
 
@@ -199,6 +200,21 @@
     </form>
   </dialog>
 
+  <dialog class="astra-memory-dialog astra-skills-dialog" id="astraSkillsDialog" aria-labelledby="astraSkillsTitle">
+    <form method="dialog" class="memory-dialog-head">
+      <div><span class="memory-dialog-kicker">ASTRALORE V2 · PRIVATE WORKSPACE</span><h2 id="astraSkillsTitle">ASTRA SKILLS</h2></div>
+      <button class="memory-dialog-close" aria-label="Close skills">×</button>
+    </form>
+    <p class="memory-privacy-note">Upload Markdown (.md) files to give ASTRA extra task-specific guidance. Skills are private to your account. Enabled skills are used as user-level guidance and cannot override ASTRA's safety or security rules.</p>
+    <div class="astra-skill-upload">
+      <input id="astraSkillFile" type="file" accept=".md,text/markdown">
+      <button type="button" id="astraSkillUpload">UPLOAD .MD</button>
+    </div>
+    <p class="astra-skills-limits">Maximum 10 files · 24 KB per file · 20,000 characters</p>
+    <p id="astraSkillsStatus" class="memory-notice" aria-live="polite"></p>
+    <div id="astraSkillsList" class="astra-skills-list"></div>
+  </dialog>
+
   <dialog class="astra-document-dialog" id="astraDocumentDialog" aria-labelledby="astraDocumentTitle">
     <div class="document-editor-head">
       <div><span class="memory-dialog-kicker">ASTRALORE DOCUMENT WORKSPACE</span><h2 id="astraDocumentTitle">DOCUMENT EDITOR</h2></div>
@@ -245,6 +261,7 @@
   <script src="astra-config.js"></script>
   <script src="astra-cloud-auth.js"></script>
   <script src="astra-cloud-store.js"></script>
+  <script src="astra-skills.js"></script>
   <script src="astra-memory.js"></script>
   <script src="astra-page.js"></script>
   <script src="astra-document-editor.js"></script>
