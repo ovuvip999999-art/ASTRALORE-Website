@@ -81,6 +81,7 @@
           <span id="astraStatus">CONNECTING</span>
         </div>
         <button class="install-app-button" id="installAstra" type="button" hidden>↓ INSTALL APP</button>
+        <button class="memory-open-button" id="astraAccountButton" type="button">SIGN IN</button>
         <button class="memory-open-button" id="astraMemoryButton" type="button">✦ MEMORY</button>
       </header>
 
@@ -163,7 +164,29 @@
     <button type="button" id="astraClearMemories" class="memory-clear-button">DELETE ALL MEMORIES</button>
   </dialog>
 
+  <dialog class="astra-memory-dialog" id="astraAccountDialog" aria-labelledby="astraAccountTitle">
+    <form method="dialog" class="memory-dialog-head">
+      <div><span class="memory-dialog-kicker">ASTRALORE CLOUD ACCOUNT</span><h2 id="astraAccountTitle">ASTRA ACCOUNT</h2></div>
+      <button class="memory-dialog-close" aria-label="Close account">×</button>
+    </form>
+    <p class="memory-privacy-note">Sign in to sync your conversations across devices. Your password is sent directly to Supabase Auth and is never sent to ASTRA's AI Worker. Use a unique password and never share it in chat.</p>
+    <form id="astraAuthForm" class="astra-auth-form">
+      <label for="astraAuthEmail">EMAIL</label>
+      <input id="astraAuthEmail" type="email" autocomplete="email" maxlength="254" required>
+      <label for="astraAuthPassword">PASSWORD</label>
+      <input id="astraAuthPassword" type="password" autocomplete="current-password" minlength="8" maxlength="128" required>
+      <div class="astra-auth-actions">
+        <button type="submit" id="astraSignIn">SIGN IN</button>
+        <button type="button" id="astraSignUp">CREATE ACCOUNT</button>
+        <button type="button" id="astraSignOut" hidden>SIGN OUT</button>
+      </div>
+      <p id="astraAuthStatus" class="memory-notice" aria-live="polite"></p>
+    </form>
+  </dialog>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="astra-config.js"></script>
+  <script src="astra-cloud-auth.js"></script>
   <script src="astra-memory.js"></script>
   <script src="astra-page.js"></script>
   <script src="astra-pwa.js"></script>
