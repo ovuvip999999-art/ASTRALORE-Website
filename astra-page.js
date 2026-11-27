@@ -380,6 +380,53 @@ function renderAnswer(container, text) {
 
     if (who === "bot") {
       renderAnswer(content, text);
+      const exportButton = document.createElement("button");
+      exportButton.type = "button";
+      exportButton.className = "astra-message-export";
+      exportButton.textContent = "DOWNLOAD AS PDF";
+      exportButton.addEventListener("click", async () => {
+        exportButton.disabled = true;
+        exportButton.textContent = "PREPARING PDF…";
+        try {
+          await loadScriptOnce("https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js", "jspdf");
+          const JsPDF = window.jspdf?.jsPDF || window.jsPDF;
+          if (!JsPDF) throw new Error("PDF export library is unavailable.");
+          const pdf = new JsPDF({ unit: "mm", format: "a4" });
+          pdf.setFont("helvetica", "normal");
+          pdf.setFontSize(10);
+          const plainText = String(text)
+            .replace(/```[a-z0-9_-]*\n?/gi, "")
+            .replace(/`/g, "")
+            .replace(/^#{1,6}\s*/gm, "")
+            .replace(/\*\*(.*?)\*\*/g, "$1")
+            .replace(/\*(.*?)\*/g, "$1")
+            .replace(/\[(.*?)\]\((.*?)\)/g, "$1 ($2)");
+          const paragraphs = plainText.split("\n");
+          let y = 16;
+          pdf.setFontSize(15);
+          pdf.text("ASTRA · ASTRALORE", 15, y);
+          y += 10;
+          pdf.setFontSize(10);
+          for (const paragraph of paragraphs) {
+            const lines = pdf.splitTextToSize(paragraph || " ", 180);
+            for (const line of lines) {
+              if (y > 280) { pdf.addPage(); y = 16; }
+              pdf.text(line, 15, y);
+              y += 5;
+            }
+            y += 2;
+          }
+          pdf.save("ASTRA-Document-" + new Date().toISOString().slice(0, 10) + ".pdf");
+          exportButton.textContent = "PDF DOWNLOADED";
+          if (status) status.textContent = "PDF EXPORTED";
+        } catch (error) {
+          exportButton.textContent = "PDF EXPORT FAILED";
+          if (status) status.textContent = error.message || "PDF EXPORT FAILED";
+        } finally {
+          exportButton.disabled = false;
+        }
+      });
+      content.appendChild(exportButton);
     } else {
       const archivedAttachment = String(text).match(/\[(Image|File) attached: ([^\]]+)\]$/);
       const visibleText = archivedAttachment
@@ -665,7 +712,47 @@ function renderAnswer(container, text) {
 
           const confidenceOf = result =>
             Number.isFinite(result?.data?.confidence) ? result.data.confidence : null;
-          const textOf = result => String(result?.data?.text || "").trim();
+          const rawTextOf = result => String(result?.data?.text || "").trim();
+          const textOf = result => {
+            const words = Array.isArray(result?.data?.words)
+              ? result.data.words.filter(word => word && typeof word.text === "string" && word.text.trim() && word.bbox)
+              : [];
+            if (!words.length) return rawTextOf(result);
+            const ordered = words.map(word => ({
+              text: word.text.trim(),
+              x0: Number(word.bbox.x0),
+              x1: Number(word.bbox.x1),
+              y: (Number(word.bbox.y0) + Number(word.bbox.y1)) / 2,
+              height: Math.max(1, Number(word.bbox.y1) - Number(word.bbox.y0))
+            })).filter(word => Number.isFinite(word.x0) && Number.isFinite(word.x1) && Number.isFinite(word.y));
+            if (!ordered.length) return rawTextOf(result);
+            ordered.sort((a, b) => a.y - b.y || a.x0 - b.x0);
+            const lines = [];
+            for (const word of ordered) {
+              let line = lines.find(item => Math.abs(item.y - word.y) <= Math.max(5, Math.min(item.height, word.height) * 0.55));
+              if (!line) {
+                line = { y: word.y, height: word.height, words: [] };
+                lines.push(line);
+              }
+              line.words.push(word);
+              line.y = line.words.reduce((sum, item) => sum + item.y, 0) / line.words.length;
+              line.height = Math.max(line.height, word.height);
+            }
+            return lines.sort((a, b) => a.y - b.y).map(line => {
+              const row = line.words.sort((a, b) => a.x0 - b.x0);
+              let output = "";
+              let previousEnd = null;
+              for (const word of row) {
+                if (previousEnd !== null) {
+                  const gap = word.x0 - previousEnd;
+                  output += gap > Math.max(24, line.height * 1.6) ? " | " : gap > 2 ? " " : "";
+                }
+                output += word.text;
+                previousEnd = word.x1;
+              }
+              return output;
+            }).join("\n");
+          };
           const scoreOf = result => {
             if (!result) return -1;
             const confidence = confidenceOf(result);
@@ -738,7 +825,10 @@ function renderAnswer(container, text) {
               selectedPass: selected === enhancedResult ? "SPARSE_TEXT_THRESHOLD" : "AUTO",
               attempts
             });
-            if (pageText) ocrPages.push("[Page " + pageNo + " · OCR]\n" + pageText);
+            if (pageText) {
+              const qualityLabel = confidence !== null && confidence < 60 ? " · LOW OCR CONFIDENCE · VERIFY" : "";
+              ocrPages.push("[Page " + pageNo + " · OCR · confidence " + (confidence === null ? "unknown" : Math.round(confidence) + "/100") + qualityLabel + "]\n" + pageText);
+            }
 
             if (thresholdCanvas) {
               thresholdCanvas.width = 0;
@@ -989,7 +1079,17 @@ function renderAnswer(container, text) {
     try {
       const data = await askAstra(message, attachmentForSend);
       const reply = data.reply;
-      if (status) status.textContent = "ONLINE";
+      if (data.documentContextAvailable) {
+        const state = data.documentPersistenceStatus === "SAVED" ? "SAVED" :
+          data.documentPersistenceStatus === "RESTORED" ? "RESTORED" : "AVAILABLE";
+        if (status) status.textContent = "DOCUMENT " + state + " · " + String(data.documentName || "ATTACHED FILE").slice(0, 48);
+      } else if (data.documentPersistenceStatus === "NOT_FOUND") {
+        if (status) status.textContent = "DOCUMENT NOT FOUND · REATTACH FILE";
+      } else if (data.documentPersistenceStatus === "NO_CONVERSATION_ID") {
+        if (status) status.textContent = "DOCUMENT NOT LINKED TO CLOUD CHAT";
+      } else if (status) {
+        status.textContent = "ONLINE";
+      }
 
       typing.remove();
       addMessage(reply, "bot");
