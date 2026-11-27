@@ -502,7 +502,7 @@ function renderAnswer(container, text) {
     const accessToken = sessionResult.data?.session?.access_token;
     let storedOriginalPath = attachment?.storagePath || null;
     if (attachment?.kind === "document" && attachment.originalFile &&
-        /\\.pdf$/i.test(attachment.name) && window.ASTRASupabase && cloudConversation?.id) {
+        /\.pdf$/i.test(attachment.name) && window.ASTRASupabase && cloudConversation?.id) {
       try {
         const userResult = await window.ASTRASupabase.auth.getUser();
         const userId = userResult.data?.user?.id;
