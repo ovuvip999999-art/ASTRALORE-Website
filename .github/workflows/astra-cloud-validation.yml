@@ -5,6 +5,7 @@ on:
     branches:
       - feature/astra-cloud-memory
   pull_request:
+    types: [opened, synchronize, reopened, edited]
     paths:
       - "backend/worker.js"
       - "backend/migrations/**"
