@@ -44,3 +44,25 @@ $$;
 
 revoke all on function public.astra_consume_image_generation(uuid) from public, anon;
 grant execute on function public.astra_consume_image_generation(uuid) to authenticated;
+
+create or replace function public.astra_release_image_generation(p_user_id uuid)
+returns void
+language plpgsql
+security definer
+set search_path = public
+as $$
+begin
+  if auth.uid() is null or auth.uid() <> p_user_id then
+    raise exception 'Not authorized';
+  end if;
+
+  update public.astra_creative_usage
+    set images_generated = greatest(0, images_generated - 1),
+        updated_at = now()
+    where user_id = p_user_id
+      and usage_date = (now() at time zone 'utc')::date;
+end;
+$$;
+
+revoke all on function public.astra_release_image_generation(uuid) from public, anon;
+grant execute on function public.astra_release_image_generation(uuid) to authenticated;
