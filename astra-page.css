@@ -1446,3 +1446,12 @@ body[data-theme="light"] .astra-image-prompt,body[data-theme="light"] .astra-ima
 body[data-theme="light"] .astra-image-label { color:#51417f; }
 body[data-theme="light"] .astra-image-cost-ack { color:#655b79; }
 @media(max-width:560px) { .astra-image-studio-dialog { padding:15px; } .astra-image-preview { max-height:48vh; } }
+
+
+/* ASTRA V2 — video studio */
+.astra-video-studio-dialog { max-width:min(760px,calc(100% - 28px)); }
+.astra-video-cost-note { padding:11px 12px; border:1px solid #d7a56b55; border-radius:8px; background:#d7a56b12; color:#e7c99f; font-size:11px; line-height:1.55; }
+.astra-video-preview { display:block; width:100%; max-height:62vh; margin:14px auto; border:1px solid #ffffff22; border-radius:10px; background:#080914; }
+.astra-video-preview[hidden],#astraVideoOpen[hidden] { display:none; }
+body[data-theme="light"] .astra-video-cost-note { color:#795528; background:#fff7e8; border-color:#e3c89c; }
+@media(max-width:560px) { .astra-video-studio-dialog { padding:15px; } .astra-video-preview { max-height:48vh; } }
