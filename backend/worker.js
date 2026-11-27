@@ -223,7 +223,8 @@ export default {
       return json({ error: "Your session is invalid or expired. Please sign in again." }, 401, origin);
     }
 
-    let documentSource = "UPLOADED_WITH_THIS_MESSAGE";
+    let documentSource = "NO_DOCUMENT";
+    let documentPersistenceStatus = validConversationId ? "NOT_FOUND" : "NO_CONVERSATION_ID";
     if (validConversationId) {
       try {
         const documentStore = createDocumentStore({
@@ -233,9 +234,14 @@ export default {
         });
         if (document) {
           await documentStore.save(conversationId, authenticatedUser.id, document);
+          documentSource = "UPLOADED_WITH_THIS_MESSAGE";
+          documentPersistenceStatus = "SAVED";
         } else {
           document = await documentStore.load(conversationId, authenticatedUser.id);
-          if (document) documentSource = "RESTORED_FROM_THIS_CONVERSATION";
+          if (document) {
+            documentSource = "RESTORED_FROM_THIS_CONVERSATION";
+            documentPersistenceStatus = "RESTORED";
+          }
         }
       } catch (error) {
         console.error("ASTRA conversation document persistence failed", String(error?.message || error).slice(0, 180));
@@ -341,7 +347,14 @@ export default {
         console.log("ASTRA memory extraction skipped", String(memoryError?.message || "Unknown error").slice(0, 160));
       }
 
-      return json({ reply, memoryUpdates, cloudMemoryUsed: archiveRows.length > 0, documentContextAvailable: Boolean(document), documentName: document?.name || null }, 200, origin);
+      return json({
+        reply,
+        memoryUpdates,
+        cloudMemoryUsed: archiveRows.length > 0,
+        documentContextAvailable: Boolean(document),
+        documentName: document?.name || null,
+        documentPersistenceStatus
+      }, 200, origin);
     } catch (error) {
       console.error("ASTRA Workers AI request failed", {
         name: error?.name || "Error",
