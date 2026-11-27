@@ -15,7 +15,8 @@
 
   if (!form || !input || !chat) return;
 
-  let history = [];
+  if (window.ASTRAMemory) window.ASTRAMemory.ensureConversation();
+  let history = window.ASTRAMemory ? window.ASTRAMemory.getCurrentMessages() : [];
   let busy = false;
 
   function appendInline(parent, text) {
@@ -287,6 +288,12 @@ function renderAnswer(container, text) {
     return bubble;
   }
 
+  // Restore the most recent conversation stored on this device.
+  if (history.length) {
+    history.forEach(item => addMessage(item.content, item.role === "user" ? "user" : "bot"));
+    if (welcome) welcome.hidden = true;
+  }
+
   async function askAstra(question) {
     if (!API_URL) {
       throw new Error("ASTRA's live connection is not configured.");
@@ -297,7 +304,8 @@ function renderAnswer(container, text) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
         message: question,
-        history: history.slice(-8)
+        history: history.slice(-8),
+        memory: window.ASTRAMemory ? window.ASTRAMemory.getMemories().map(item => item.text) : []
       })
     });
 
@@ -313,7 +321,7 @@ function renderAnswer(container, text) {
       throw new Error("ASTRA returned an empty response. Please try again.");
     }
 
-    return data.reply;
+    return data;
   }
 
   async function send(text) {
@@ -336,7 +344,8 @@ function renderAnswer(container, text) {
     typing.classList.add("astra-message-loading");
 
     try {
-      const reply = await askAstra(message);
+      const data = await askAstra(message);
+      const reply = data.reply;
       if (status) status.textContent = "ONLINE";
 
       typing.remove();
@@ -347,8 +356,18 @@ function renderAnswer(container, text) {
         { role: "assistant", content: reply }
       );
 
-      if (history.length > 16) {
-        history.splice(0, history.length - 16);
+      if (history.length > 500) {
+        history.splice(0, history.length - 500);
+      }
+      if (window.ASTRAMemory) {
+        window.ASTRAMemory.saveCurrentMessages(history);
+        renderArchive();
+        const learned = Array.isArray(data.memoryUpdates) ? data.memoryUpdates : [];
+        if (learned.length) {
+          window.ASTRAMemory.addMemories(learned);
+          renderMemories();
+          if (memoryNotice) memoryNotice.textContent = "ASTRA updated its memory from this conversation.";
+        }
       }
     } catch (error) {
       if (status) status.textContent = "CONNECTION ISSUE";
@@ -387,12 +406,122 @@ function renderAnswer(container, text) {
       if (busy) return;
 
       history = [];
+      if (window.ASTRAMemory) window.ASTRAMemory.createConversation();
       chat.querySelectorAll(".astra-message").forEach(message => message.remove());
-
       if (welcome) welcome.hidden = false;
-
       input.value = "";
+      renderArchive();
       input.focus();
+    });
+  }
+
+  // Searchable conversation archive (stored locally on this device).
+  const archiveSearch = document.getElementById("astraArchiveSearch");
+  const archiveList = document.getElementById("astraArchiveList");
+
+  function renderArchive() {
+    if (!archiveList || !window.ASTRAMemory) return;
+    const query = archiveSearch ? archiveSearch.value : "";
+    const conversations = window.ASTRAMemory.searchConversations(query);
+    archiveList.replaceChildren();
+    if (!conversations.length) {
+      const empty = document.createElement("p");
+      empty.className = "archive-empty";
+      empty.textContent = query ? "No matching conversations." : "Your conversations will appear here.";
+      archiveList.appendChild(empty);
+      return;
+    }
+    conversations.forEach(item => {
+      if (item.id === window.ASTRAMemory.getCurrentConversationId() && !item.messages.length) return;
+      const button = document.createElement("button");
+      button.type = "button";
+      button.className = "archive-conversation" +
+        (item.id === window.ASTRAMemory.getCurrentConversationId() ? " active" : "");
+      button.dataset.conversationId = item.id;
+      const title = document.createElement("span");
+      title.className = "archive-conversation-title";
+      title.textContent = item.title || "Conversation";
+      const meta = document.createElement("small");
+      meta.textContent = new Date(item.updatedAt).toLocaleDateString();
+      button.append(title, meta);
+      archiveList.appendChild(button);
+    });
+  }
+
+  if (archiveSearch) archiveSearch.addEventListener("input", renderArchive);
+  if (archiveList) archiveList.addEventListener("click", event => {
+    const button = event.target.closest("[data-conversation-id]");
+    if (!button || busy || !window.ASTRAMemory) return;
+    const restored = window.ASTRAMemory.openConversation(button.dataset.conversationId);
+    if (!restored) return;
+    history = restored;
+    chat.querySelectorAll(".astra-message").forEach(message => message.remove());
+    history.forEach(item => addMessage(item.content, item.role === "user" ? "user" : "bot"));
+    if (welcome) welcome.hidden = history.length > 0;
+    renderArchive();
+    input.focus();
+  });
+
+  renderArchive();
+
+  // User-controlled, device-only memory controls.
+  const memoryButton = document.getElementById("astraMemoryButton");
+  const memoryDialog = document.getElementById("astraMemoryDialog");
+  const memoryList = document.getElementById("astraMemoryList");
+  const memoryNotice = document.getElementById("astraMemoryNotice");
+
+  function renderMemories() {
+    if (!memoryList || !window.ASTRAMemory) return;
+    memoryList.replaceChildren();
+    const memories = window.ASTRAMemory.getMemories();
+    if (!memories.length) {
+      const empty = document.createElement("p");
+      empty.className = "memory-empty";
+      empty.textContent = "ASTRA hasn't learned any long-term memories yet. Keep chatting naturally; useful details will be saved automatically.";
+      memoryList.appendChild(empty);
+      return;
+    }
+    memories.forEach(item => {
+      const row = document.createElement("div");
+      row.className = "astra-memory-item";
+      const content = document.createElement("span");
+      content.textContent = item.text;
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.textContent = "Remove";
+      remove.setAttribute("aria-label", "Remove saved memory");
+      remove.dataset.memoryRemove = item.id;
+      row.append(content, remove);
+      memoryList.appendChild(row);
+    });
+  }
+
+  if (memoryButton && memoryDialog) {
+    memoryButton.addEventListener("click", () => {
+      renderMemories();
+      if (typeof memoryDialog.showModal === "function") memoryDialog.showModal();
+      else memoryDialog.setAttribute("open", "");
+    });
+  }
+
+  if (memoryList) {
+    memoryList.addEventListener("click", event => {
+      const button = event.target.closest("[data-memory-remove]");
+      if (!button || !window.ASTRAMemory) return;
+      window.ASTRAMemory.removeMemory(button.dataset.memoryRemove);
+      renderMemories();
+      if (memoryNotice) memoryNotice.textContent = "Memory removed from this device.";
+    });
+  }
+
+  const clearMemoryButton = document.getElementById("astraClearMemories");
+  if (clearMemoryButton) {
+    clearMemoryButton.addEventListener("click", () => {
+      if (!window.ASTRAMemory || !window.ASTRAMemory.getMemories().length) return;
+      if (!window.confirm("Delete all saved ASTRA memories from this device?")) return;
+      window.ASTRAMemory.clearMemories();
+      renderMemories();
+      if (memoryNotice) memoryNotice.textContent = "All saved memories were deleted from this device.";
     });
   }
 

@@ -48,6 +48,11 @@
         <span>＋</span> New conversation
       </button>
 
+      <div class="archive-heading">RECENT CONVERSATIONS</div>
+      <input id="astraArchiveSearch" class="archive-search" type="search"
+        placeholder="Search conversations..." aria-label="Search conversations">
+      <div id="astraArchiveList" class="archive-list" aria-live="polite"></div>
+
       <div class="sidebar-section-label">YOUR WORKSPACE</div>
 
       <div class="sidebar-item active">
@@ -76,6 +81,7 @@
           <span id="astraStatus">CONNECTING</span>
         </div>
         <button class="install-app-button" id="installAstra" type="button" hidden>↓ INSTALL APP</button>
+        <button class="memory-open-button" id="astraMemoryButton" type="button">✦ MEMORY</button>
       </header>
 
       <section class="conversation" id="astraChat" aria-live="polite">
@@ -145,7 +151,20 @@
     </main>
   </div>
 
+  <dialog class="astra-memory-dialog" id="astraMemoryDialog" aria-labelledby="astraMemoryTitle">
+    <form method="dialog" class="memory-dialog-head">
+      <div><span class="memory-dialog-kicker">YOUR DEVICE · PRIVATE TO THIS BROWSER</span><h2 id="astraMemoryTitle">ASTRA MEMORY</h2></div>
+      <button class="memory-dialog-close" aria-label="Close memory">×</button>
+    </form>
+    <p class="memory-privacy-note">ASTRA automatically saves useful, non-sensitive details from your conversations—such as ongoing projects, preferences and goals. Memories stay on this device. Review or remove anything below. Your recent chat history is kept on this device until you start a new chat or clear browser data. Do not share passwords or highly sensitive information in chat.</p>
+    <div class="memory-auto-status">✦ AUTOMATIC MEMORY IS ON · DEVICE ONLY</div>
+    <p id="astraMemoryNotice" class="memory-notice" aria-live="polite"></p>
+    <div id="astraMemoryList" class="astra-memory-list"></div>
+    <button type="button" id="astraClearMemories" class="memory-clear-button">DELETE ALL MEMORIES</button>
+  </dialog>
+
   <script src="astra-config.js"></script>
+  <script src="astra-memory.js"></script>
   <script src="astra-page.js"></script>
   <script src="astra-pwa.js"></script>
 </body>
