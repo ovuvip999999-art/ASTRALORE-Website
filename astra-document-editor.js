@@ -18,11 +18,12 @@
   const canvas = $("astraPdfCanvas");
   const stage = $("astraPdfPageStage");
   const overlayLayer = $("astraPdfOverlayLayer");
+  const textLayer = $("astraPdfTextLayer");
   if (!dialog || !editor || !saveButton || !pdfButton || !textButton) return;
 
   const BUCKET = "astra-original-documents";
   let current = null, saveHandler = null, savedText = "", pdfBytes = null;
-  let pdfDocument = null, pageNumber = 1, annotations = [], pdfLibPromise = null, pdfJsPromise = null;
+  let pdfDocument = null, pageNumber = 1, annotations = [], pdfLibPromise = null, pdfJsPromise = null, selectedTextBox = null;
 
   function showStatus(message) { if (status) status.textContent = message; }
   function safeBaseName(name) {
@@ -114,6 +115,48 @@
       });
     }
   }
+  async function renderSelectableText(page, viewport) {
+    if (!textLayer) return;
+    textLayer.replaceChildren();
+    textLayer.style.width = viewport.width + "px";
+    textLayer.style.height = viewport.height + "px";
+    const content = await page.getTextContent();
+    for (const item of content.items || []) {
+      const value = String(item.str || "").trim();
+      if (!value || !item.width) continue;
+      const tx = window.pdfjsLib.Util.transform(viewport.transform, item.transform);
+      const fontHeight = Math.max(6, Math.hypot(tx[2], tx[3]));
+      const span = document.createElement("span");
+      span.className = "pdf-detected-text";
+      span.textContent = value;
+      span.title = "Select to replace this text";
+      span.style.left = tx[4] + "px";
+      span.style.top = (tx[5] - fontHeight) + "px";
+      span.style.width = Math.max(fontHeight * 0.6, item.width * viewport.scale) + "px";
+      span.style.height = Math.max(fontHeight * 1.25, 8) + "px";
+      span.style.fontSize = fontHeight + "px";
+      span.addEventListener("click", event => {
+        event.stopPropagation();
+        const rect = span.getBoundingClientRect();
+        const stageRect = stage.getBoundingClientRect();
+        const x = Math.max(0, Math.min(99, (rect.left - stageRect.left) / stageRect.width * 100));
+        const y = Math.max(0, Math.min(99, (rect.top - stageRect.top) / stageRect.height * 100));
+        const width = Math.max(1, Math.min(100 - x, rect.width / stageRect.width * 100 + 0.5));
+        const height = Math.max(1, Math.min(100 - y, rect.height / stageRect.height * 100 + 0.8));
+        selectedTextBox = { x, y, width, height, fontSize: Math.max(6, Math.min(72, fontHeight * 0.75)) };
+        $("astraPdfTool").value = "replace";
+        $("astraPdfOverlayText").value = value;
+        $("astraPdfX").value = x.toFixed(1);
+        $("astraPdfY").value = y.toFixed(1);
+        $("astraPdfW").value = width.toFixed(1);
+        $("astraPdfH").value = height.toFixed(1);
+        $("astraPdfFontSize").value = Math.round(selectedTextBox.fontSize);
+        showStatus("TEXT SELECTED · Edit the text field, then click REPLACE SELECTED TEXT.");
+      });
+      textLayer.appendChild(span);
+    }
+  }
+
   async function renderPage() {
     if (!pdfDocument) return;
     const page = await pdfDocument.getPage(pageNumber);
@@ -127,6 +170,7 @@
     stage.style.width = viewport.width + "px"; stage.style.height = viewport.height + "px";
     overlayLayer.style.width = viewport.width + "px"; overlayLayer.style.height = viewport.height + "px";
     await page.render({ canvasContext: context, viewport }).promise;
+    await renderSelectableText(page, viewport);
     $("astraPdfPageLabel").textContent = "PAGE " + pageNumber + " / " + pdfDocument.numPages;
     $("astraPdfPrev").disabled = pageNumber <= 1;
     $("astraPdfNext").disabled = pageNumber >= pdfDocument.numPages;
@@ -144,7 +188,7 @@
     saveHandler = typeof onSave === "function" ? onSave : null;
     savedText = current.text; editor.value = current.text; editor.disabled = false;
     annotations = Array.isArray(current.editorState.annotations) ? current.editorState.annotations.slice(0, 100) : [];
-    pdfBytes = null; pdfDocument = null; pageNumber = 1;
+    pdfBytes = null; pdfDocument = null; pageNumber = 1; selectedTextBox = null;
     title.textContent = current.name + " · DOCUMENT EDITOR";
     saveButton.disabled = !saveHandler;
     const isPdf = current.mimeType === "application/pdf" || /\.pdf$/i.test(current.name);
@@ -175,12 +219,23 @@
     if (!pdfDocument) return;
     const type = $("astraPdfTool").value;
     const text = $("astraPdfOverlayText").value.trim();
-    if (type === "text" && !text) { showStatus("Enter the text you want to add."); return; }
+    if ((type === "text" || type === "replace") && !text) { showStatus("Enter the text you want to add."); return; }
+    if (type === "replace" && !selectedTextBox) { showStatus("Click an existing detected text block on the PDF page first."); return; }
     if (annotations.length >= 100) { showStatus("Maximum of 100 annotations per document."); return; }
     const x = numberValue("astraPdfX", 0, 100, 10) * 10;
     const y = numberValue("astraPdfY", 0, 100, 15) * 10;
     const width = numberValue("astraPdfW", 1, 100, 35) * 10;
     const height = numberValue("astraPdfH", 1, 100, 8) * 10;
+    if (type === "replace" && selectedTextBox) {
+      const box = selectedTextBox;
+      annotations.push({ type: "cover", page: pageNumber, x: box.x * 10, y: box.y * 10, width: box.width * 10, height: box.height * 10, fontSize: 0, text: "" });
+      annotations.push({ type: "text", page: pageNumber, x: box.x * 10, y: box.y * 10, width: box.width * 10, height: box.height * 10, fontSize: numberValue("astraPdfFontSize", 6, 72, box.fontSize), text });
+      selectedTextBox = null;
+      $("astraPdfOverlayText").value = "";
+      renderAnnotations();
+      showStatus("REPLACEMENT PREVIEW ADDED · Check alignment, then save or export.");
+      return;
+    }
     annotations.push({ type, page: pageNumber, x, y, width, height, fontSize: numberValue("astraPdfFontSize", 6, 72, 14), text: type === "text" ? text : "" });
     renderAnnotations();
     showStatus(type === "cover" ? "COVER AREA ADDED · Save or export to apply it." : "TEXT ADDED · Save or export to apply it.");
