@@ -1250,3 +1250,41 @@ body[data-theme="light"] .astra-composer textarea::placeholder { color:#77708a; 
   .astra-composer textarea { min-height:44px; padding:10px 2px 8px; }
   .astra-composer button { flex-basis:42px; width:42px; height:42px; border-radius:14px; }
 }
+
+
+/* ASTRA VISION INPUT — image attachment controls */
+.astra-attach-button {
+  flex:0 0 42px;
+  width:42px;
+  height:42px;
+  border:1px solid rgba(177,146,242,.42);
+  border-radius:14px;
+  background:rgba(145,112,220,.16);
+  color:#c9b3ff;
+  font-size:27px;
+  line-height:1;
+  transition:background .18s ease,transform .18s ease,border-color .18s ease;
+}
+.astra-attach-button:hover { background:rgba(145,112,220,.3); border-color:#b99aff; transform:translateY(-1px); }
+.astra-attachment-preview {
+  display:flex;
+  align-items:center;
+  gap:11px;
+  width:min(100%,760px);
+  margin:0 auto 10px;
+  padding:9px 12px;
+  border:1px solid rgba(177,146,242,.38);
+  border-radius:15px;
+  background:rgba(42,34,69,.78);
+  color:#f3edff;
+}
+.astra-attachment-preview[hidden] { display:none; }
+.astra-attachment-preview img { width:48px; height:48px; object-fit:cover; border-radius:9px; }
+.astra-attachment-preview div { display:flex; flex:1; min-width:0; flex-direction:column; gap:3px; }
+.astra-attachment-preview strong { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; }
+.astra-attachment-preview span { color:#b5a9cf; font-size:11px; }
+.astra-attachment-preview button { width:30px; height:30px; border:0; border-radius:50%; background:transparent; color:inherit; font-size:21px; }
+.astra-user-attachment { display:block; width:auto; max-width:min(100%,360px); max-height:300px; margin-top:10px; border:1px solid rgba(177,146,242,.28); border-radius:13px; object-fit:contain; }
+body[data-theme="light"] .astra-attach-button { background:#eee7fb; color:#6849a9; border-color:#d4c4ef; }
+body[data-theme="light"] .astra-attachment-preview { background:#f5f1fc; color:#29243c; border-color:#d9cdee; }
+body[data-theme="light"] .astra-attachment-preview span { color:#655b79; }
