@@ -4,12 +4,14 @@ on:
   push:
     branches:
       - feature/astra-cloud-memory
+      - feature/astra-creative-skills
   pull_request:
     types: [opened, synchronize, reopened, edited]
     paths:
       - "backend/worker.js"
       - "backend/migrations/**"
       - "astra-page.js"
+      - "astra-skills.js"
       - "astra-document-editor.js"
       - "astra.html"
       - "astra-page.css"
@@ -31,6 +33,7 @@ jobs:
       - name: Check browser JavaScript syntax
         run: |
           node --check astra-page.js
+          node --check astra-skills.js
           node --check astra-document-editor.js
           node --check astra-cloud-auth.js
           node --check astra-cloud-store.js
