@@ -41,11 +41,11 @@ test("recognises a hyphenated test range", () => {
 
 test("browser PDF OCR records separate render, recognition, and quality diagnostics", async () => {
   const source = await readFile(new URL("../astra-page.js", import.meta.url), "utf8");
-  assert.match(source, /pagesRendered\+\+/);
-  assert.match(source, /pagesProcessed\+\+/);
-  assert.match(source, /averageConfidence/);
-  assert.match(source, /failureStage = "OCR_QUALITY_CHECK"/);
-  assert.match(source, /ocrPages\.join\("\\n\\n"\)/);
-  assert.match(source, /ocrText\.replace\(\/\\[Page/);
-  assert.match(source, /match\(\/\[\\p\{L\}\\p\{N\}\\p\{P\}\]\/gu\)/);
+  assert.ok(source.includes("pagesRendered++"));
+  assert.ok(source.includes("pagesProcessed++"));
+  assert.ok(source.includes("averageConfidence"));
+  assert.ok(source.includes('failureStage = "OCR_QUALITY_CHECK"'));
+  assert.ok(source.includes('ocrPages.join("\\n\\n")'));
+  assert.ok(source.includes("ocrText.replace(/\\\\[Page"));
+  assert.ok(source.includes("match(/[\\\\p{L}\\\\p{N}\\\\p{P}]/gu)"));
 });
