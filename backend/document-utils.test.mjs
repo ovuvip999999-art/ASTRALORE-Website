@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import { buildDocumentChunks } from "./document-utils.js";
 
 test("retrieves all requested test headers for an en-dash range", () => {
@@ -35,4 +36,16 @@ test("recognises a hyphenated test range", () => {
   const result = buildDocumentChunks("10 Arjuna\n20 Arjuna", "Tests 10-20");
   assert.ok(result.chunks.some(chunk => chunk.includes("10 Arjuna")));
   assert.ok(result.chunks.some(chunk => chunk.includes("20 Arjuna")));
+});
+
+
+test("browser PDF OCR records separate render, recognition, and quality diagnostics", async () => {
+  const source = await readFile(new URL("../astra-page.js", import.meta.url), "utf8");
+  assert.match(source, /pagesRendered\+\+/);
+  assert.match(source, /pagesProcessed\+\+/);
+  assert.match(source, /averageConfidence/);
+  assert.match(source, /failureStage = "OCR_QUALITY_CHECK"/);
+  assert.match(source, /ocrPages\.join\("\\n\\n"\)/);
+  assert.match(source, /ocrText\.replace\(\/\\[Page/);
+  assert.match(source, /match\(\/\[\\p\{L\}\\p\{N\}\\p\{P\}\]\/gu\)/);
 });
