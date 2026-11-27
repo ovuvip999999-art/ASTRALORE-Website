@@ -2,6 +2,15 @@
 (() => {
   "use strict";
   const openButton = document.getElementById("astraImageStudioButton");
+  const videoOpenButton = document.getElementById("astraVideoStudioButton");
+  const videoDialog = document.getElementById("astraVideoStudioDialog");
+  const videoPrompt = document.getElementById("astraVideoPrompt");
+  const videoRatio = document.getElementById("astraVideoRatio");
+  const videoCostAck = document.getElementById("astraVideoCostAck");
+  const videoGenerateButton = document.getElementById("astraVideoGenerate");
+  const videoPreview = document.getElementById("astraVideoPreview");
+  const videoOpenLink = document.getElementById("astraVideoOpen");
+  const videoStatus = document.getElementById("astraVideoStatus");
   const dialog = document.getElementById("astraImageStudioDialog");
   const promptInput = document.getElementById("astraImagePrompt");
   const ratioInput = document.getElementById("astraImageRatio");
@@ -20,6 +29,74 @@
     preview.hidden = true;
     preview.removeAttribute("src");
     downloadButton.hidden = true;
+  }
+
+  if (videoOpenButton && videoDialog) {
+    videoOpenButton.addEventListener("click", () => {
+      if (typeof videoDialog.showModal === "function") videoDialog.showModal();
+      else videoDialog.setAttribute("open", "");
+    });
+  }
+
+  if (videoGenerateButton && videoDialog && videoPrompt && videoRatio && videoCostAck && videoPreview && videoOpenLink && videoStatus) {
+    videoGenerateButton.addEventListener("click", async () => {
+      const prompt = videoPrompt.value.trim();
+      if (prompt.length < 5 || prompt.length > 1000) {
+        videoStatus.textContent = "Write a prompt between 5 and 1,000 characters.";
+        return;
+      }
+      if (!videoCostAck.checked) {
+        videoStatus.textContent = "Confirm the estimated US$0.25 model cost and account-owner permission first.";
+        return;
+      }
+      if (!window.ASTRASupabase) {
+        videoStatus.textContent = "Sign in to your ASTRA account first.";
+        return;
+      }
+
+      videoGenerateButton.disabled = true;
+      videoPreview.hidden = true;
+      videoPreview.removeAttribute("src");
+      videoOpenLink.hidden = true;
+      videoStatus.textContent = "Generating your 5-second video…";
+      try {
+        const { data: sessionData, error: sessionError } = await window.ASTRASupabase.auth.getSession();
+        if (sessionError || !sessionData.session?.access_token) throw new Error("Your session expired. Sign in again.");
+        const apiUrl = typeof window.ASTRA_API_URL === "string" ? window.ASTRA_API_URL.trim() : "";
+        if (!apiUrl) throw new Error("ASTRA's AI Worker is not configured.");
+        const response = await fetch(apiUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer " + sessionData.session.access_token
+          },
+          body: JSON.stringify({
+            creativeAction: { operation: "generate-video", prompt, aspectRatio: videoRatio.value },
+            costAcknowledged: true
+          })
+        });
+        const data = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(data.error || "Video generation failed.");
+        if (typeof data.videoUrl !== "string" || !data.videoUrl.startsWith("https://")) throw new Error("The video service returned no valid video URL.");
+        videoPreview.src = data.videoUrl;
+        videoPreview.hidden = false;
+        videoOpenLink.href = data.videoUrl;
+        videoOpenLink.hidden = false;
+        videoStatus.textContent = "Video ready · " + (Number.isInteger(data.remainingToday) ? data.remainingToday + " video generations left today" : "preview only");
+      } catch (error) {
+        videoStatus.textContent = error.message || "Video generation failed. Please try again.";
+      } finally {
+        videoGenerateButton.disabled = false;
+      }
+    });
+    videoDialog.addEventListener("close", () => {
+      videoPreview.pause();
+      videoPreview.removeAttribute("src");
+      videoPreview.load();
+      videoPreview.hidden = true;
+      videoOpenLink.removeAttribute("href");
+      videoOpenLink.hidden = true;
+    });
   }
 
   openButton.addEventListener("click", () => {
