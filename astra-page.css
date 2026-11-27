@@ -579,9 +579,9 @@ button, a {
     width: 100%;
     min-height: auto;
     padding: 12px 16px;
-    flex-direction: row;
+    display: grid;
+    grid-template-columns: 1fr auto;
     align-items: center;
-    justify-content: space-between;
     gap: 10px;
     border-right: 0;
     border-bottom: 1px solid #ffffff15;
@@ -601,12 +601,15 @@ button, a {
     font-size: 8px;
   }
 
-  .new-chat-button,
-  .sidebar-section-label,
-  .sidebar-item,
-  .sidebar-bottom {
-    display: none;
+  .new-chat-button {
+    margin: 0;
+    padding: 9px 11px;
+    font-size: 11px;
   }
+  .sidebar-section-label, .sidebar-item, .sidebar-bottom { display: none; }
+  .archive-heading, .archive-search, .archive-list { display: block; grid-column: 1 / -1; }
+  .archive-heading { margin: 5px 0 0; }
+  .archive-list { max-height: 130px; }
 
   .astra-main {
     min-height: calc(100dvh - 58px);
@@ -705,3 +708,696 @@ button, a {
   .topbar { flex-wrap: wrap; gap: 9px; }
   .install-app-button { padding: 8px 10px; font-size: 9px; }
 }
+
+
+/* ASTRA local memory controls */
+.memory-open-button {
+  border: 1px solid rgba(172, 153, 255, .35);
+  border-radius: 999px;
+  background: rgba(130, 105, 220, .12);
+  color: #d9d0ff;
+  padding: 10px 14px;
+  font: 600 11px "DM Mono", monospace;
+  letter-spacing: .08em;
+  cursor: pointer;
+}
+.memory-open-button:hover { background: rgba(130, 105, 220, .24); }
+.astra-memory-dialog {
+  width: min(560px, calc(100% - 28px));
+  max-height: min(82vh, 720px);
+  padding: 24px;
+  border: 1px solid rgba(172, 153, 255, .28);
+  border-radius: 20px;
+  background: #101020;
+  color: #f4f1ff;
+  box-shadow: 0 24px 90px rgba(0,0,0,.65);
+}
+.astra-memory-dialog::backdrop { background: rgba(3, 4, 14, .78); backdrop-filter: blur(8px); }
+.memory-dialog-head { display:flex; align-items:center; justify-content:space-between; gap:16px; }
+.memory-dialog-head h2 { margin:6px 0 0; font:800 23px "Manrope",sans-serif; letter-spacing:.06em; }
+.memory-dialog-kicker { color:#a99adf; font:10px "DM Mono",monospace; letter-spacing:.12em; }
+.memory-dialog-close { border:0; background:transparent; color:#eee; font-size:28px; cursor:pointer; }
+.memory-privacy-note { color:#b9b6ca; font-size:12px; line-height:1.6; margin:16px 0 20px; }
+.memory-add-form { display:grid; gap:9px; }
+.memory-add-form label { color:#d8d1f5; font-size:12px; font-weight:700; }
+.memory-add-form input { width:100%; box-sizing:border-box; border:1px solid rgba(172,153,255,.28); border-radius:10px; padding:13px; background:#090a16; color:#fff; font:14px "Manrope",sans-serif; }
+.memory-add-form button,.memory-clear-button { border:1px solid rgba(172,153,255,.3); border-radius:10px; padding:11px 14px; background:rgba(130,105,220,.2); color:#e7e0ff; font:600 10px "DM Mono",monospace; letter-spacing:.08em; cursor:pointer; }
+.memory-notice { min-height:16px; color:#bcaeff; font-size:11px; }
+.astra-memory-list { display:grid; gap:8px; max-height:260px; overflow:auto; }
+.astra-memory-item { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; padding:11px; border:1px solid rgba(255,255,255,.08); border-radius:10px; background:rgba(255,255,255,.035); }
+.astra-memory-item span { font-size:12px; line-height:1.5; overflow-wrap:anywhere; }
+.astra-memory-item button { flex:none; border:0; background:transparent; color:#e0a5b3; font:11px "DM Mono",monospace; cursor:pointer; }
+.memory-empty { color:#aaa6bb; font-size:12px; }
+.memory-clear-button { margin-top:14px; border-color:rgba(224,165,179,.25); color:#e0a5b3; }
+@media (max-width:600px) {
+  .memory-open-button { padding:8px 10px; font-size:10px; }
+  .astra-memory-dialog { padding:18px; }
+}
+
+/* Automatic memory status */
+.memory-auto-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 9px 11px;
+  border: 1px solid rgba(145, 126, 235, .24);
+  border-radius: 9px;
+  background: rgba(130, 105, 220, .10);
+  color: #c9bfff;
+  font: 10px "DM Mono", monospace;
+  letter-spacing: .06em;
+}
+
+
+/* Searchable conversation archive */
+.archive-heading {
+  margin: 25px 0 10px;
+  color: #77708f;
+  font: 10px 'DM Mono', monospace;
+  letter-spacing: 1.3px;
+}
+.archive-search {
+  width: 100%;
+  padding: 11px 12px;
+  border: 1px solid #ffffff1c;
+  border-radius: 8px;
+  outline: none;
+  background: #ffffff08;
+  color: #eeeaf9;
+  font-size: 12px;
+}
+.archive-search:focus { border-color: #a88bea88; }
+.archive-search::placeholder { color: #77718b; }
+.archive-list {
+  display: grid;
+  gap: 6px;
+  margin-top: 10px;
+  max-height: min(48vh, 430px);
+  overflow-y: auto;
+  scrollbar-width: thin;
+}
+.archive-conversation {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  padding: 10px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: #c9c2dc;
+  text-align: left;
+  cursor: pointer;
+}
+.archive-conversation:hover,
+.archive-conversation.active {
+  border-color: #9b7cdd35;
+  background: #8060c51a;
+}
+.archive-conversation-title {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 11px;
+}
+.archive-conversation small {
+  flex: none;
+  color: #77718b;
+  font: 9px 'DM Mono', monospace;
+}
+.archive-empty {
+  margin: 8px 2px;
+  color: #77718b;
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+/* ASTRA cloud account controls */
+.astra-auth-form { display:grid; gap:9px; margin-top:18px; }
+.astra-auth-form label { color:#a99bc7; font:10px 'DM Mono',monospace; letter-spacing:.12em; }
+.astra-auth-form input { width:100%; box-sizing:border-box; padding:12px 13px; border:1px solid #51456b; border-radius:7px; background:#0c0b19; color:#f4efff; font:13px 'Manrope',sans-serif; }
+.astra-auth-form input:focus { outline:2px solid #9b7cdd88; border-color:#a88bea; }
+.astra-auth-actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; }
+.astra-auth-actions button { border:1px solid #8065b5; border-radius:6px; padding:10px 13px; background:#211936; color:#eee7ff; font:10px 'DM Mono',monospace; cursor:pointer; }
+.astra-auth-actions button:disabled { opacity:.5; cursor:wait; }
+.astra-auth-actions button[hidden] { display:none; }
+
+
+/* ASTRA V16 — fixed workspace: conversation scrolls, composer stays visible */
+html, body { height:100%; overflow:hidden; }
+.astra-app { height:100dvh; min-height:0; overflow:hidden; }
+.astra-main { height:100%; min-height:0; overflow:hidden; }
+.conversation { min-height:0; overscroll-behavior:contain; }
+.composer-area { flex:none; position:relative; z-index:2; padding-bottom:max(18px, env(safe-area-inset-bottom)); }
+.topbar { flex:none; gap:18px; }
+.topbar-actions { display:flex; align-items:center; justify-content:flex-end; flex-wrap:wrap; gap:8px; }
+.topbar-actions .memory-open-button { padding:9px 12px; font-size:9px; white-space:nowrap; }
+.danger-action { border-color:rgba(226,139,157,.4)!important; color:#efb0bd!important; }
+.danger-action:hover { background:rgba(190,72,100,.18)!important; }
+.astra-auth-required .astra-app { filter:blur(2px); pointer-events:none; user-select:none; }
+.astra-auth-required .astra-memory-dialog[open] { pointer-events:auto; }
+.astra-auth-required .astra-memory-dialog[open]::backdrop { background:rgba(3,4,14,.88); backdrop-filter:blur(10px); }
+.astra-auth-form button:focus-visible,.memory-open-button:focus-visible,.astra-composer button:focus-visible { outline:2px solid #c6b4ff; outline-offset:3px; }
+.astra-composer button { min-width:53px; }
+.astra-message-loading { position:relative; }
+.astra-message-loading .astra-message-content::after { content:""; display:inline-block; width:20px; height:5px; margin-left:7px; background:radial-gradient(circle,#c7b2ff 1.5px,transparent 2px) 0 50%/7px 5px repeat-x; animation:astra-thinking 1s steps(3,end) infinite; }
+@keyframes astra-thinking { to { background-position:21px 50%; } }
+
+@media(max-width:900px) {
+  .topbar { align-items:flex-start; flex-wrap:wrap; }
+  .topbar-actions { width:100%; justify-content:flex-start; }
+}
+@media(max-width:560px) {
+  html, body { overflow:hidden; }
+  .astra-app { display:flex; flex-direction:column; }
+  .astra-sidebar { flex:none; }
+  .astra-main { flex:1; min-height:0; }
+  .topbar { min-height:auto; padding:10px 14px; }
+  .topbar-actions { gap:6px; }
+  .topbar-actions .memory-open-button { padding:8px 9px; font-size:8px; }
+  .conversation { padding:18px 4% 24px; }
+  .composer-area { padding:0 4% max(12px,env(safe-area-inset-bottom)); }
+}
+
+/* ASTRA V16 — soft, readable light theme */
+body[data-theme="light"] { background:#f4f2fb; color:#252238; }
+body[data-theme="light"] .astra-background { background:radial-gradient(ellipse at 70% 10%,#d9ccff,transparent 45%),radial-gradient(ellipse at 30% 90%,#dce9ff,transparent 45%),#f4f2fb; }
+body[data-theme="light"] .astra-sidebar { background:rgba(250,249,255,.94); border-color:#ded9ec; }
+body[data-theme="light"] .astra-logo,body[data-theme="light"] .topbar h1 { color:#29243c; }
+body[data-theme="light"] .topbar { background:rgba(250,249,255,.88); border-color:#ded9ec; }
+body[data-theme="light"] .connection-status { color:#655d7d; }
+body[data-theme="light"] .conversation { color:#29243c; }
+body[data-theme="light"] .welcome-screen h2 { color:#29243c; }
+body[data-theme="light"] .welcome-screen > p { color:#625d72; }
+body[data-theme="light"] .suggestion-grid button { background:#ffffffb8; border-color:#dcd5ed; color:#38324d; }
+body[data-theme="light"] .suggestion-grid button:hover { background:#eee9fb; border-color:#9d83dc; }
+body[data-theme="light"] .astra-message-bot { background:#fff; border-color:#e0dced; color:#302b40; box-shadow:0 5px 22px #43356b0d; }
+body[data-theme="light"] .astra-message-bot .astra-message-label { color:#7758bd; }
+body[data-theme="light"] .astra-message-content strong { color:#29243c; }
+body[data-theme="light"] .astra-message-content h4 { color:#4e3d78; }
+body[data-theme="light"] .astra-message-content em { color:#66528e; }
+body[data-theme="light"] .astra-message-content code { background:#eeeaf6; color:#5c438c; }
+body[data-theme="light"] .astra-message-content td { border-color:#dcd6e8; }
+body[data-theme="light"] .astra-message-content tr:first-child td { background:#eee8fb; color:#34284e; }
+body[data-theme="light"] .composer-area { background:linear-gradient(180deg,transparent,#f4f2fb 25%); }
+body[data-theme="light"] .astra-composer { background:#fff; border-color:#d2c8e8; box-shadow:0 8px 30px #45356b12; }
+body[data-theme="light"] .astra-composer input { color:#29243c; }
+body[data-theme="light"] .composer-note { color:#77718a; }
+body[data-theme="light"] .archive-heading,body[data-theme="light"] .sidebar-section-label { color:#817a96; }
+body[data-theme="light"] .archive-search { background:#fff; color:#302b40; border-color:#ded8eb; }
+body[data-theme="light"] .archive-conversation { color:#514966; }
+body[data-theme="light"] .archive-conversation:hover,body[data-theme="light"] .archive-conversation.active { background:#eee9fa; border-color:#d6c9ef; }
+body[data-theme="light"] .sidebar-bottom { border-color:#e0dbea; }
+body[data-theme="light"] .sidebar-bottom strong { color:#51466d; }
+body[data-theme="light"] .sidebar-bottom span { color:#77718a; }
+body[data-theme="light"] .memory-open-button { color:#554477; background:#eee9fa; border-color:#d2c6e8; }
+body[data-theme="light"] .astra-memory-dialog { background:#fff; color:#29243c; border-color:#d9d1e8; }
+body[data-theme="light"] .memory-privacy-note { color:#625d72; }
+body[data-theme="light"] .astra-auth-form label { color:#65577f; }
+body[data-theme="light"] .astra-auth-form input { background:#f8f7fc; color:#29243c; border-color:#d7d0e5; }
+body[data-theme="light"] .astra-auth-actions button { background:#eee9fa; color:#43355f; border-color:#d1c5e8; }
+body[data-theme="light"] .astra-memory-item { background:#f8f7fc; border-color:#e6e1ef; }
+body[data-theme="light"] .memory-dialog-close { color:#4b455c; }
+
+
+/* Per-conversation contextual actions */
+.archive-row { position:relative; display:flex; align-items:center; gap:2px; border:1px solid transparent; border-radius:8px; }
+.archive-row:hover,.archive-row:focus-within { border-color:#9b7cdd35; background:#8060c51a; }
+.archive-row .archive-conversation { flex:1; min-width:0; border:0; background:transparent; }
+.archive-row .archive-conversation:hover,.archive-row .archive-conversation.active { background:transparent; border-color:transparent; }
+.archive-more { flex:none; width:30px; height:30px; margin-right:5px; border:0; border-radius:6px; background:transparent; color:#aaa0c8; font-size:21px; line-height:1; cursor:pointer; opacity:0; transition:opacity .15s,background .15s; }
+.archive-row:hover .archive-more,.archive-row:focus-within .archive-more,.archive-more[aria-expanded="true"] { opacity:1; }
+.archive-more:hover,.archive-more[aria-expanded="true"] { background:#8d73c52b; color:#eee7ff; }
+.archive-menu { position:absolute; z-index:20; top:calc(100% - 2px); right:5px; min-width:145px; padding:5px; border:1px solid #a38bd455; border-radius:9px; background:#171528; box-shadow:0 12px 35px #0008; }
+.archive-menu[hidden] { display:none; }
+.archive-menu button { display:block; width:100%; padding:9px 11px; border:0; border-radius:6px; background:transparent; color:#e7e0f6; text-align:left; font-size:12px; cursor:pointer; }
+.archive-menu button:hover { background:#ffffff12; }
+.archive-menu .archive-menu-danger { color:#efacb9; }
+body[data-theme="light"] .archive-row:hover,body[data-theme="light"] .archive-row:focus-within { background:#eee9fa; border-color:#d6c9ef; }
+body[data-theme="light"] .archive-more { color:#62567c; }
+body[data-theme="light"] .archive-menu { background:#fff; border-color:#d8cde9; box-shadow:0 12px 35px #3e31531f; }
+body[data-theme="light"] .archive-menu button { color:#342d47; }
+body[data-theme="light"] .archive-menu .archive-menu-danger { color:#b34360; }
+@media(hover:none) {
+ .archive-more { opacity:1; }
+}
+
+
+/* User-only message actions: reveal on hover/focus; always available on touch. */
+.astra-message-user { position:relative; padding-bottom:48px; }
+.astra-message-actions {
+  position:absolute;
+  right:12px;
+  bottom:9px;
+  display:flex;
+  align-items:center;
+  gap:5px;
+  opacity:0;
+  transform:translateY(3px);
+  transition:opacity .16s ease,transform .16s ease;
+}
+.astra-message-user:hover .astra-message-actions,
+.astra-message-user:focus-within .astra-message-actions { opacity:1; transform:translateY(0); }
+.astra-message-action {
+  border:1px solid rgba(255,255,255,.24);
+  border-radius:6px;
+  padding:5px 9px;
+  background:rgba(15,13,35,.28);
+  color:#fff;
+  font:10px 'DM Mono',monospace;
+  cursor:pointer;
+}
+.astra-message-action:hover { background:rgba(15,13,35,.55); border-color:rgba(255,255,255,.55); }
+.astra-message-action-delete { color:#ffe0e6; }
+.astra-message-export {
+  display:inline-flex;
+  align-items:center;
+  margin-top:12px;
+  border:1px solid rgba(180,160,255,.32);
+  border-radius:7px;
+  padding:7px 10px;
+  background:rgba(100,75,170,.12);
+  color:#cfc2ff;
+  font:10px 'DM Mono',monospace;
+  letter-spacing:.5px;
+  cursor:pointer;
+}
+.astra-message-export:hover { background:rgba(100,75,170,.24); border-color:rgba(180,160,255,.65); }
+.astra-message-export:disabled { opacity:.6; cursor:wait; }
+body[data-theme="light"] .astra-message-export { color:#51417f; border-color:#bdb0e5; background:#f4f0ff; }
+
+@media(hover:none) {
+  .astra-message-actions { opacity:1; transform:none; }
+}
+body[data-theme="light"] .astra-message-user { background:linear-gradient(120deg,#7056b8,#5868b4); color:#fff; }
+@media(max-width:560px) {
+  .astra-message-user { padding-bottom:48px; }
+  .astra-message-actions { right:9px; bottom:8px; }
+  .astra-message-action { padding:6px 9px; font-size:9px; }
+}
+
+
+/* Sidebar controls moved out of the header for a calmer chat workspace. */
+.sidebar-controls {
+  display:grid;
+  grid-template-columns:1fr;
+  gap:8px;
+  margin-top:22px;
+  padding:14px 0 16px;
+  border-top:1px solid #ffffff18;
+  border-bottom:1px solid #ffffff18;
+}
+.sidebar-controls-label {
+  margin-bottom:3px;
+  color:#9388ad;
+  font:9px 'DM Mono',monospace;
+  letter-spacing:1.15px;
+}
+.sidebar-control-button {
+  width:100%;
+  min-height:38px;
+  justify-content:center;
+  text-align:center;
+  white-space:normal;
+  overflow-wrap:anywhere;
+}
+.sidebar-controls .install-app-button {
+  margin:0;
+  width:100%;
+  min-height:38px;
+}
+.topbar-actions { display:flex !important; align-items:center; justify-content:flex-end; gap:16px; }
+
+@media(max-width:560px) {
+  .astra-sidebar {
+    grid-template-columns:1fr;
+    gap:8px;
+    max-height:46dvh;
+    overflow-y:auto;
+    align-items:stretch;
+  }
+  .sidebar-controls {
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:7px;
+    margin-top:5px;
+    padding:9px 0;
+  }
+  .sidebar-controls-label { grid-column:1/-1; }
+  .sidebar-control-button,.sidebar-controls .install-app-button {
+    min-height:34px;
+    padding:7px 8px;
+    font-size:9px;
+  }
+  .archive-heading { margin-top:5px; }
+  .archive-list { max-height:90px; }
+}
+
+/* Stronger light-theme contrast for previously muted labels and controls. */
+body[data-theme="light"] .topbar-kicker { color:#66528f; }
+body[data-theme="light"] .connection-status { color:#51466d; }
+body[data-theme="light"] .connection-status i { background:#7a58c8; box-shadow:0 0 10px #9879dc66; }
+body[data-theme="light"] .sidebar-controls { border-color:#ded8eb; }
+body[data-theme="light"] .sidebar-controls-label { color:#65577f; }
+body[data-theme="light"] .sidebar-section-label,
+body[data-theme="light"] .archive-heading { color:#655b7b; }
+body[data-theme="light"] .sidebar-item { color:#493a70; background:#eee9fa; border-color:#d5c8ed; }
+body[data-theme="light"] .sidebar-item span { color:#7355b4; }
+body[data-theme="light"] .archive-search::placeholder { color:#706783; opacity:1; }
+body[data-theme="light"] .archive-empty { color:#625873; }
+body[data-theme="light"] .archive-conversation small { color:#625873; }
+body[data-theme="light"] .install-app-button {
+  color:#49376f;
+  background:#eee9fa;
+  border-color:#cfc2e7;
+}
+body[data-theme="light"] .install-app-button:hover { color:#35244f; background:#e5dcf7; border-color:#9f86d1; }
+body[data-theme="light"] .memory-auto-status { color:#51406f; background:#f0ebfb; border-color:#d8cbed; }
+body[data-theme="light"] .memory-notice { color:#59477f; }
+body[data-theme="light"] .memory-empty { color:#625873; }
+body[data-theme="light"] .memory-add-form label { color:#51446e; }
+body[data-theme="light"] .memory-add-form input { background:#fbfaff; color:#29243c; border-color:#d4cbe5; }
+body[data-theme="light"] .memory-add-form button,
+body[data-theme="light"] .memory-clear-button { color:#44345f; background:#eee9fa; border-color:#d1c5e8; }
+body[data-theme="light"] .astra-memory-item span { color:#332d43; }
+body[data-theme="light"] .memory-dialog-kicker { color:#65518e; }
+body[data-theme="light"] .astra-auth-form label { color:#51446e; }
+body[data-theme="light"] .astra-auth-actions button { color:#3e3158; background:#eee9fa; border-color:#cfc2e7; }
+body[data-theme="light"] .memory-open-button { color:#44345f; background:#eee9fa; border-color:#cfc2e7; }
+body[data-theme="light"] .memory-open-button:hover { color:#302344; background:#e4dcf5; }
+body[data-theme="light"] .sidebar-bottom strong { color:#44365f; }
+body[data-theme="light"] .sidebar-bottom span { color:#625873; }
+body[data-theme="light"] .composer-note { color:#625873; }
+body[data-theme="light"] .astra-message-user .astra-message-label { color:#f0eaff; }
+body[data-theme="light"] .astra-message-action { color:#fff; border-color:#ffffff66; }
+
+
+/* Light-theme visibility fix: the New Conversation label was using a pale
+   dark-theme text color against the light lavender button background. */
+body[data-theme="light"] .new-chat-button {
+  color:#382653;
+  background:linear-gradient(120deg,#e7defb,#dce2fb);
+  border-color:#c5b4e9;
+  font-weight:600;
+}
+body[data-theme="light"] .new-chat-button span { color:#65449f; }
+body[data-theme="light"] .new-chat-button:hover {
+  color:#26183d;
+  background:linear-gradient(120deg,#ded1f6,#d1daf8);
+  border-color:#9e84d0;
+}
+
+
+/* ASTRA V17 — ChatGPT-inspired message composer and send interaction */
+.astra-composer {
+  align-items:flex-end;
+  gap:10px;
+  padding:10px 11px 10px 18px;
+  border:1px solid rgba(164,143,220,.34);
+  border-radius:25px;
+  background:rgba(22,20,39,.94);
+  box-shadow:0 14px 44px rgba(0,0,0,.24),0 0 0 1px rgba(255,255,255,.025) inset;
+  backdrop-filter:blur(18px);
+  transition:border-color .2s ease,box-shadow .2s ease,background .2s ease;
+}
+.astra-composer:focus-within {
+  border-color:rgba(174,150,244,.78);
+  box-shadow:0 14px 48px rgba(0,0,0,.28),0 0 0 3px rgba(139,105,218,.12);
+}
+.astra-composer textarea {
+  display:block;
+  flex:1;
+  min-width:0;
+  min-height:44px;
+  max-height:168px;
+  resize:none;
+  overflow-y:hidden;
+  padding:11px 0 9px;
+  border:0;
+  outline:0;
+  background:transparent;
+  color:#f4f0ff;
+  font:15px/1.55 'Manrope',sans-serif;
+  cursor:text;
+  scrollbar-width:thin;
+}
+.astra-composer textarea::placeholder { color:#918aa6; opacity:1; }
+.astra-composer textarea:disabled { opacity:.58; cursor:wait; }
+.astra-composer button {
+  flex:none;
+  display:grid;
+  place-items:center;
+  width:43px;
+  height:43px;
+  border:0;
+  border-radius:50%;
+  background:linear-gradient(145deg,#a88bea,#6655c7);
+  color:#fff;
+  font:700 25px/1 'Manrope',sans-serif;
+  box-shadow:0 4px 15px rgba(111,83,190,.32);
+  transition:transform .18s ease,filter .18s ease,opacity .18s ease,box-shadow .18s ease;
+}
+.astra-composer button:hover:not(:disabled) {
+  filter:brightness(1.12);
+  transform:translateY(-2px);
+  box-shadow:0 7px 20px rgba(111,83,190,.42);
+}
+.astra-composer button:active:not(:disabled) { transform:scale(.94); }
+.astra-composer button:disabled { opacity:.55; cursor:wait; filter:saturate(.7); }
+.composer-note { margin-top:11px; letter-spacing:.045em; }
+.astra-message { animation:astra-message-enter .22s ease both; }
+@keyframes astra-message-enter {
+  from { opacity:0; transform:translateY(7px); }
+  to { opacity:1; transform:translateY(0); }
+}
+.astra-message-loading {
+  opacity:1;
+  border-color:rgba(166,139,231,.24);
+  background:rgba(125,102,184,.10);
+  animation:none;
+}
+.astra-message-loading .astra-message-label { color:#bda5f3; }
+.astra-message-loading .astra-message-content { color:#aaa1bf; font-size:13px; }
+.astra-message-loading .astra-message-content::after {
+  width:25px;
+  height:7px;
+  margin-left:9px;
+  background:radial-gradient(circle,#c8b4ff 2px,transparent 2.5px) 0 50%/8px 7px repeat-x;
+  animation:astra-thinking 1s steps(3,end) infinite;
+}
+body[data-theme="light"] .astra-composer {
+  background:rgba(255,255,255,.96);
+  border-color:#d5c9e9;
+  box-shadow:0 14px 38px rgba(63,48,99,.12),0 0 0 1px rgba(255,255,255,.8) inset;
+}
+body[data-theme="light"] .astra-composer:focus-within {
+  border-color:#9878d2;
+  box-shadow:0 14px 38px rgba(63,48,99,.14),0 0 0 3px rgba(139,105,218,.13);
+}
+body[data-theme="light"] .astra-composer textarea { color:#29243c; }
+body[data-theme="light"] .astra-composer textarea::placeholder { color:#77708a; }
+body[data-theme="light"] .astra-message-loading {
+  background:#f4f0fc;
+  border-color:#e0d7f0;
+}
+body[data-theme="light"] .astra-message-loading .astra-message-content { color:#655b79; }
+@media(max-width:560px) {
+  .astra-composer { padding:8px 9px 8px 15px; gap:8px; border-radius:22px; }
+  .astra-composer textarea { min-height:42px; padding-top:10px; font-size:14px; }
+  .astra-composer button { width:41px; height:41px; }
+}
+
+
+/* ASTRA V18 — full-width lavender composer */
+.composer-area {
+  width:100%;
+  max-width:none;
+  min-width:0;
+  box-sizing:border-box;
+  padding:0 clamp(16px,4.5vw,64px) max(18px,env(safe-area-inset-bottom));
+}
+.astra-composer {
+  display:flex;
+  width:100%;
+  max-width:none;
+  min-width:0;
+  box-sizing:border-box;
+  gap:12px;
+  padding:11px 12px 11px 20px;
+  border:1px solid rgba(177,146,242,.58);
+  border-radius:24px;
+  background:linear-gradient(115deg,rgba(91,66,143,.42),rgba(52,55,112,.42));
+  box-shadow:0 12px 38px rgba(8,5,24,.22),0 0 28px rgba(145,112,220,.14),inset 0 1px rgba(255,255,255,.07);
+}
+.astra-composer textarea {
+  flex:1 1 auto;
+  width:100%;
+  min-width:0;
+  box-sizing:border-box;
+  min-height:48px;
+  max-height:168px;
+  padding:12px 4px 10px;
+  color:#f6f0ff;
+}
+.astra-composer button {
+  flex:0 0 46px;
+  width:46px;
+  height:46px;
+  border-radius:15px;
+  background:linear-gradient(135deg,#ad8cff 0%,#8968e9 52%,#6869e8 100%);
+  color:#fff;
+  box-shadow:0 5px 18px rgba(126,91,211,.38),inset 0 1px rgba(255,255,255,.28);
+}
+.astra-composer button:hover:not(:disabled) {
+  filter:brightness(1.1);
+  box-shadow:0 8px 24px rgba(126,91,211,.48),inset 0 1px rgba(255,255,255,.3);
+}
+body[data-theme="light"] .astra-composer {
+  background:linear-gradient(115deg,rgba(238,229,255,.98),rgba(226,232,255,.98));
+  border-color:#c8b5ec;
+  box-shadow:0 10px 30px rgba(85,63,135,.12),inset 0 1px rgba(255,255,255,.9);
+}
+body[data-theme="light"] .astra-composer textarea { color:#29243c; }
+body[data-theme="light"] .astra-composer textarea::placeholder { color:#77708a; }
+@media(max-width:560px) {
+  .composer-area { padding:0 14px max(12px,env(safe-area-inset-bottom)); }
+  .astra-composer { width:100%; padding:8px 9px 8px 14px; gap:8px; border-radius:21px; }
+  .astra-composer textarea { min-height:44px; padding:10px 2px 8px; }
+  .astra-composer button { flex-basis:42px; width:42px; height:42px; border-radius:14px; }
+}
+
+
+/* ASTRA VISION INPUT — image attachment controls */
+.astra-attach-button {
+  flex:0 0 42px;
+  width:42px;
+  height:42px;
+  border:1px solid rgba(177,146,242,.42);
+  border-radius:14px;
+  background:rgba(145,112,220,.16);
+  color:#c9b3ff;
+  font-size:27px;
+  line-height:1;
+  transition:background .18s ease,transform .18s ease,border-color .18s ease;
+}
+.astra-attach-button:hover { background:rgba(145,112,220,.3); border-color:#b99aff; transform:translateY(-1px); }
+.astra-attachment-preview {
+  display:flex;
+  align-items:center;
+  gap:11px;
+  width:min(100%,760px);
+  margin:0 auto 10px;
+  padding:9px 12px;
+  border:1px solid rgba(177,146,242,.38);
+  border-radius:15px;
+  background:rgba(42,34,69,.78);
+  color:#f3edff;
+}
+.astra-attachment-preview[hidden] { display:none; }
+.astra-attachment-preview img { width:48px; height:48px; object-fit:cover; border-radius:9px; }
+.astra-attachment-preview div { display:flex; flex:1; min-width:0; flex-direction:column; gap:3px; }
+.astra-attachment-preview strong { overflow:hidden; text-overflow:ellipsis; white-space:nowrap; font-size:12px; }
+.astra-attachment-preview span { color:#b5a9cf; font-size:11px; }
+.astra-attachment-preview button { width:30px; height:30px; border:0; border-radius:50%; background:transparent; color:inherit; font-size:21px; }
+.astra-user-attachment { display:block; width:auto; max-width:min(100%,360px); max-height:300px; margin-top:10px; border:1px solid rgba(177,146,242,.28); border-radius:13px; object-fit:contain; }
+body[data-theme="light"] .astra-attach-button { background:#eee7fb; color:#6849a9; border-color:#d4c4ef; }
+body[data-theme="light"] .astra-attachment-preview { background:#f5f1fc; color:#29243c; border-color:#d9cdee; }
+body[data-theme="light"] .astra-attachment-preview span { color:#655b79; }
+
+
+/* ASTRA document attachment support */
+.astra-attachment-preview img[hidden] { display: none !important; }
+.astra-attachment-preview > div { min-width: 0; }
+.astra-attachment-preview strong { overflow-wrap: anywhere; }
+.astra-attachment-preview span { display: block; opacity: .72; font-size: .78rem; margin-top: 3px; }
+
+
+/* Visible document attachment card inside sent chat messages */
+.astra-user-file-attachment {
+  display:flex;
+  align-items:center;
+  gap:11px;
+  width:min(100%,360px);
+  margin-top:10px;
+  padding:11px 13px;
+  border:1px solid rgba(177,146,242,.38);
+  border-radius:13px;
+  background:rgba(35,29,58,.62);
+  color:#f3edff;
+}
+.astra-user-file-icon {
+  display:grid;
+  place-items:center;
+  flex:0 0 43px;
+  height:43px;
+  border-radius:10px;
+  background:rgba(145,112,220,.25);
+  color:#d8c5ff;
+  font-size:11px;
+  font-weight:800;
+  letter-spacing:.04em;
+}
+.astra-user-file-details { display:flex; flex-direction:column; min-width:0; gap:4px; }
+.astra-user-file-details strong { overflow-wrap:anywhere; font-size:12px; }
+.astra-user-file-details small { color:#b5a9cf; font-size:11px; }
+body[data-theme="light"] .astra-user-file-attachment { background:#f5f1fc; color:#29243c; border-color:#d9cdee; }
+body[data-theme="light"] .astra-user-file-icon { background:#e9defb; color:#6849a9; }
+body[data-theme="light"] .astra-user-file-details small { color:#655b79; }
+
+
+/* ASTRA document editor */
+.topbar-actions{display:flex;align-items:center;gap:16px}
+.document-editor-open{border:1px solid #a88bea66;border-radius:8px;padding:10px 13px;background:#8060c51c;color:#e6dcff;font:10px 'DM Mono',monospace;letter-spacing:.8px}
+.document-editor-open:hover{background:#8060c544;border-color:#c4aaff}
+.astra-document-dialog{width:min(920px,calc(100% - 28px));max-height:min(90vh,900px);padding:22px;border:1px solid #a88bea66;border-radius:16px;background:#101020;color:#f4f1ff;box-shadow:0 24px 90px #000b}
+.astra-document-dialog::backdrop{background:#03040ecc;backdrop-filter:blur(8px)}
+.document-editor-head{display:flex;align-items:center;justify-content:space-between;gap:16px}
+.document-editor-head h2{margin:6px 0 0;font:800 20px 'Manrope',sans-serif;overflow-wrap:anywhere}
+.document-editor-note{color:#b9b6ca;font-size:12px;line-height:1.6}
+.document-editor-text{display:block;width:100%;min-height:min(55vh,560px);resize:vertical;padding:14px;border:1px solid #ffffff25;border-radius:10px;outline:none;background:#080914;color:#eeeaf9;font:12px/1.7 'DM Mono',monospace;white-space:pre;tab-size:2}
+.document-editor-text:focus{border-color:#a88bea}
+.document-editor-actions{display:flex;flex-wrap:wrap;gap:9px}
+.document-editor-actions button{border:1px solid #a88bea55;border-radius:8px;padding:11px 14px;background:#8060c533;color:#eee8ff;font:10px 'DM Mono',monospace;letter-spacing:.6px}
+.document-editor-actions button:hover{background:#8060c566}
+.document-editor-actions button:disabled{opacity:.5;cursor:wait}
+@media(max-width:560px){.topbar-actions{width:100%;justify-content:space-between}.document-editor-open{padding:8px 10px;font-size:8px}.astra-document-dialog{padding:15px}.document-editor-text{min-height:52vh;font-size:11px}}
+
+.astra-pdf-editor{margin:14px 0 18px}
+.pdf-page-toolbar{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:10px 0;color:#c9b9ed;font:10px 'DM Mono',monospace}
+.pdf-page-toolbar button,.pdf-annotation-controls button{border:1px solid #a88bea55;border-radius:7px;padding:9px 11px;background:#8060c533;color:#eee8ff;font:10px 'DM Mono',monospace}
+.pdf-page-toolbar button:disabled{opacity:.35;cursor:not-allowed}
+.pdf-page-stage{position:relative;max-width:100%;margin:0 auto 15px;overflow:hidden;background:#fff;box-shadow:0 12px 35px #0008}
+.pdf-page-stage canvas{display:block;max-width:100%;height:auto}
+.pdf-overlay-layer{position:absolute;inset:0;pointer-events:none}
+.pdf-preview-cover{position:absolute;background:#fff;border:1px dashed #8a79b4aa}
+.pdf-preview-text{position:absolute;overflow-wrap:anywhere;white-space:pre-wrap;color:#111;background:#fff9;border-bottom:1px dashed #9a82cc;line-height:1.2}
+.pdf-annotation-controls{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px;padding:12px;border:1px solid #ffffff1b;border-radius:10px;background:#ffffff08}
+.pdf-annotation-controls label{display:flex;flex-direction:column;gap:5px;color:#a99cc7;font:9px 'DM Mono',monospace;letter-spacing:.4px}
+.pdf-annotation-controls input,.pdf-annotation-controls select{min-width:0;width:100%;padding:9px;border:1px solid #ffffff25;border-radius:6px;background:#080914;color:#f3edff;font:12px 'Manrope',sans-serif}
+.pdf-annotation-controls button{align-self:end;min-height:36px}
+.pdf-annotation-list{max-height:120px;overflow:auto;color:#c7bfd9;font-size:11px}
+.pdf-annotation-list li{padding:5px 0}
+.pdf-annotation-list button{margin-left:10px;border:0;background:transparent;color:#d2bfff;font:9px 'DM Mono',monospace}
+@media(max-width:600px){.pdf-annotation-controls{grid-template-columns:repeat(2,minmax(0,1fr))}.pdf-page-stage{max-width:100%;overflow:hidden}}
+
+/* PDF text selection layer */
+.pdf-text-layer{position:absolute;inset:0;z-index:2;pointer-events:none;overflow:hidden}
+.pdf-detected-text{position:absolute;display:block;overflow:hidden;white-space:pre;opacity:0;color:transparent;pointer-events:auto;cursor:text;border:1px solid transparent;box-sizing:border-box}
+.pdf-detected-text:hover{opacity:.22;background:#a88bea;border-color:#8d6bd0}
+.pdf-overlay-layer{z-index:3}
+
+.pdf-ai-edit-controls{margin:12px 0;padding:12px;border:1px solid #a88bea55;border-radius:10px;background:#8060c51a}
+.pdf-ai-edit-controls label{display:block;margin-bottom:8px;color:#cbb8f1;font:10px 'DM Mono',monospace;letter-spacing:.6px}
+.pdf-ai-edit-controls div{display:flex;gap:8px}
+.pdf-ai-edit-controls input{flex:1;min-width:0;padding:10px;border:1px solid #ffffff25;border-radius:7px;background:#080914;color:#f3edff;font:12px 'Manrope',sans-serif}
+.pdf-ai-edit-controls button{border:1px solid #a88bea66;border-radius:7px;padding:9px 13px;background:#8060c544;color:#eee8ff;font:10px 'DM Mono',monospace}
+.pdf-ai-edit-controls button:disabled{opacity:.5;cursor:wait}
+.pdf-ai-edit-controls p{margin:8px 0 0;color:#aaa0bd;font-size:10px;line-height:1.5}
+@media(max-width:560px){.pdf-ai-edit-controls div{flex-direction:column}}
+
+
+/* ASTRA text replacement: keep replacement text inside the detected source box */
+.pdf-preview-text{overflow:hidden;overflow-wrap:normal;white-space:nowrap;line-height:1;box-sizing:border-box}
+.pdf-manual-geometry[hidden]{display:none!important}

@@ -48,10 +48,23 @@
         <span>＋</span> New conversation
       </button>
 
+      <div class="archive-heading">RECENT CONVERSATIONS</div>
+      <input id="astraArchiveSearch" class="archive-search" type="search"
+        placeholder="Search conversations..." aria-label="Search conversations">
+      <div id="astraArchiveList" class="archive-list" aria-live="polite"></div>
+
       <div class="sidebar-section-label">YOUR WORKSPACE</div>
 
       <div class="sidebar-item active">
         <span>✧</span> ASTRA AI
+      </div>
+
+      <div class="sidebar-controls" aria-label="Appearance and account controls">
+        <div class="sidebar-controls-label">PREFERENCES & ACCOUNT</div>
+        <button class="memory-open-button sidebar-control-button" id="astraThemeToggle" type="button" aria-pressed="false" title="Switch theme">LIGHT MODE</button>
+        <button class="install-app-button sidebar-control-button" id="installAstra" type="button" hidden>↓ INSTALL APP</button>
+        <button class="memory-open-button sidebar-control-button" id="astraAccountButton" type="button">SIGN IN</button>
+        <button class="memory-open-button sidebar-control-button" id="astraMemoryButton" type="button">✦ MEMORY</button>
       </div>
 
       <div class="sidebar-bottom">
@@ -71,11 +84,13 @@
           <h1>ASTRA <span>AI</span></h1>
         </div>
 
-        <div class="connection-status">
-          <i></i>
-          <span id="astraStatus">CONNECTING</span>
+        <div class="topbar-actions">
+          <button type="button" id="astraDocumentEditorButton" class="document-editor-open">EDIT DOCUMENT</button>
+          <div class="connection-status">
+            <i></i>
+            <span id="astraStatus">CONNECTING</span>
+          </div>
         </div>
-        <button class="install-app-button" id="installAstra" type="button" hidden>↓ INSTALL APP</button>
       </header>
 
       <section class="conversation" id="astraChat" aria-live="polite">
@@ -122,17 +137,24 @@
       </section>
 
       <footer class="composer-area">
+        <div class="astra-attachment-preview" id="astraAttachmentPreview" hidden>
+          <img id="astraAttachmentThumb" alt="Selected image preview">
+          <div><strong id="astraAttachmentName"></strong><span id="astraAttachmentKind">Ready to analyse</span></div>
+          <button type="button" id="astraRemoveAttachment" aria-label="Remove attachment">×</button>
+        </div>
         <form class="astra-composer" id="astraForm">
+          <input id="astraFileInput" type="file" accept="image/jpeg,image/png,image/webp,.pdf,.docx,.xlsx,.xls,.csv,.txt,.md" hidden>
+          <button type="button" class="astra-attach-button" id="astraAttachButton" aria-label="Attach an image" title="Attach an image">＋</button>
           <label class="sr-only" for="astraInput">Message ASTRA</label>
 
-          <input
+          <textarea
             id="astraInput"
-            type="text"
+            rows="1"
             maxlength="800"
-            placeholder="Ask ASTRA anything..."
+            placeholder="Message ASTRA..."
             autocomplete="off"
-            required
-          >
+            aria-label="Message ASTRA"
+          ></textarea>
 
           <button type="submit" aria-label="Send message">↑</button>
         </form>
@@ -145,8 +167,87 @@
     </main>
   </div>
 
+  <dialog class="astra-memory-dialog" id="astraMemoryDialog" aria-labelledby="astraMemoryTitle">
+    <form method="dialog" class="memory-dialog-head">
+      <div><span class="memory-dialog-kicker">YOUR DEVICE · PRIVATE TO THIS BROWSER</span><h2 id="astraMemoryTitle">ASTRA MEMORY</h2></div>
+      <button class="memory-dialog-close" aria-label="Close memory">×</button>
+    </form>
+    <p class="memory-privacy-note">ASTRA automatically saves useful, non-sensitive details from your conversations—such as ongoing projects, preferences and goals. Memories stay on this device. Review or remove anything below. Your recent chat history is kept on this device until you start a new chat or clear browser data. Do not share passwords or highly sensitive information in chat.</p>
+    <div class="memory-auto-status">✦ AUTOMATIC MEMORY IS ON · DEVICE ONLY</div>
+    <p id="astraMemoryNotice" class="memory-notice" aria-live="polite"></p>
+    <div id="astraMemoryList" class="astra-memory-list"></div>
+    <button type="button" id="astraClearMemories" class="memory-clear-button">DELETE ALL MEMORIES</button>
+  </dialog>
+
+  <dialog class="astra-memory-dialog" id="astraAccountDialog" aria-labelledby="astraAccountTitle">
+    <form method="dialog" class="memory-dialog-head">
+      <div><span class="memory-dialog-kicker">ASTRALORE CLOUD ACCOUNT</span><h2 id="astraAccountTitle">ASTRA ACCOUNT</h2></div>
+      <button class="memory-dialog-close" aria-label="Close account">×</button>
+    </form>
+    <p class="memory-privacy-note">Sign in to sync your conversations across devices. Your password is sent directly to Supabase Auth and is never sent to ASTRA's AI Worker. Use a unique password and never share it in chat.</p>
+    <form id="astraAuthForm" class="astra-auth-form">
+      <label for="astraAuthEmail">EMAIL</label>
+      <input id="astraAuthEmail" type="email" autocomplete="email" maxlength="254" required>
+      <label for="astraAuthPassword">PASSWORD</label>
+      <input id="astraAuthPassword" type="password" autocomplete="current-password" minlength="8" maxlength="128" required>
+      <div class="astra-auth-actions">
+        <button type="submit" id="astraSignIn">SIGN IN</button>
+        <button type="button" id="astraSignUp">CREATE ACCOUNT</button>
+        <button type="button" id="astraSignOut" hidden>SIGN OUT</button>
+      </div>
+      <p id="astraAuthStatus" class="memory-notice" aria-live="polite"></p>
+    </form>
+  </dialog>
+
+  <dialog class="astra-document-dialog" id="astraDocumentDialog" aria-labelledby="astraDocumentTitle">
+    <div class="document-editor-head">
+      <div><span class="memory-dialog-kicker">ASTRALORE DOCUMENT WORKSPACE</span><h2 id="astraDocumentTitle">DOCUMENT EDITOR</h2></div>
+      <button type="button" class="memory-dialog-close" id="astraDocumentClose" aria-label="Close document editor">×</button>
+    </div>
+    <p class="document-editor-note">To replace text, click it on the PDF page and type the new words. ASTRA attempts to extract and embed the original PDF font, using its own width metrics and baseline information. Some PDFs contain subsetted fonts that do not include new characters; ASTRA checks for missing glyphs before export and asks before using a substitute. Exact matching is not guaranteed when the source font data is unavailable. Manual positioning is only for adding text or covering an area. The original PDF remains unchanged underneath the edit layer.</p>
+    <section id="astraPdfVisualEditor" class="astra-pdf-editor" hidden>
+      <div class="pdf-page-toolbar">
+        <button type="button" id="astraPdfPrev">← PREVIOUS</button>
+        <span id="astraPdfPageLabel">PAGE 1</span>
+        <button type="button" id="astraPdfNext">NEXT →</button>
+      </div>
+      <div id="astraPdfPageStage" class="pdf-page-stage"><canvas id="astraPdfCanvas"></canvas><div id="astraPdfTextLayer" class="pdf-text-layer"></div><div id="astraPdfOverlayLayer" class="pdf-overlay-layer"></div></div>
+      <div class="pdf-annotation-controls">
+        <label>TOOL<select id="astraPdfTool"><option value="replace">Replace selected text</option><option value="text">Add text</option><option value="cover">Cover area</option></select></label>
+        <label>TEXT<input id="astraPdfOverlayText" type="text" maxlength="500" placeholder="Enter text to add"></label>
+        <label class="pdf-manual-geometry">X %<input id="astraPdfX" type="number" min="0" max="100" value="10"></label>
+        <label class="pdf-manual-geometry">Y %<input id="astraPdfY" type="number" min="0" max="100" value="15"></label>
+        <label class="pdf-manual-geometry">WIDTH %<input id="astraPdfW" type="number" min="1" max="100" value="35"></label>
+        <label class="pdf-manual-geometry">HEIGHT %<input id="astraPdfH" type="number" min="1" max="100" value="8"></label>
+        <label class="pdf-manual-geometry">FONT SIZE<input id="astraPdfFontSize" type="number" min="6" max="72" value="14"></label>
+        <button type="button" id="astraPdfAddAnnotation">ADD TO PAGE</button>
+      </div>
+      <div class="pdf-ai-edit-controls">
+        <label for="astraPdfAiInstruction">ASK ASTRA TO EDIT THIS PAGE</label>
+        <div><input id="astraPdfAiInstruction" type="text" maxlength="500" placeholder="e.g. Change the heading to Project Overview"><button type="button" id="astraPdfAiApply">ASK ASTRA</button></div>
+        <p>ASTRA matches your instruction against detected text on the current page. Review every proposed change before exporting.</p>
+      </div>
+      <ol id="astraPdfAnnotationList" class="pdf-annotation-list"></ol>
+    </section>
+    <section id="astraTextEditorFallback">
+      <label class="sr-only" for="astraDocumentText">Edit extracted document text</label>
+      <textarea id="astraDocumentText" class="document-editor-text" maxlength="50000" spellcheck="false"></textarea>
+    </section>
+    <p id="astraDocumentEditorStatus" class="memory-notice" aria-live="polite"></p>
+    <div class="document-editor-actions">
+      <button type="button" id="astraDocumentSave">SAVE TO CLOUD</button>
+      <button type="button" id="astraDocumentExportPdf">EXPORT PDF</button>
+      <button type="button" id="astraDocumentExportText">EXPORT TXT</button>
+    </div>
+  </dialog>
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="astra-config.js"></script>
+  <script src="astra-cloud-auth.js"></script>
+  <script src="astra-cloud-store.js"></script>
+  <script src="astra-memory.js"></script>
   <script src="astra-page.js"></script>
+  <script src="astra-document-editor.js"></script>
   <script src="astra-pwa.js"></script>
 </body>
 </html>
