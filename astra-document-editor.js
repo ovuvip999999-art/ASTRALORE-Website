@@ -25,7 +25,7 @@
 
   const BUCKET = "astra-original-documents";
   let current = null, saveHandler = null, aiEditHandler = null, savedText = "", pdfBytes = null;
-  let pdfDocument = null, pageNumber = 1, annotations = [], pdfLibPromise = null, pdfJsPromise = null, selectedTextBox = null, detectedTextBlocks = [];
+  let pdfDocument = null, pageNumber = 1, annotations = [], pdfLibPromise = null, pdfJsPromise = null, selectedTextBox = null, detectedTextBlocks = [], renderScale = 1;
 
   function showStatus(message) { if (status) status.textContent = message; }
   function safeBaseName(name) {
@@ -90,6 +90,23 @@
     return Number.isFinite(value) ? Math.min(max, Math.max(min, value)) : fallbackValue;
   }
   function pageAnnotations() { return annotations.filter(item => item.page === pageNumber); }
+  function updateEditorMode() {
+    const replacing = $("astraPdfTool")?.value === "replace";
+    document.querySelectorAll(".pdf-manual-geometry").forEach(field => { field.hidden = replacing; });
+    const addButton = $("astraPdfAddAnnotation");
+    if (addButton) addButton.textContent = replacing ? "REPLACE SELECTED TEXT" : "ADD TO PAGE";
+  }
+  function previewFontSize(item, widthPx) {
+    const base = Math.max(4, Number(item.fontSize || 12) * renderScale);
+    const context = document.createElement("canvas").getContext("2d");
+    if (!context) return base;
+    const family = item.fontFamily === "serif" ? "serif" : item.fontFamily === "monospace" ? "monospace" : "sans-serif";
+    const size = base;
+    context.font = (item.fontWeight || "normal") + " " + (item.fontStyle || "normal") + " " + size + "px " + family;
+    const measured = context.measureText(String(item.text || "")).width;
+    if (measured > Math.max(2, widthPx - 2)) return Math.max(4, size * Math.max(0.35, (widthPx - 2) / measured));
+    return size;
+  }
   function renderAnnotations() {
     overlayLayer.replaceChildren();
     const page = pdfDocument?.getPage ? pdfDocument.getPage(pageNumber) : null;
@@ -101,7 +118,7 @@
       el.style.top = item.y / 1000 * 100 + "%";
       el.style.width = item.width / 1000 * 100 + "%";
       el.style.minHeight = Math.max(2, item.height / 1000 * 100) + "%";
-      if (item.type === "text") { el.textContent = item.text; el.style.fontSize = Math.max(8, item.fontSize * canvas.width / 600) + "px"; }
+      if (item.type === "text") { el.textContent = item.text; el.style.display = "flex"; el.style.alignItems = "center"; el.style.whiteSpace = "nowrap"; el.style.padding = "0 1px"; el.style.fontFamily = item.fontFamily || "sans-serif"; el.style.fontWeight = item.fontWeight || "normal"; el.style.fontStyle = item.fontStyle || "normal"; el.style.fontSize = previewFontSize(item, item.width / 1000 * canvas.width) + "px"; }
       overlayLayer.appendChild(el);
     }
     const list = $("astraPdfAnnotationList");
@@ -129,6 +146,21 @@
       if (!value || !item.width) continue;
       const tx = window.pdfjsLib.Util.transform(viewport.transform, item.transform);
       const fontHeight = Math.max(6, Math.hypot(tx[2], tx[3]));
+      const style = content.styles?.[item.fontName] || {};
+      const familyName = String(style.fontFamily || "").toLowerCase();
+      const sourceFontName = String(item.fontName || "");
+      const fontFamily = /mono|courier/.test(familyName) ? "monospace" : /serif|times|georgia/.test(familyName) ? "serif" : "sans-serif";
+      const fontWeight = /bold|black|heavy/i.test(sourceFontName) ? "bold" : "normal";
+      const fontStyle = /italic|oblique/i.test(sourceFontName) ? "italic" : "normal";
+      const box = {
+        text: value,
+        x: Math.max(0, Math.min(99, tx[4] / viewport.width * 100)),
+        y: Math.max(0, Math.min(99, (tx[5] - fontHeight) / viewport.height * 100)),
+        width: Math.max(1, Math.min(100, item.width * viewport.scale / viewport.width * 100 + 0.5)),
+        height: Math.max(1, Math.min(100, fontHeight * 1.25 / viewport.height * 100 + 0.8)),
+        fontSize: Math.max(4, Math.min(72, Number(item.height) || fontHeight / viewport.scale || 12)),
+        fontFamily, fontWeight, fontStyle
+      };
       const span = document.createElement("span");
       span.className = "pdf-detected-text";
       span.textContent = value;
@@ -138,25 +170,16 @@
       span.style.width = Math.max(fontHeight * 0.6, item.width * viewport.scale) + "px";
       span.style.height = Math.max(fontHeight * 1.25, 8) + "px";
       span.style.fontSize = fontHeight + "px";
-      const block = { text: value, x: Math.max(0, Math.min(99, tx[4] / viewport.width * 100)), y: Math.max(0, Math.min(99, (tx[5] - fontHeight) / viewport.height * 100)), width: Math.max(1, Math.min(100, item.width * viewport.scale / viewport.width * 100 + 0.5)), height: Math.max(1, Math.min(100, fontHeight * 1.25 / viewport.height * 100 + 0.8)), fontSize: Math.max(6, Math.min(72, fontHeight * 0.75)) };
-      detectedTextBlocks.push(block);
+      detectedTextBlocks.push(box);
       span.addEventListener("click", event => {
         event.stopPropagation();
-        const rect = span.getBoundingClientRect();
-        const stageRect = stage.getBoundingClientRect();
-        const x = Math.max(0, Math.min(99, (rect.left - stageRect.left) / stageRect.width * 100));
-        const y = Math.max(0, Math.min(99, (rect.top - stageRect.top) / stageRect.height * 100));
-        const width = Math.max(1, Math.min(100 - x, rect.width / stageRect.width * 100 + 0.5));
-        const height = Math.max(1, Math.min(100 - y, rect.height / stageRect.height * 100 + 0.8));
-        selectedTextBox = { x, y, width, height, fontSize: Math.max(6, Math.min(72, fontHeight * 0.75)) };
+        selectedTextBox = box;
         $("astraPdfTool").value = "replace";
         $("astraPdfOverlayText").value = value;
-        $("astraPdfX").value = x.toFixed(1);
-        $("astraPdfY").value = y.toFixed(1);
-        $("astraPdfW").value = width.toFixed(1);
-        $("astraPdfH").value = height.toFixed(1);
-        $("astraPdfFontSize").value = Math.round(selectedTextBox.fontSize);
-        showStatus("TEXT SELECTED · Edit the text field, then click REPLACE SELECTED TEXT.");
+        updateEditorMode();
+        showStatus("TEXT SELECTED · Enter the replacement words, then click REPLACE SELECTED TEXT. Position and size are automatic.");
+        $("astraPdfOverlayText").focus();
+        $("astraPdfOverlayText").select();
       });
       textLayer.appendChild(span);
     }
@@ -169,6 +192,7 @@
     const maxWidth = Math.min(760, Math.max(260, stage.parentElement?.clientWidth || 700));
     const scale = maxWidth / base.width;
     const viewport = page.getViewport({ scale });
+    renderScale = scale;
     const context = canvas.getContext("2d", { alpha: false });
     canvas.width = Math.ceil(viewport.width); canvas.height = Math.ceil(viewport.height);
     canvas.style.width = viewport.width + "px"; canvas.style.height = viewport.height + "px";
@@ -219,6 +243,8 @@
     if (!dialog.open) dialog.showModal();
   }
 
+  $("astraPdfTool")?.addEventListener("change", updateEditorMode);
+  updateEditorMode();
   $("astraPdfPrev")?.addEventListener("click", async () => { if (pageNumber > 1) { pageNumber--; await renderPage(); } });
   $("astraPdfNext")?.addEventListener("click", async () => { if (pdfDocument && pageNumber < pdfDocument.numPages) { pageNumber++; await renderPage(); } });
   $("astraPdfAddAnnotation")?.addEventListener("click", () => {
@@ -235,11 +261,11 @@
     if (type === "replace" && selectedTextBox) {
       const box = selectedTextBox;
       annotations.push({ type: "cover", page: pageNumber, x: box.x * 10, y: box.y * 10, width: box.width * 10, height: box.height * 10, fontSize: 0, text: "" });
-      annotations.push({ type: "text", page: pageNumber, x: box.x * 10, y: box.y * 10, width: box.width * 10, height: box.height * 10, fontSize: numberValue("astraPdfFontSize", 6, 72, box.fontSize), text });
+      annotations.push({ type: "text", page: pageNumber, x: box.x * 10, y: box.y * 10, width: box.width * 10, height: box.height * 10, fontSize: box.fontSize, fontFamily: box.fontFamily, fontWeight: box.fontWeight, fontStyle: box.fontStyle, text });
       selectedTextBox = null;
       $("astraPdfOverlayText").value = "";
       renderAnnotations();
-      showStatus("REPLACEMENT PREVIEW ADDED · Check alignment, then save or export.");
+      showStatus("REPLACEMENT PREVIEW ADDED · ASTRA fitted the text to the selected block. Review before export.");
       return;
     }
     annotations.push({ type, page: pageNumber, x, y, width, height, fontSize: numberValue("astraPdfFontSize", 6, 72, 14), text: type === "text" ? text : "" });
@@ -264,7 +290,7 @@
         const block = detectedTextBlocks[index];
         if (!block || block.text !== edit.sourceText || typeof edit.replacementText !== "string" || !edit.replacementText.trim()) continue;
         annotations.push({ type: "cover", page: pageNumber, x: block.x * 10, y: block.y * 10, width: block.width * 10, height: block.height * 10, fontSize: 0, text: "" });
-        annotations.push({ type: "text", page: pageNumber, x: block.x * 10, y: block.y * 10, width: block.width * 10, height: block.height * 10, fontSize: block.fontSize, text: edit.replacementText.slice(0, 500) });
+        annotations.push({ type: "text", page: pageNumber, x: block.x * 10, y: block.y * 10, width: block.width * 10, height: block.height * 10, fontSize: block.fontSize, fontFamily: block.fontFamily, fontWeight: block.fontWeight, fontStyle: block.fontStyle, text: edit.replacementText.slice(0, 500) });
         applied++;
       }
       renderAnnotations();
@@ -296,7 +322,14 @@
         await ensurePdfLib();
         const { PDFDocument, StandardFonts, rgb } = window.PDFLib;
         const pdf = await PDFDocument.load(pdfBytes);
-        const font = await pdf.embedFont(StandardFonts.Helvetica);
+        const fontCache = new Map();
+        const resolveFontKey = item => {
+          const family = String(item.fontFamily || "sans-serif").toLowerCase();
+          const bold = item.fontWeight === "bold", italic = item.fontStyle === "italic";
+          if (family === "monospace") return bold ? (italic ? "CourierBoldOblique" : "CourierBold") : (italic ? "CourierOblique" : "Courier");
+          if (family === "serif") return bold ? (italic ? "TimesRomanBoldItalic" : "TimesRomanBold") : (italic ? "TimesRomanItalic" : "TimesRoman");
+          return bold ? (italic ? "HelveticaBoldOblique" : "HelveticaBold") : (italic ? "HelveticaOblique" : "Helvetica");
+        };
         for (const item of annotations) {
           const page = pdf.getPage(item.page - 1);
           if (!page) continue;
@@ -308,12 +341,15 @@
           if (item.type === "cover") {
             page.drawRectangle({ x, y: size.height - top - height, width, height, color: rgb(1, 1, 1), borderWidth: 0 });
           } else {
-            const fontSize = Math.max(6, Math.min(72, item.fontSize));
-            page.drawText(item.text, {
-              x, y: size.height - top - fontSize, size: fontSize, font,
-              color: rgb(0.05, 0.05, 0.08), maxWidth: Math.max(20, width),
-              lineHeight: fontSize * 1.25
-            });
+            const key = resolveFontKey(item);
+            if (!fontCache.has(key)) fontCache.set(key, await pdf.embedFont(StandardFonts[key]));
+            const font = fontCache.get(key);
+            const naturalSize = Math.max(4, Math.min(72, Number(item.fontSize) || 12, height * 0.88));
+            const widthAtOne = Math.max(0.01, font.widthOfTextAtSize(item.text, 1));
+            const fontSize = Math.max(4, Math.min(naturalSize, Math.max(2, width - 1) / widthAtOne));
+            const textHeight = font.heightAtSize(fontSize);
+            const y = size.height - top - Math.max(0, (height - textHeight) / 2) - textHeight * 0.82;
+            page.drawText(item.text, { x: x + 0.5, y, size: fontSize, font, color: rgb(0.05, 0.05, 0.08) });
           }
         }
         const bytes = await pdf.save();
