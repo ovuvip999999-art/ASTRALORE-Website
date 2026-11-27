@@ -1288,3 +1288,10 @@ body[data-theme="light"] .astra-composer textarea::placeholder { color:#77708a; 
 body[data-theme="light"] .astra-attach-button { background:#eee7fb; color:#6849a9; border-color:#d4c4ef; }
 body[data-theme="light"] .astra-attachment-preview { background:#f5f1fc; color:#29243c; border-color:#d9cdee; }
 body[data-theme="light"] .astra-attachment-preview span { color:#655b79; }
+
+
+/* ASTRA document attachment support */
+.astra-attachment-preview img[hidden] { display: none !important; }
+.astra-attachment-preview > div { min-width: 0; }
+.astra-attachment-preview strong { overflow-wrap: anywhere; }
+.astra-attachment-preview span { display: block; opacity: .72; font-size: .78rem; margin-top: 3px; }
