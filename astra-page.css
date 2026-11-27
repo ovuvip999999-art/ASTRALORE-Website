@@ -1075,3 +1075,19 @@ body[data-theme="light"] .sidebar-bottom span { color:#625873; }
 body[data-theme="light"] .composer-note { color:#625873; }
 body[data-theme="light"] .astra-message-user .astra-message-label { color:#f0eaff; }
 body[data-theme="light"] .astra-message-action { color:#fff; border-color:#ffffff66; }
+
+
+/* Light-theme visibility fix: the New Conversation label was using a pale
+   dark-theme text color against the light lavender button background. */
+body[data-theme="light"] .new-chat-button {
+  color:#382653;
+  background:linear-gradient(120deg,#e7defb,#dce2fb);
+  border-color:#c5b4e9;
+  font-weight:600;
+}
+body[data-theme="light"] .new-chat-button span { color:#65449f; }
+body[data-theme="light"] .new-chat-button:hover {
+  color:#26183d;
+  background:linear-gradient(120deg,#ded1f6,#d1daf8);
+  border-color:#9e84d0;
+}
