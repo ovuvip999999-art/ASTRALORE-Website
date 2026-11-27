@@ -2,6 +2,7 @@ import { buildDocumentChunks } from "./document-utils.js";
 import { createDocumentStore } from "./document-store.js";
 
 const ALLOWED_ORIGINS = new Set([
+  "https://86d63a08.astralore-aeb.pages.dev",
   "https://feature-astra-cloud-memory.astralore-aeb.pages.dev",
   "https://ovuvip999999-art.github.io",
   "https://astralore-aeb.pages.dev",
