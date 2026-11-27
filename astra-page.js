@@ -761,7 +761,25 @@ function renderAnswer(container, text) {
         if (status) status.textContent = "DOCUMENT READY · ASTRA CAN READ IT";
       } catch (error) {
         clearAttachment();
-        if (status) status.textContent = (error.message || "COULD NOT READ THIS FILE").slice(0, 120);
+        const message = String(error?.message || "COULD NOT READ THIS FILE");
+        const diagnosticMarker = "Diagnostic report: ";
+        const diagnosticIndex = message.indexOf(diagnosticMarker);
+        if (diagnosticIndex >= 0) {
+          const rawDiagnostic = message.slice(diagnosticIndex + diagnosticMarker.length);
+          let formattedDiagnostic = rawDiagnostic;
+          try {
+            formattedDiagnostic = JSON.stringify(JSON.parse(rawDiagnostic), null, 2);
+          } catch {}
+          addMessage(
+            "PDF extraction failed. The complete diagnostic report is below. Use the Copy code button to send it here.\n\n```json\n" +
+              formattedDiagnostic +
+              "\n```",
+            "bot"
+          );
+          if (status) status.textContent = "PDF DIAGNOSTIC READY · USE COPY CODE";
+        } else if (status) {
+          status.textContent = message.slice(0, 120);
+        }
       }
     });
   }
