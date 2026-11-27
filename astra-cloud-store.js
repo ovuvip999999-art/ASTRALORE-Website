@@ -76,6 +76,14 @@
     if (error) throw error;
     return data || [];
   }
+  async function renameConversation(id, title) {
+    const user = await requireUser();
+    const cleanTitle = String(title || "").trim().replace(/\\s+/g, " ").slice(0, 160);
+    if (!cleanTitle) throw new Error("Enter a conversation name.");
+    const { error } = await client.from("astra_conversations").update({ title: cleanTitle })
+      .eq("id", id).eq("user_id", user.id);
+    if (error) throw error;
+  }
   async function deleteConversation(id) {
     const user = await requireUser();
     const { error } = await client.from("astra_conversations").delete()
@@ -84,6 +92,6 @@
   }
   window.ASTRACloud = Object.freeze({
     requireUser, listConversations, createConversation, loadMessages,
-    appendMessages, searchMessages, deleteConversation
+    appendMessages, searchMessages, renameConversation, deleteConversation
   });
 })();
