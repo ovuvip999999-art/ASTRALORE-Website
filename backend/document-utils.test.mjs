@@ -49,4 +49,8 @@ test("browser PDF OCR records separate render, recognition, and quality diagnost
   assert.ok(source.includes("ocrText.replace("));
   assert.ok(source.includes("[Page "));
   assert.ok(source.includes("ocrReadableRatio"));
+  assert.ok(source.includes("page.getViewport({ scale: 2.5 })"), "OCR should render at higher resolution");
+  assert.ok(source.includes("makeThresholdCanvas"), "OCR should create a contrast-normalized threshold image");
+  assert.ok(source.includes("tessedit_pageseg_mode: \"11\""), "OCR should retry using sparse-text segmentation");
+  assert.ok(source.includes("selectedPass"), "Diagnostics should report which OCR pass was selected");
 });
