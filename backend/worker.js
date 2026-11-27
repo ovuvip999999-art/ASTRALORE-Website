@@ -345,6 +345,8 @@ export default {
     }
     if (creativeAction) {
       const prompt = typeof creativeAction.prompt === "string" ? creativeAction.prompt.trim() : "";
+      const restrictedPrompt = /\\b(nude|naked|porn(?:ographic)?|erotic|sexually explicit|gore|gory|dismember(?:ment)?|self[- ]harm|suicide|graphic injury|weapon construction|bomb making)\\b/i;
+      if (restrictedPrompt.test(prompt)) return json({ error: "That prompt is not supported. Keep generated content age-appropriate and non-graphic." }, 400, origin);
       const ratios = new Set(["1:1", "9:16", "16:9"]);
       if (!["generate-image", "generate-video"].includes(creativeAction.operation) || prompt.length < 5 || prompt.length > 1000 || !ratios.has(creativeAction.aspectRatio)) {
         return json({ error: "Provide a valid creative prompt and supported aspect ratio." }, 400, origin);
@@ -414,7 +416,7 @@ export default {
       }
     }
 
-    if (creativeAction) {
+    if (creativeAction?.operation === "generate-image") {
       if (env.ASTRA_CREATIVE_ENABLED !== "true") {
         return json({ error: "ASTRA Image Studio is not enabled on this preview Worker yet." }, 503, origin);
       }
