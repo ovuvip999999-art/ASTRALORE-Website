@@ -355,10 +355,23 @@
     pdfButton.disabled = true; showStatus("Preparing PDF export…");
     try {
       if (pdfBytes && pdfDocument) {
+        // Export from the live editor state first; fall back to the last cloud-saved state.
+        const savedAnnotations = Array.isArray(current.editorState?.annotations) ? current.editorState.annotations : [];
+        const exportAnnotations = (annotations.length ? annotations : savedAnnotations)
+          .filter(item => item && (item.type === "text" || item.type === "cover") &&
+            Number.isInteger(item.page) && item.page >= 1 && item.page <= pdfDocument.numPages &&
+            ["x", "y", "width", "height"].every(key => Number.isFinite(Number(item[key]))));
+        if (!exportAnnotations.length) {
+          throw new Error("No PDF edits are available to export. Apply an edit on the page first, then export again.");
+        }
+        // Always paint all cover rectangles before replacement text, regardless of list order.
+        exportAnnotations.sort((a, b) => a.page - b.page ||
+          (a.type === "cover" ? 0 : 1) - (b.type === "cover" ? 0 : 1));
+        showStatus("Applying " + exportAnnotations.length + " saved edit layers to the original PDF…");
         await ensurePdfLib();
         const { PDFDocument, StandardFonts, rgb } = window.PDFLib;
         const pdf = await PDFDocument.load(pdfBytes);
-        const textEdits = annotations.filter(item => item.type === "text" && item.fontName);
+        const textEdits = exportAnnotations.filter(item => item.type === "text" && item.fontName);
         const embeddedFonts = new Map();
         let fontFallbacks = 0;
         if (textEdits.length) {
@@ -380,7 +393,8 @@
           }
         }
         await (document.fonts?.ready || Promise.resolve());
-        for (const item of annotations) {
+        let appliedEdits = 0;
+        for (const item of exportAnnotations) {
           const page = pdf.getPage(item.page - 1);
           if (!page) continue;
           const size = page.getSize();
@@ -389,7 +403,11 @@
           const width = item.width / 1000 * size.width;
           const height = item.height / 1000 * size.height;
           if (item.type === "cover") {
-            page.drawRectangle({ x, y: size.height - top - height, width, height, color: rgb(1, 1, 1), borderWidth: 0 });
+            page.drawRectangle({
+              x, y: size.height - top - height, width, height,
+              color: rgb(1, 1, 1), opacity: 1, borderColor: rgb(1, 1, 1), borderOpacity: 1, borderWidth: 0
+            });
+            appliedEdits++;
           } else {
             const originalFont = item.fontName ? embeddedFonts.get(item.fontName) : null;
             if (originalFont) {
@@ -407,6 +425,7 @@
                 x: textX, y: baseline, size: fontSize, font: originalFont,
                 color: rgb(0.05, 0.05, 0.08), maxWidth: availableWidth
               });
+              appliedEdits++;
               continue;
             }
             fontFallbacks++;
@@ -437,11 +456,17 @@
             ctx.fillText(String(item.text || ""), textX, textCanvas.height / 2, availableWidth);
             const png = await pdf.embedPng(textCanvas.toDataURL("image/png"));
             page.drawImage(png, { x, y: size.height - top - height, width, height });
+            appliedEdits++;
           }
         }
+        if (!appliedEdits) throw new Error("ASTRA found no valid edit layers to apply. Nothing was downloaded.");
         const bytes = await pdf.save();
+        if (!(bytes instanceof Uint8Array) || bytes.length <= pdfBytes.length * 0.8) {
+          throw new Error("The edited PDF could not be generated safely. The original file was not downloaded as an edited copy.");
+        }
         downloadBlob(new Blob([bytes], { type: "application/pdf" }), safeBaseName(current.name) + "-edited.pdf");
-        showStatus(fontFallbacks ? "PDF EXPORTED · " + fontFallbacks + " REPLACEMENT(S) USED A FALLBACK FONT BECAUSE THE ORIGINAL FONT COULD NOT BE EMBEDDED." : "EDITED PDF EXPORTED · ORIGINAL EMBEDDED FONTS USED FOR REPLACEMENTS.");
+        showStatus("EDITED PDF EXPORTED · " + appliedEdits + " EDIT LAYERS APPLIED." +
+          (fontFallbacks ? " " + fontFallbacks + " TEXT REPLACEMENT(S) USED A FALLBACK FONT." : ""));
       } else {
         showStatus("No original PDF loaded. Exporting extracted text as a new PDF…");
         await ensurePdfLib();
