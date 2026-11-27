@@ -528,9 +528,53 @@ function renderAnswer(container, text) {
       for (let pageNo = 1; pageNo <= pageLimit; pageNo++) {
         const page = await pdf.getPage(pageNo);
         const content = await page.getTextContent();
-        const textItems = content.items   .filter(item => item.str && item.str.trim())   .map(item => ({     text: item.str.trim(),     x: item.transform[4],     y: item.transform[5],     height: Math.abs(item.transform[3]) || 10,     width: item.width || 0   }))   .sort((a, b) => b.y - a.y || a.x - b.x);  const lines = [];  for (const item of textItems) {   let line = lines.find(     existing => Math.abs(existing.y - item.y) <=       Math.max(2, Math.min(existing.height, item.height) * 0.35)   );    if (!line) {     line = {       y: item.y,       height: item.height,       items: []     };     lines.push(line);   }    line.items.push(item); }  lines.sort((a, b) => b.y - a.y);  const pageText = lines.map(line => {   line.items.sort((a, b) => a.x - b.x);    let result = "";   let previousEnd = null;    for (const item of line.items) {     if (previousEnd !== null) {       const gap = item.x - previousEnd;       result += gap > 24 ? " | " : gap > 5 ? " " : "";     }      result += item.text;     previousEnd = item.x + item.width;   }    return result; }).join("
-");  pages.push("[Page " + pageNo + "]
-" + pageText);
+        const textItems = content.items
+          .filter(item => item.str && item.str.trim())
+          .map(item => ({
+            text: item.str.trim(),
+            x: item.transform[4],
+            y: item.transform[5],
+            height: Math.abs(item.transform[3]) || 10,
+            width: item.width || 0
+          }))
+          .sort((a, b) => b.y - a.y || a.x - b.x);
+
+        const lines = [];
+
+        for (const item of textItems) {
+          let line = lines.find(
+            existing => Math.abs(existing.y - item.y) <=
+              Math.max(2, Math.min(existing.height, item.height) * 0.35)
+          );
+
+          if (!line) {
+            line = { y: item.y, height: item.height, items: [] };
+            lines.push(line);
+          }
+
+          line.items.push(item);
+        }
+
+        lines.sort((a, b) => b.y - a.y);
+
+        const pageText = lines.map(line => {
+          line.items.sort((a, b) => a.x - b.x);
+          let result = "";
+          let previousEnd = null;
+
+          for (const item of line.items) {
+            if (previousEnd !== null) {
+              const gap = item.x - previousEnd;
+              result += gap > 24 ? " | " : gap > 5 ? " " : "";
+            }
+            result += item.text;
+            previousEnd = item.x + item.width;
+          }
+
+          return result;
+        }).join("\n");
+
+        pages.push("[Page " + pageNo + "]\n" + pageText);
         if (pages.join("\n").length >= MAX_EXTRACTED_CHARS) break;
       }
       if (pdf.numPages > pageLimit) pages.push("[Only the first " + pageLimit + " pages were extracted.]");
