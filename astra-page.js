@@ -567,7 +567,7 @@ function renderAnswer(container, text) {
       headers: { "Content-Type": "application/json", "Authorization": "Bearer " + accessToken },
       body: JSON.stringify({
         conversationId: cloudConversation.id,
-        documentAction: { operation, ...(documentData ? { document: documentData } : {}) }
+        documentAction: { operation, ...(documentData ? (operation === "plan-edit" ? { payload: documentData } : { document: documentData }) : {}) }
       })
     });
     const data = await response.json().catch(() => ({}));
@@ -608,6 +608,8 @@ function renderAnswer(container, text) {
         activeAttachment.text = updatedDocument.text;
       }
       if (status) status.textContent = "DOCUMENT SAVED · " + String(updatedDocument.name).slice(0, 48);
+    }, async (instruction, pageText, pageNumber) => {
+      return await sendDocumentAction("plan-edit", { instruction, pageText, pageNumber });
     });
   }
 
