@@ -22,6 +22,7 @@ export function createDocumentStore({ baseUrl, anonKey, authorization, fetchImpl
           mime_type: document.mimeType,
           extracted_text: document.text,
           storage_path: typeof document.storagePath === "string" ? document.storagePath : null,
+          editor_state: document.editorState && typeof document.editorState === "object" ? document.editorState : { annotations: [] },
           updated_at: new Date().toISOString()
         })
       });
@@ -32,7 +33,7 @@ export function createDocumentStore({ baseUrl, anonKey, authorization, fetchImpl
 
     async load(conversationId, userId) {
       const query = new URLSearchParams({
-        select: "file_name,mime_type,extracted_text,storage_path",
+        select: "file_name,mime_type,extracted_text,storage_path,editor_state",
         conversation_id: "eq." + conversationId,
         user_id: "eq." + userId,
         limit: "1"
@@ -51,7 +52,8 @@ export function createDocumentStore({ baseUrl, anonKey, authorization, fetchImpl
         name: String(row.file_name || "Previously uploaded document"),
         mimeType: String(row.mime_type || "text/plain"),
         text: row.extracted_text,
-        storagePath: typeof row.storage_path === "string" ? row.storage_path : null
+        storagePath: typeof row.storage_path === "string" ? row.storage_path : null,
+        editorState: row.editor_state && typeof row.editor_state === "object" ? row.editor_state : { annotations: [] }
       };
     }
   };
