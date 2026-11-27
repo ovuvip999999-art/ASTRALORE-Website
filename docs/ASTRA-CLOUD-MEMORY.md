@@ -51,5 +51,11 @@ The Worker must not be deployed with placeholder values. The user must create th
 6. Add export/delete-account flows, abuse controls, retention controls and tests.
 7. Verify browser, PWA and Android WebView sign-in and history sync before production rollout.
 
-## Current limitation
-This branch contains the initial database schema and architecture plan only. It does not yet implement login, Worker token verification, cloud persistence, or cloud retrieval. Do not advertise cloud memory as active until those pieces are deployed and tested.
+## Current implementation status (development branch)
+- Supabase email/password sign-in and persistent browser sessions are wired into the ASTRA page.
+- The browser archive client uses the signed-in user's JWT and Supabase RLS for conversation listing, loading, saving, full-text search, and conversation deletion.
+- The Worker now validates any supplied bearer token through Supabase Auth. For authenticated requests it searches up to 12 relevant prior message excerpts using the caller's JWT and passes them to the model as untrusted reference context.
+- User messages are written to the cloud archive before the AI request; assistant replies are saved after generation. Original message rows remain in the database rather than being replaced by summaries.
+- The Worker still allows unauthenticated legacy requests for compatibility with the currently deployed public site. Those requests do not receive cross-chat archive retrieval.
+- This is not yet production-ready: the Worker changes have not been deployed or integration-tested against Supabase; the revised SQL migration must be applied; abuse/rate limiting, export and account-deletion flows, and browser/PWA/Android end-to-end tests remain before public rollout.
+- The SUPABASE_URL and SUPABASE_ANON_KEY Worker variables are public project configuration only. Never add a Supabase secret/service-role key to this repository or browser code.
