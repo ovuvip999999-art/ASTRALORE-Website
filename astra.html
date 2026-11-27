@@ -201,19 +201,37 @@
 
   <dialog class="astra-document-dialog" id="astraDocumentDialog" aria-labelledby="astraDocumentTitle">
     <div class="document-editor-head">
-      <div>
-        <span class="memory-dialog-kicker">ASTRALORE DOCUMENT WORKSPACE</span>
-        <h2 id="astraDocumentTitle">DOCUMENT EDITOR</h2>
-      </div>
+      <div><span class="memory-dialog-kicker">ASTRALORE DOCUMENT WORKSPACE</span><h2 id="astraDocumentTitle">DOCUMENT EDITOR</h2></div>
       <button type="button" class="memory-dialog-close" id="astraDocumentClose" aria-label="Close document editor">×</button>
     </div>
-    <p class="document-editor-note">This editor changes the extracted text, not the original PDF/DOCX page layout. Saving updates the cloud copy for this conversation. Export creates a new file; your original remains unchanged.</p>
-    <label class="sr-only" for="astraDocumentText">Edit extracted document text</label>
-    <textarea id="astraDocumentText" class="document-editor-text" maxlength="50000" spellcheck="false"></textarea>
+    <p class="document-editor-note">PDF visual mode keeps the original page design. Add text or cover an area, then export a new PDF. Existing PDF text is not directly rewritten; the original stays unchanged.</p>
+    <section id="astraPdfVisualEditor" class="astra-pdf-editor" hidden>
+      <div class="pdf-page-toolbar">
+        <button type="button" id="astraPdfPrev">← PREVIOUS</button>
+        <span id="astraPdfPageLabel">PAGE 1</span>
+        <button type="button" id="astraPdfNext">NEXT →</button>
+      </div>
+      <div id="astraPdfPageStage" class="pdf-page-stage"><canvas id="astraPdfCanvas"></canvas><div id="astraPdfOverlayLayer" class="pdf-overlay-layer"></div></div>
+      <div class="pdf-annotation-controls">
+        <label>TOOL<select id="astraPdfTool"><option value="text">Add text</option><option value="cover">Cover area</option></select></label>
+        <label>TEXT<input id="astraPdfOverlayText" type="text" maxlength="500" placeholder="Enter text to add"></label>
+        <label>X %<input id="astraPdfX" type="number" min="0" max="100" value="10"></label>
+        <label>Y %<input id="astraPdfY" type="number" min="0" max="100" value="15"></label>
+        <label>WIDTH %<input id="astraPdfW" type="number" min="1" max="100" value="35"></label>
+        <label>HEIGHT %<input id="astraPdfH" type="number" min="1" max="100" value="8"></label>
+        <label>FONT SIZE<input id="astraPdfFontSize" type="number" min="6" max="72" value="14"></label>
+        <button type="button" id="astraPdfAddAnnotation">ADD TO PAGE</button>
+      </div>
+      <ol id="astraPdfAnnotationList" class="pdf-annotation-list"></ol>
+    </section>
+    <section id="astraTextEditorFallback">
+      <label class="sr-only" for="astraDocumentText">Edit extracted document text</label>
+      <textarea id="astraDocumentText" class="document-editor-text" maxlength="50000" spellcheck="false"></textarea>
+    </section>
     <p id="astraDocumentEditorStatus" class="memory-notice" aria-live="polite"></p>
     <div class="document-editor-actions">
       <button type="button" id="astraDocumentSave">SAVE TO CLOUD</button>
-      <button type="button" id="astraDocumentExportPdf">EXPORT NEW PDF</button>
+      <button type="button" id="astraDocumentExportPdf">EXPORT PDF</button>
       <button type="button" id="astraDocumentExportText">EXPORT TXT</button>
     </div>
   </dialog>
