@@ -369,7 +369,7 @@ function renderAnswer(container, text) {
       },
       body: JSON.stringify({
         message: question,
-        history: history.slice(-8),
+        history: history.slice(-9, -1),
         memory: window.ASTRAMemory ? window.ASTRAMemory.getMemories().map(item => item.text) : []
       })
     });
@@ -404,6 +404,18 @@ function renderAnswer(container, text) {
 
     addMessage(message, "user");
     input.value = "";
+    const userSequence = history.length;
+    history.push({ role: "user", content: message });
+    if (window.ASTRAMemory) window.ASTRAMemory.saveCurrentMessages(history);
+    if (window.ASTRACloud && cloudReady && cloudConversation) {
+      try {
+        await window.ASTRACloud.appendMessages(cloudConversation, [
+          { role: "user", content: message, sequence_no: userSequence }
+        ]);
+      } catch (saveError) {
+        if (status) status.textContent = "CLOUD SAVE ISSUE · " + (saveError.message || "RETRY LATER");
+      }
+    }
 
     const typing = addMessage("Receiving signal…", "bot");
     typing.classList.add("astra-message-loading");
@@ -416,20 +428,17 @@ function renderAnswer(container, text) {
       typing.remove();
       addMessage(reply, "bot");
 
-      history.push(
-        { role: "user", content: message },
-        { role: "assistant", content: reply }
-      );
+      const assistantSequence = history.length;
+      history.push({ role: "assistant", content: reply });
 
-      if (history.length > 500) {
+      if (!cloudReady && history.length > 500) {
         history.splice(0, history.length - 500);
       }
       if (window.ASTRACloud && cloudReady && cloudConversation) {
         try {
-          await window.ASTRACloud.appendMessages(
-            cloudConversation,
-            history.map((item, index) => ({ ...item, sequence_no: index }))
-          );
+          await window.ASTRACloud.appendMessages(cloudConversation, [
+            { role: "assistant", content: reply, sequence_no: assistantSequence }
+          ]);
           await refreshCloudArchive();
         } catch (saveError) {
           if (status) status.textContent = "CLOUD SAVE ISSUE · " + (saveError.message || "RETRY LATER");
@@ -446,6 +455,7 @@ function renderAnswer(container, text) {
         }
       }
     } catch (error) {
+      if (window.ASTRAMemory) window.ASTRAMemory.saveCurrentMessages(history);
       if (status) status.textContent = "CONNECTION ISSUE";
       typing.remove();
       addMessage(
