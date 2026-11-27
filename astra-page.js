@@ -21,6 +21,7 @@
   let cloudReady = false;
   let cloudInitPromise = null;
   let busy = false;
+  let activeAttachment = null;
   let signedIn = document.body.dataset.authenticated === "true";
 
   async function initializeCloudArchive() {
@@ -455,7 +456,6 @@ function renderAnswer(container, text) {
     return data;
   }
 
-  let activeAttachment = null;
   const fileInput = document.getElementById("astraFileInput");
   const attachButton = document.getElementById("astraAttachButton");
   const attachmentPreview = document.getElementById("astraAttachmentPreview");
