@@ -118,7 +118,7 @@
     if (!pdfDocument) return;
     const page = await pdfDocument.getPage(pageNumber);
     const base = page.getViewport({ scale: 1 });
-    const maxWidth = Math.min(760, Math.max(300, stage.clientWidth || 700));
+    const maxWidth = Math.min(760, Math.max(260, stage.parentElement?.clientWidth || 700));
     const scale = maxWidth / base.width;
     const viewport = page.getViewport({ scale });
     const context = canvas.getContext("2d", { alpha: false });
