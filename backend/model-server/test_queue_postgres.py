@@ -18,6 +18,7 @@ MIGRATIONS = [
     Path(__file__).resolve().parents[1] / "migrations" / "0010_astra_generation_jobs.sql",
     Path(__file__).resolve().parents[1] / "migrations" / "0011_astra_private_generated_assets.sql",
     Path(__file__).resolve().parents[1] / "migrations" / "0012_astra_job_access_modes.sql",
+    Path(__file__).resolve().parents[1] / "migrations" / "0013_astra_origin_scoped_worker_claims.sql",
 ]
 
 
@@ -88,18 +89,18 @@ class QueuePostgresIntegrationTests(unittest.TestCase):
             conn.execute("select set_config('request.jwt.claim.sub', %s, false)", (user_id,))
         return conn
 
-    def enqueue(self, conn, *, user_id=USER_A, key="request-key-0001", modality="image", request=None):
+    def enqueue(self, conn, *, user_id=USER_A, key="request-key-0001", modality="image", request=None, request_origin="internal"):
         payload = request if request is not None else {"prompt": "A calm blue planet"}
         row = conn.execute(
-            """select * from public.astra_enqueue_generation_job(%s, %s, %s, %s, %s)""",
-            (user_id, modality, "astra-" + modality + "-test", Jsonb(payload), key),
+            """select * from public.astra_enqueue_generation_job_v2(%s, %s, %s, %s, %s, %s)""",
+            (user_id, modality, "astra-" + modality + "-test", Jsonb(payload), key, request_origin),
         ).fetchone()
         return row
 
-    def claim(self, conn, worker="integration-worker"):
+    def claim(self, conn, worker="integration-worker", request_origin="internal"):
         return conn.execute(
-            "select * from public.astra_claim_generation_jobs(%s, 1, 90)",
-            (worker,),
+            "select * from public.astra_claim_generation_jobs_v2(%s, %s, 1, 90)",
+            (worker, request_origin),
         ).fetchone()
 
     def test_private_storage_bucket_is_nonpublic_and_restricts_broad_user_policies(self):
@@ -170,6 +171,22 @@ class QueuePostgresIntegrationTests(unittest.TestCase):
                 conn.execute(
                     "select public.astra_enqueue_generation_job_v2(%s, %s, %s, %s, %s, %s)",
                     (USER_A, "image", "astra-image-test", Jsonb({"prompt": "internal"}), "origin-key-0001", "public"),
+                )
+
+    def test_worker_claims_are_strictly_scoped_to_authenticated_origin(self):
+        with self.connect("service_role") as conn:
+            internal = self.enqueue(conn, key="claim-internal-001", request_origin="internal")
+            public = self.enqueue(conn, key="claim-public-001", request_origin="public")
+            claimed_public = self.claim(conn, worker="public-worker", request_origin="public")
+            self.assertEqual(claimed_public["id"], public["id"])
+            self.assertEqual(claimed_public["request_origin"], "public")
+            claimed_internal = self.claim(conn, worker="internal-worker", request_origin="internal")
+            self.assertEqual(claimed_internal["id"], internal["id"])
+            self.assertEqual(claimed_internal["request_origin"], "internal")
+            with self.assertRaises(psycopg.Error):
+                conn.execute(
+                    "select * from public.astra_claim_generation_jobs_v2(%s, %s, 1, 90)",
+                    ("worker", "all"),
                 )
 
     def test_claim_lease_heartbeat_and_expired_lease_recovery(self):
