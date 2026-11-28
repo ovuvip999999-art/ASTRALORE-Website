@@ -15,6 +15,17 @@ No provider has been selected in Wrangler configuration. The provider registry r
 - A future provider can be added as another adapter without changing the Studio UI.
 - Provider adapters report their cost basis. Neuron-metered image usage and per-second video pricing must not be treated as interchangeable or assumed free.
 
+## Provider research snapshot — 28 November 2026
+
+The provider boundary is intentionally not tied to one vendor, but current free API options are limited:
+
+- Cloudflare Workers AI documents 10,000 Neurons/day at no charge. Its pricing documentation says usage beyond that allowance requires the Workers Paid plan; the account plan and account-wide consumption still need verification before ASTRA can rely on it as a no-charge route. [Official pricing](https://developers.cloudflare.com/workers-ai/platform/pricing/).
+- Hugging Face's current pricing documentation lists no monthly Inference Provider credits for Free accounts. [Official pricing](https://huggingface.co/docs/inference-providers/main/pricing).
+- Google's current Gemini image-generation model pricing lists no free API tier for those image models. [Official pricing](https://ai.google.dev/gemini-api/docs/pricing).
+- Wan is an open model, but self-hosting is not equivalent to free hosted inference. The Wan2.1 project reports about 8.19 GB VRAM for its 1.3B text-to-video model. [Official model repository](https://github.com/Wan-Video/Wan2.1).
+
+**Current decision:** keep Cloudflare as an optional image-provider adapter, not a mandatory dependency. Do not add a hosted provider whose free tier cannot be verified. Keep video paused until a genuinely no-cost hosting route is available or an account owner explicitly approves a funded option.
+
 ## Why generation is still blocked
 
 A provider adapter is not a spending-control system. We do not yet have a reliable shared budget that measures and reserves the real cost across all ASTRA image and video requests. Cloudflare's free Workers AI allowance is shared with other account AI traffic, and the current video model has a per-second price.
