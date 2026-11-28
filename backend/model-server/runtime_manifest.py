@@ -1,0 +1,212 @@
+"""Strict, checksum-verified manifest for self-hosted model artifacts.
+
+This module never downloads or loads weights and never executes model code.
+It verifies files already placed inside an administrator-controlled model root.
+"""
+from __future__ import annotations
+
+import hashlib
+import json
+import os
+import re
+import stat
+from pathlib import Path, PurePosixPath
+from typing import Any
+
+SHA256_RE = re.compile(r"^[0-9a-f]{64}$")
+COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
+MODEL_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]{0,127}$")
+MAX_FILES_PER_MODEL = 1000
+MAX_FILE_BYTES = 50 * 1024 * 1024 * 1024
+MAX_MODEL_BYTES = 100 * 1024 * 1024 * 1024
+HASH_CHUNK = 1024 * 1024
+RUNTIMES = {"diffusers", "wan-video", "custom"}
+
+
+class RuntimeManifestError(ValueError):
+    """Raised when a model artifact manifest or local artifact is unsafe."""
+
+
+def _exact_keys(value: dict[str, Any], required: set[str], label: str) -> None:
+    if set(value) != required:
+        raise RuntimeManifestError(f"{label} has missing or unknown fields.")
+
+
+def _safe_relative_path(value: Any) -> PurePosixPath:
+    if not isinstance(value, str) or not value or "\\" in value:
+        raise RuntimeManifestError("Model artifact path must be a relative POSIX path.")
+    raw_parts = value.split("/")
+    path = PurePosixPath(value)
+    if path.is_absolute() or any(part in {"", ".", ".."} for part in raw_parts):
+        raise RuntimeManifestError("Model artifact path contains unsafe components.")
+    return path
+
+
+def _hash_artifact_from_root(root: Path, relative: PurePosixPath) -> tuple[str, int, str]:
+    """Hash a file through no-follow directory descriptors to resist path swaps."""
+    directory_flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0)
+    file_flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
+    opened_directories: list[int] = []
+    file_fd = None
+    try:
+        current_fd = os.open(root, directory_flags)
+        opened_directories.append(current_fd)
+        for part in relative.parts[:-1]:
+            current_fd = os.open(part, directory_flags, dir_fd=current_fd)
+            opened_directories.append(current_fd)
+        file_fd = os.open(relative.parts[-1], file_flags, dir_fd=current_fd)
+        before = os.fstat(file_fd)
+        if not stat.S_ISREG(before.st_mode):
+            raise RuntimeManifestError("A model artifact is not a regular file.")
+        if not 1 <= before.st_size <= MAX_FILE_BYTES:
+            raise RuntimeManifestError("A model artifact size is outside permitted bounds.")
+        digest = hashlib.sha256()
+        with os.fdopen(os.dup(file_fd), "rb") as handle:
+            while True:
+                block = handle.read(HASH_CHUNK)
+                if not block:
+                    break
+                digest.update(block)
+        after = os.fstat(file_fd)
+        before_signature = (before.st_dev, before.st_ino, before.st_size, before.st_mtime_ns)
+        after_signature = (after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns)
+        if before_signature != after_signature:
+            raise RuntimeManifestError("A model artifact changed during verification.")
+        return digest.hexdigest(), before.st_size, str(root.joinpath(*relative.parts))
+    except RuntimeManifestError:
+        raise
+    except OSError:
+        raise RuntimeManifestError("A model artifact is missing, linked, or unreadable.") from None
+    finally:
+        if file_fd is not None:
+            os.close(file_fd)
+        for descriptor in reversed(opened_directories):
+            os.close(descriptor)
+
+
+def _positive_int(value: Any, *, minimum: int, maximum: int, label: str) -> int:
+    if type(value) is not int or not minimum <= value <= maximum:
+        raise RuntimeManifestError(f"{label} is outside the permitted bounds.")
+    return value
+
+
+def load_manifest_json(raw: str) -> list[dict[str, Any]]:
+    if not isinstance(raw, str) or not raw.strip() or len(raw.encode("utf-8")) > 1_000_000:
+        raise RuntimeManifestError("Runtime manifest is empty or too large.")
+    try:
+        payload = json.loads(raw)
+    except (TypeError, ValueError):
+        raise RuntimeManifestError("Runtime manifest must be valid JSON.") from None
+    if not isinstance(payload, dict) or set(payload) != {"models"} or not isinstance(payload["models"], list):
+        raise RuntimeManifestError("Runtime manifest must contain only a models array.")
+    if len(payload["models"]) > 50:
+        raise RuntimeManifestError("Runtime manifest contains too many model entries.")
+
+    required = {
+        "model_id", "revision", "modality", "files", "min_vram_mb",
+        "max_width", "max_height", "max_pixels", "runtime", "allow_remote_code",
+        "license_id", "license_reviewed_by_owner",
+    }
+    file_keys = {"path", "sha256", "size_bytes"}
+    seen: set[tuple[str, str]] = set()
+    normalized = []
+
+    for item in payload["models"]:
+        if not isinstance(item, dict):
+            raise RuntimeManifestError("Each model entry must be an object.")
+        _exact_keys(item, required, "Model entry")
+        model_id = item["model_id"]
+        revision = item["revision"]
+        if not isinstance(model_id, str) or not MODEL_ID_RE.fullmatch(model_id):
+            raise RuntimeManifestError("Model ID is invalid.")
+        if not isinstance(revision, str) or not (COMMIT_RE.fullmatch(revision) or re.fullmatch(r"sha256:[0-9a-f]{64}", revision)):
+            raise RuntimeManifestError("Model revision must be an immutable commit or SHA-256 identifier.")
+        identity = (model_id, revision)
+        if identity in seen:
+            raise RuntimeManifestError("Duplicate model ID and revision.")
+        seen.add(identity)
+        if not isinstance(item["modality"], str) or item["modality"] not in {"image", "video"}:
+            raise RuntimeManifestError("Model modality must be image or video.")
+        if not isinstance(item["runtime"], str) or item["runtime"] not in RUNTIMES:
+            raise RuntimeManifestError("Model runtime is not in the approved runtime allowlist.")
+        if item["runtime"] == "wan-video" and item["modality"] != "video":
+            raise RuntimeManifestError("Wan video runtime can only serve video models.")
+        if item["allow_remote_code"] is not False:
+            raise RuntimeManifestError("Remote model code execution is forbidden.")
+        if not isinstance(item["license_id"], str) or not 1 <= len(item["license_id"].strip()) <= 128:
+            raise RuntimeManifestError("A model license identifier is required.")
+        if type(item["license_reviewed_by_owner"]) is not bool:
+            raise RuntimeManifestError("Owner license review status must be a boolean.")
+        files = item["files"]
+        if not isinstance(files, list) or not 1 <= len(files) <= MAX_FILES_PER_MODEL:
+            raise RuntimeManifestError("Each model must declare a bounded non-empty file list.")
+        seen_paths: set[str] = set()
+        normalized_files = []
+        total_bytes = 0
+        for file_item in files:
+            if not isinstance(file_item, dict):
+                raise RuntimeManifestError("Model file entry must be an object.")
+            _exact_keys(file_item, file_keys, "Model file")
+            rel = _safe_relative_path(file_item["path"])
+            rel_string = rel.as_posix()
+            if rel_string in seen_paths:
+                raise RuntimeManifestError("Duplicate model artifact path.")
+            seen_paths.add(rel_string)
+            digest = file_item["sha256"]
+            if not isinstance(digest, str) or not SHA256_RE.fullmatch(digest):
+                raise RuntimeManifestError("Model artifact SHA-256 must be lowercase hexadecimal.")
+            size = _positive_int(file_item["size_bytes"], minimum=1, maximum=MAX_FILE_BYTES, label="Model artifact size")
+            total_bytes += size
+            if total_bytes > MAX_MODEL_BYTES:
+                raise RuntimeManifestError("Total model artifact size exceeds the 100 GiB limit.")
+            normalized_files.append({"path": rel_string, "sha256": digest, "size_bytes": size})
+        max_width = _positive_int(item["max_width"], minimum=64, maximum=16384, label="max_width")
+        max_height = _positive_int(item["max_height"], minimum=64, maximum=16384, label="max_height")
+        max_pixels = _positive_int(item["max_pixels"], minimum=4096, maximum=100_000_000, label="max_pixels")
+        if max_pixels > max_width * max_height:
+            raise RuntimeManifestError("max_pixels cannot exceed max_width multiplied by max_height.")
+        normalized.append({
+            "model_id": model_id,
+            "revision": revision,
+            "modality": item["modality"],
+            "files": normalized_files,
+            "min_vram_mb": _positive_int(item["min_vram_mb"], minimum=1024, maximum=131072, label="min_vram_mb"),
+            "max_width": max_width,
+            "max_height": max_height,
+            "max_pixels": max_pixels,
+            "runtime": item["runtime"],
+            "allow_remote_code": False,
+            "license_id": item["license_id"].strip(),
+            "license_reviewed_by_owner": item["license_reviewed_by_owner"],
+        })
+    return normalized
+
+
+def verify_model_artifacts(
+    manifest: list[dict[str, Any]],
+    *,
+    model_root: str | Path,
+) -> list[dict[str, Any]]:
+    root_input = Path(model_root)
+    if root_input.is_symlink():
+        raise RuntimeManifestError("Model root cannot be a symbolic link.")
+    try:
+        root = root_input.resolve(strict=True)
+    except (OSError, RuntimeError):
+        raise RuntimeManifestError("Model root does not exist.") from None
+    if not root.is_dir():
+        raise RuntimeManifestError("Model root must be a directory.")
+
+    verified = []
+    for model in manifest:
+        verified_files = []
+        for file_item in model["files"]:
+            rel = _safe_relative_path(file_item["path"])
+            digest, size, resolved_path = _hash_artifact_from_root(root, rel)
+            if size != file_item["size_bytes"]:
+                raise RuntimeManifestError("A model artifact size does not match the manifest.")
+            if digest != file_item["sha256"]:
+                raise RuntimeManifestError("A model artifact checksum does not match the manifest.")
+            verified_files.append({**file_item, "resolved_path": resolved_path})
+        verified.append({**model, "files": verified_files})
+    return verified

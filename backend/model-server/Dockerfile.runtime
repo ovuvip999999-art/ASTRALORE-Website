@@ -1,0 +1,33 @@
+# Official PyTorch 2.5.1 CUDA 12.4 runtime, linux/amd64 manifest digest:
+# pytorch/pytorch@sha256:c8268a92a69bd500f8be0e665b2630ee006dadaf7bfbc24249141b15ff622755
+ARG PYTORCH_BASE_IMAGE
+FROM ${PYTORCH_BASE_IMAGE}
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    HF_HUB_OFFLINE=1 \
+    TRANSFORMERS_OFFLINE=1 \
+    HF_DATASETS_OFFLINE=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+USER root
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ffmpeg \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /opt/astra
+COPY requirements-runtime.txt ./
+RUN python -m pip install --no-cache-dir -r requirements-runtime.txt \
+    && python -m pip check \
+    && python -c "import torch; assert torch.__version__.split('+')[0] == '2.5.1'; assert torch.version.cuda and torch.version.cuda.startswith('12.4')"
+
+COPY runtime_errors.py runtime_manifest.py runtime_registry.py ./
+COPY sd35_adapter.py wan21_adapter.py astra_sandbox_entrypoint.py ./
+RUN python -m py_compile runtime_errors.py runtime_manifest.py runtime_registry.py sd35_adapter.py wan21_adapter.py astra_sandbox_entrypoint.py \
+    && python -c "import astra_sandbox_entrypoint, diffusers, transformers; print('ASTRA runtime imports OK')"
+
+RUN useradd --create-home --uid 10001 --shell /usr/sbin/nologin astra
+USER 10001:10001
+WORKDIR /tmp
+
+# The parent executor supplies the exact entrypoint command and bounded stdin.
