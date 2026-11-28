@@ -162,3 +162,25 @@ When resuming, fetch PR #20 and this checkpoint first, inspect the latest CI sta
 - Worker limits: 512 MiB, 16K per side, 40 megapixels, 120-second video duration. The 40 MP cap is stricter than the database's 100 MP metadata ceiling to reduce decode-memory risk.
 - Added tests using real Pillow-generated image fixtures and mocked ffprobe success/failure responses. Added Pillow to runtime requirements and included tests in CI/Windows runner.
 - This is not yet wired to a worker or private storage. A future worker must run inspection in a restricted process/container, upload validated bytes privately, then complete the job. Generation remains disabled.
+
+## Private generated-media storage milestone
+
+- Added migration `0011_astra_private_generated_assets.sql` to create a private Supabase Storage bucket with public access disabled, a 512 MiB object limit, and PNG/JPEG/WebP/MP4/WebM allowlist. Migration has NOT been applied.
+- Added a restrictive Storage RLS policy for `anon` and `authenticated` so even a broader permissive policy cannot grant access to the ASTRA generated-media bucket. The future worker uses only server-side `service_role`.
+- Added `asset_store.py`, which streams validated files (no full-file memory buffering) to deterministic owner/job/asset object paths. It exposes no public or signed URL.
+- Upload adapter rechecks open-file identity, size and SHA-256 during transfer, disables overwrite, rejects path traversal/symlinks, and never deletes an existing object after an upload conflict.
+- Updated migration 0010 completion RPC to require a storage path exactly matching job owner UUID, job UUID, asset UUID and MIME-derived extension. It cannot accept metadata pointing to another user's or another job's object.
+- Added unit tests for successful private upload, streaming headers/path, digest mismatch cleanup, conflict safety, invalid IDs, and path traversal.
+- Expanded PostgreSQL integration tests to execute both migrations and simulate a broad permissive Storage policy; the restrictive rule must still block the private bucket.
+- Added tests to CI and the Windows PowerShell runner. CI verification for this new milestone is pending.
+- No Supabase migrations have been applied; no Worker integration, worker process, signed download endpoint, model runtime, or deployment exists. The generation fail-closed guard remains active.
+
+## Next work after private storage
+
+1. Verify CI on the latest head, including the ephemeral PostgreSQL migration and RLS tests.
+2. Build a private worker control plane with claim/heartbeat/complete/fail operations protected by a separate worker credential and lease tokens; do not expose worker operations to browsers.
+3. Add an isolated worker loop that enforces hard concurrency, time, memory, disk and cancellation limits; keep inference disabled until an approved runtime exists.
+4. Add owner-authorized signed asset retrieval through the authenticated API; do not make the bucket public.
+5. Add private Worker-to-model-server job submission/status integration only behind the existing fail-closed generation guard and an additional explicit disabled-by-default flag.
+6. Review and select model revisions/licenses, then build a small isolated inference adapter and benchmark actual outputs.
+
