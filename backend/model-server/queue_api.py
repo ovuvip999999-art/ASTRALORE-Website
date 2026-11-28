@@ -183,7 +183,7 @@ def get_generation_job(
 ):
     if request_origin not in {"internal", "public"}:
         raise HTTPException(status_code=404, detail="Generation route not found.")
-    store, _, access_token = _authenticated_store(x_astra_server_token, authorization)
+    store, _, access_token = _authenticated_store(x_astra_server_token, authorization, request_origin)
     try:
         job = store.get_user_job(job_id=job_id, access_token=access_token)
     except QueueStoreError:
@@ -203,7 +203,7 @@ def cancel_generation_job(
 ):
     if request_origin not in {"internal", "public"}:
         raise HTTPException(status_code=404, detail="Generation route not found.")
-    store, _, access_token = _authenticated_store(x_astra_server_token, authorization)
+    store, _, access_token = _authenticated_store(x_astra_server_token, authorization, request_origin)
     try:
         visible_job = store.get_user_job(job_id=job_id, access_token=access_token)
         if visible_job is None or visible_job.get("request_origin", "internal") != request_origin:
@@ -223,7 +223,7 @@ def get_generation_asset_url(
 ):
     if request_origin not in {"internal", "public"}:
         raise HTTPException(status_code=404, detail="Generation route not found.")
-    store, user_id, access_token = _authenticated_store(x_astra_server_token, authorization)
+    store, user_id, access_token = _authenticated_store(x_astra_server_token, authorization, request_origin)
     try:
         canonical_job_id = store._uuid(job_id, "job_id")
         job = store.get_user_job(job_id=canonical_job_id, access_token=access_token)
