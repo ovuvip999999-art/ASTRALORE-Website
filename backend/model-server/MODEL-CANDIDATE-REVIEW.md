@@ -12,11 +12,12 @@ This review records primary-source license and hardware notes before any weights
 - Task: text-to-image.
 - License: Stability AI Community License, not Apache/MIT. The model card states free research/non-commercial/commercial use for individuals or organizations with less than USD 1 million in total annual revenue; above that threshold an Enterprise License is required.
 - Access: the Hugging Face model card is gated and requires agreement to the license and acknowledgement of Stability AI's privacy policy. A parent/account owner must review the full current agreement and any account/data implications before accepting it or downloading weights.
-- Hardware note: Stability AI's own release article reports 9.9 GB VRAM for SD 3.5 Medium excluding text encoders. Treat this as a vendor-reported baseline, not an ASTRA deployment guarantee. The full pipeline must be measured with all text encoders, VAE, precision, resolution, and concurrency settings.
+- Hardware note: Stability AI's own release article reports 9.9 GB VRAM for SD 3.5 Medium excluding text encoders. Hugging Face Diffusers' current SD3 documentation explains that the pipeline uses three text encoders and is challenging below 24 GB VRAM; CPU model offload is recommended for most commodity hardware. These are upstream notes, not an ASTRA deployment guarantee. The full pipeline must be measured with all text encoders, VAE, precision, resolution, and concurrency settings.
 - Primary sources:
   - Model card and license summary: https://huggingface.co/stabilityai/stable-diffusion-3.5-medium
   - Full license linked by the model card: https://huggingface.co/stabilityai/stable-diffusion-3.5-medium/blob/main/LICENSE.md
   - Stability AI hardware/license announcement: https://stability.ai/news-updates/introducing-stable-diffusion-3-5
+  - Hugging Face Diffusers SD3 pipeline and memory notes: https://huggingface.co/docs/diffusers/main/api/pipelines/stable_diffusion/stable_diffusion_3
 
 Decision: **keep as the first image evaluation candidate, pending adult license review and a measured hardware budget**. Do not accept the gated terms or download weights as part of this code-only milestone.
 
