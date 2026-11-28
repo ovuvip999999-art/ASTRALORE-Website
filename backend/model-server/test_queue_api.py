@@ -193,6 +193,15 @@ class QueueApiTests(unittest.TestCase):
         self.assertEqual(job["request"]["model_revision"], CATALOG[0]["revision"])
         self.assertEqual(self.store.enqueued[0].get("request_origin", "internal"), "internal")
 
+    def test_public_route_sets_public_origin_server_side(self):
+        response = self.client.post("/v1/public/jobs", json=self.body(), headers=self.headers())
+        self.assertEqual(response.status_code, 202)
+        self.assertEqual(self.store.enqueued[0]["request_origin"], "public")
+
+    def test_unknown_origin_route_is_not_available(self):
+        response = self.client.post("/v1/admin/jobs", json=self.body(), headers=self.headers())
+        self.assertEqual(response.status_code, 404)
+
     def test_create_rejects_brief_settings_mismatch(self):
         body = self.body()
         body["brief"]["modality"] = "video"
