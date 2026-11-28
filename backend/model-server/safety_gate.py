@@ -47,7 +47,9 @@ class SafetyGate:
         if not isinstance(decision, SafetyDecision):
             raise SafetyGateError("MODERATION_UNAVAILABLE", retryable=True)
         if (
-            decision.action != "allow"
+            not isinstance(decision.action, str)
+            or not isinstance(decision.category, str)
+            or decision.action != "allow"
             or decision.category not in {"none", "benign"}
             or isinstance(decision.confidence, bool)
             or not isinstance(decision.confidence, (int, float))
@@ -59,7 +61,7 @@ class SafetyGate:
     def check_prompt(self, prompt: str, modality: str) -> None:
         if not isinstance(prompt, str) or not 1 <= len(prompt.strip()) <= 4000:
             raise SafetyGateError("SAFETY_REVIEW_REQUIRED", retryable=False)
-        if modality not in {"image", "video"}:
+        if not isinstance(modality, str) or modality not in {"image", "video"}:
             raise SafetyGateError("SAFETY_REVIEW_REQUIRED", retryable=False)
         try:
             decision = self.provider.moderate_prompt(prompt, modality)
@@ -69,7 +71,7 @@ class SafetyGate:
 
     def check_output(self, media_path: str | Path, modality: str) -> None:
         path = Path(media_path)
-        if not path.is_file() or path.is_symlink() or modality not in {"image", "video"}:
+        if not path.is_file() or path.is_symlink() or not isinstance(modality, str) or modality not in {"image", "video"}:
             raise SafetyGateError("SAFETY_REVIEW_REQUIRED", retryable=False)
         try:
             decision = self.provider.moderate_output(path, modality)
