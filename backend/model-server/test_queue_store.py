@@ -70,9 +70,15 @@ class QueueStoreTests(unittest.TestCase):
                 request_origin="admin",
             )
 
+    def test_claim_rejects_unknown_origin_before_network(self):
+        store = self.store(lambda request: self.fail("Network must not be called"))
+        with self.assertRaises(QueueStoreError):
+            store.claim_jobs(worker_id="worker", request_origin="all")
+
     def test_claim_uses_bounded_batch_and_lease(self):
         def handler(request):
             body = json.loads(request.content)
+            self.assertEqual(body["p_request_origin"], "public")
             self.assertEqual(body["p_batch_size"], 2)
             self.assertEqual(body["p_lease_seconds"], 90)
             return httpx.Response(200, json=[{"id": JOB_ID, "status": "running"}])
