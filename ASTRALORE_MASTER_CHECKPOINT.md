@@ -454,7 +454,7 @@ After the executor is verified, continue with host capability/preflight, model-l
 - Updated the model-server README to distinguish this CUDA execution smoke test from actual model inference and from a production security certification.
 
 ### Verification state
-- Changes are committed to `feature/astra-creative-skills`; latest commit from this implementation sequence is expected to be CI-validated before any pass is claimed.
+- CI run `46154139428` completed successfully on this implementation sequence: both `syntax` and `model-server` jobs passed; the model-server suite ran 238 tests with one expected opt-in Docker/GPU host test skipped. This verifies mocked command construction and fail-closed behavior, not real GPU execution.
 - Tests use mocked Docker/NVIDIA command runners in hosted CI. They verify command construction and fail-closed behavior, not an actual GPU device.
 - The real CUDA container probe still requires an authorized Linux host with Docker, NVIDIA Container Toolkit, and the final digest-pinned ASTRA runtime image.
 
