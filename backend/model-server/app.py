@@ -6,7 +6,7 @@ from urllib.parse import urlparse
 
 from fastapi import FastAPI, Header, HTTPException
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field, StrictInt, StrictStr
+from pydantic import BaseModel, ConfigDict, Field, StrictInt, StrictStr
 
 from creative_brief import BriefValidationError, compile_brief
 from model_registry import ModelRegistryError, load_catalog_json, route_model
@@ -19,10 +19,12 @@ IMAGE_MIME_TYPES = {"image/png", "image/jpeg", "image/webp"}
 
 
 class BriefCompileRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     brief: dict
 
 
 class ModelRouteRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     model_id: StrictStr
     modality: Literal["image", "video"]
     aspect_ratio: Literal["1:1", "9:16", "16:9"]
@@ -31,6 +33,7 @@ class ModelRouteRequest(BaseModel):
 
 
 class ImageRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     task: Literal["image"]
     prompt: str = Field(min_length=5, max_length=1000)
     aspectRatio: Literal["1:1", "9:16", "16:9"]
@@ -38,6 +41,7 @@ class ImageRequest(BaseModel):
 
 
 class VideoRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
     task: Literal["video"]
     prompt: str = Field(min_length=5, max_length=1000)
     aspectRatio: Literal["1:1", "9:16", "16:9"]
