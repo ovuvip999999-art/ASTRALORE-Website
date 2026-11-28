@@ -19,7 +19,7 @@ export function normalizeQueueAction(value) {
   }
 
   if (value.operation === "create") {
-    const keys = ["operation", "modality", "modelId", "aspectRatio", "width", "height", "brief", "idempotencyKey"];
+    const keys = ["operation", "modality", "modelId", "aspectRatio", "width", "height", "brief", "idempotencyKey", "costAcknowledged"];
     if (!hasExactKeys(value, keys)) throw new TypeError("Queue create action contains missing or unknown fields.");
     if (!["image", "video"].includes(value.modality)) throw new TypeError("Invalid queue modality.");
     if (typeof value.modelId !== "string" || !MODEL_ID_RE.test(value.modelId)) throw new TypeError("Invalid model ID.");
@@ -41,6 +41,7 @@ export function normalizeQueueAction(value) {
       throw new TypeError("Creative brief is not valid JSON.");
     }
     if (briefSize < 2 || briefSize > 32768) throw new TypeError("Creative brief is too large.");
+    if (value.costAcknowledged !== true) throw new TypeError("Confirm the generation cost before submitting a job.");
     if (typeof value.idempotencyKey !== "string" || !IDEMPOTENCY_RE.test(value.idempotencyKey)) {
       throw new TypeError("Invalid idempotency key.");
     }
@@ -52,7 +53,8 @@ export function normalizeQueueAction(value) {
       width: value.width,
       height: value.height,
       brief: value.brief,
-      idempotencyKey: value.idempotencyKey
+      idempotencyKey: value.idempotencyKey,
+      costAcknowledged: true
     };
   }
 
@@ -95,7 +97,9 @@ export async function forwardQueueAction(action, {
   if (normalized.operation === "create" && (
     env.ASTRA_MODEL_RUNTIME_READY !== "true" ||
     env.ASTRA_MODERATION_READY !== "true" ||
-    env.ASTRA_WORKER_PROCESS_READY !== "true"
+    env.ASTRA_WORKER_PROCESS_READY !== "true" ||
+    env.ASTRA_CREATIVE_GENERATION_APPROVED !== "true" ||
+    env.ASTRA_ZERO_COST_APPROVED !== "true"
   )) {
     return { status: 503, body: { error: "ASTRA generation is not ready. No job was submitted." } };
   }
