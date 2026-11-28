@@ -13,6 +13,7 @@ from typing import Literal
 from fastapi import APIRouter, Header, HTTPException
 from pydantic import BaseModel, ConfigDict, Field, StrictInt, StrictStr
 
+from asset_store import AssetStoreConfig, AssetStoreError, SupabasePrivateAssetStore
 from creative_brief import BriefValidationError, compile_brief
 from model_registry import ModelRegistryError, load_catalog_json, route_model
 from queue_store import QueueStoreError, SupabaseQueueConfig, SupabaseQueueStore
@@ -33,6 +34,10 @@ class CreateJobRequest(BaseModel):
 
 def create_store() -> SupabaseQueueStore:
     return SupabaseQueueStore(SupabaseQueueConfig.from_env())
+
+
+def create_asset_store() -> SupabasePrivateAssetStore:
+    return SupabasePrivateAssetStore(AssetStoreConfig.from_env())
 
 
 def _require_enabled() -> None:
@@ -160,3 +165,39 @@ def cancel_generation_job(
     except QueueStoreError:
         raise HTTPException(status_code=422, detail="Invalid generation job identifier or cancellation request.") from None
     return {"job_id": job_id, "status": status}
+
+@router.get("/v1/jobs/{job_id}/asset-url")
+def get_generation_asset_url(
+    job_id: str,
+    x_astra_server_token: str | None = Header(default=None),
+    authorization: str | None = Header(default=None),
+):
+    store, user_id, access_token = _authenticated_store(x_astra_server_token, authorization)
+    try:
+        canonical_job_id = store._uuid(job_id, "job_id")
+        job = store.get_user_job(job_id=canonical_job_id, access_token=access_token)
+    except QueueStoreError:
+        raise HTTPException(status_code=422, detail="Invalid generation job identifier or lookup request.") from None
+    if job is None:
+        raise HTTPException(status_code=404, detail="Generation job not found.")
+    if job.get("status") != "succeeded":
+        raise HTTPException(status_code=409, detail="Generation job has no completed asset.")
+    output_asset = job.get("output_asset")
+    if not isinstance(output_asset, dict):
+        raise HTTPException(status_code=404, detail="Generation asset not found.")
+    try:
+        expected_path = SupabasePrivateAssetStore._object_path(user_id, canonical_job_id, output_asset)
+    except AssetStoreError:
+        raise HTTPException(status_code=404, detail="Generation asset not found.") from None
+    if output_asset.get("storage_path") != expected_path:
+        raise HTTPException(status_code=404, detail="Generation asset not found.")
+    try:
+        signed_url = create_asset_store().create_signed_url(expected_path, expires_in=60)
+    except AssetStoreError:
+        raise HTTPException(status_code=503, detail="ASTRA could not safely create a private asset link.") from None
+    return {
+        "job_id": canonical_job_id,
+        "url": signed_url,
+        "expires_in": 60,
+    }
+
