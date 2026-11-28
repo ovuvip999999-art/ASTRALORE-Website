@@ -74,3 +74,11 @@ When resuming, fetch PR #20 and this checkpoint first, inspect the latest CI sta
 - After that green run, API request models were further hardened to reject unknown top-level fields (commit `7dc0e9fed21952c655c85d3f1e84eba1717b9251`); a fresh CI run for the new head must be checked before treating that final hardening as verified.
 
 - CI run #503 (`46137314116`) passed both `syntax` and `model-server` jobs on commit `fd15e06a12e89ce9bd63ab686c08b6434914d588`, including the strict API request-schema hardening.
+
+## Additional completed milestone — generation job lifecycle contract
+
+- Added `job_lifecycle.py`, a storage-neutral state machine for queued/running/succeeded/failed/cancelled jobs.
+- Enforces legal transitions, terminal-state immutability, idempotent duplicate transitions, timezone-aware monotonic timestamps, safe machine-readable failure codes, and modality-matched output metadata.
+- Output metadata validation includes MIME allowlists, UUID asset IDs, SHA-256, positive dimensions/size, a 512 MiB ceiling, and bounded video duration.
+- Added unit tests and CI coverage.
+- This is not a persistent queue or worker. Durable production execution still needs transactional job storage, atomic claims, worker leases, retries, cancellation signaling, ownership checks, and concurrency/resource limits.
