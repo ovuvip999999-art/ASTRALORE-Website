@@ -126,6 +126,28 @@ test("create forwards only normalized fields and keeps both credentials server-s
   assert.equal(forwarded.duration_seconds, null);
 });
 
+test("video creation forwards the bounded five-second duration", async () => {
+  let forwarded;
+  const action = createAction({
+    modality: "video",
+    aspectRatio: "16:9",
+    width: 832,
+    height: 480,
+    durationSeconds: 5,
+    brief: { prompt: "A sunrise over the ocean", modality: "video", aspect_ratio: "16:9" }
+  });
+  const result = await forwardQueueAction(action, {
+    env: enabledEnv(),
+    authorization: AUTH,
+    fetchImpl: async (_url, options) => {
+      forwarded = JSON.parse(options.body);
+      return new Response(JSON.stringify({ job_id: JOB_ID, status: "queued" }), { status: 202 });
+    }
+  });
+  assert.equal(result.status, 202);
+  assert.equal(forwarded.duration_seconds, 5);
+});
+
 test("status, cancel, and signed asset retrieval use fixed server routes", async () => {
   const expected = [
     ["status", "GET", "/v1/jobs/" + JOB_ID],
