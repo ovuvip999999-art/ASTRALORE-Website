@@ -211,24 +211,10 @@ async function loadEnabledSkills(env, authorization, userId) {
 }
 
 
-async function releaseImageQuota(env, authorization, userId) {
+async function reserveCreativeUsage(env, authorization, userId, kind) {
   const baseUrl = String(env.SUPABASE_URL || "").replace(/\/+$/, "");
-  if (!baseUrl || !env.SUPABASE_ANON_KEY) return;
-  await fetch(baseUrl + "/rest/v1/rpc/astra_release_image_generation", {
-    method: "POST",
-    headers: {
-      "apikey": env.SUPABASE_ANON_KEY,
-      "Authorization": authorization,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({ p_user_id: userId })
-  });
-}
-
-async function consumeVideoQuota(env, authorization, userId) {
-  const baseUrl = String(env.SUPABASE_URL || "").replace(/\/+$/, "");
-  if (!baseUrl || !env.SUPABASE_ANON_KEY) throw new Error("Video usage limits are not configured.");
-  const response = await fetch(baseUrl + "/rest/v1/rpc/astra_consume_video_generation", {
+  if (!baseUrl || !env.SUPABASE_ANON_KEY) throw new Error("Creative usage limits are not configured.");
+  const response = await fetch(baseUrl + "/rest/v1/rpc/astra_reserve_creative_usage", {
     method: "POST",
     headers: {
       "apikey": env.SUPABASE_ANON_KEY,
@@ -236,47 +222,31 @@ async function consumeVideoQuota(env, authorization, userId) {
       "Content-Type": "application/json",
       "Accept": "application/json"
     },
-    body: JSON.stringify({ p_user_id: userId })
+    body: JSON.stringify({ p_user_id: userId, p_kind: kind })
   });
-  if (!response.ok) throw new Error("Video usage limit could not be verified.");
+  if (!response.ok) throw new Error("Creative usage and daily spending limit could not be verified.");
   const data = await response.json();
   const row = Array.isArray(data) ? data[0] : data;
-  if (!row || typeof row.allowed !== "boolean") throw new Error("Video usage limit returned an invalid response.");
-  return { allowed: row.allowed, remaining: Number.isInteger(row.remaining) ? row.remaining : 0 };
+  if (!row || typeof row.allowed !== "boolean") throw new Error("Creative usage limit returned an invalid response.");
+  return {
+    allowed: row.allowed,
+    remaining: Number.isInteger(row.remaining) ? row.remaining : 0,
+    budgetRemainingUsd: Number(row.budget_remaining_usd || 0)
+  };
 }
 
-async function releaseVideoQuota(env, authorization, userId) {
+async function releaseCreativeUsage(env, authorization, userId, kind) {
   const baseUrl = String(env.SUPABASE_URL || "").replace(/\/+$/, "");
   if (!baseUrl || !env.SUPABASE_ANON_KEY) return;
-  await fetch(baseUrl + "/rest/v1/rpc/astra_release_video_generation", {
+  await fetch(baseUrl + "/rest/v1/rpc/astra_release_creative_usage", {
     method: "POST",
     headers: {
       "apikey": env.SUPABASE_ANON_KEY,
       "Authorization": authorization,
       "Content-Type": "application/json"
     },
-    body: JSON.stringify({ p_user_id: userId })
+    body: JSON.stringify({ p_user_id: userId, p_kind: kind })
   });
-}
-
-async function consumeImageQuota(env, authorization, userId) {
-  const baseUrl = String(env.SUPABASE_URL || "").replace(/\/+$/, "");
-  if (!baseUrl || !env.SUPABASE_ANON_KEY) throw new Error("Image usage limits are not configured.");
-  const response = await fetch(baseUrl + "/rest/v1/rpc/astra_consume_image_generation", {
-    method: "POST",
-    headers: {
-      "apikey": env.SUPABASE_ANON_KEY,
-      "Authorization": authorization,
-      "Content-Type": "application/json",
-      "Accept": "application/json"
-    },
-    body: JSON.stringify({ p_user_id: userId })
-  });
-  if (!response.ok) throw new Error("Image usage limit could not be verified.");
-  const data = await response.json();
-  const row = Array.isArray(data) ? data[0] : data;
-  if (!row || typeof row.allowed !== "boolean") throw new Error("Image usage limit returned an invalid response.");
-  return { allowed: row.allowed, remaining: Number.isInteger(row.remaining) ? row.remaining : 0 };
 }
 
 export default {
@@ -392,6 +362,13 @@ export default {
     if (!authenticatedUser) {
       return json({ error: "Your session is invalid or expired. Please sign in again." }, 401, origin);
     }
+    if (creativeAction && (
+      typeof env.ASTRA_CREATIVE_OWNER_USER_ID !== "string" ||
+      !env.ASTRA_CREATIVE_OWNER_USER_ID.trim() ||
+      authenticatedUser.id !== env.ASTRA_CREATIVE_OWNER_USER_ID.trim()
+    )) {
+      return json({ error: "Creative generation is restricted to the configured ASTRALORE account owner." }, 403, origin);
+    }
     const suppliedStoragePaths = [document?.storagePath, documentToSave?.storagePath]
       .filter(path => typeof path === "string");
     if (suppliedStoragePaths.some(path => path.split("/")[0] !== authenticatedUser.id)) {
@@ -405,7 +382,7 @@ export default {
       if (!env.AI) return json({ error: "ASTRA video generation is not configured on this Worker." }, 503, origin);
       let quota;
       try {
-        quota = await consumeVideoQuota(env, authorization, authenticatedUser.id);
+        quota = await reserveCreativeUsage(env, authorization, authenticatedUser.id, "video");
       } catch (error) {
         console.error("ASTRA video quota check failed", String(error?.message || error).slice(0, 140));
         return json({ error: "ASTRA could not verify today's video allowance. Apply the video quota migration and retry." }, 503, origin);
@@ -432,7 +409,7 @@ export default {
           remainingToday: quota.remaining
         }, 200, origin);
       } catch (error) {
-        try { await releaseVideoQuota(env, authorization, authenticatedUser.id); } catch {}
+        try { await releaseCreativeUsage(env, authorization, authenticatedUser.id, "video"); } catch {}
         console.error("ASTRA video generation failed", String(error?.message || error).slice(0, 180));
         return json({ error: "ASTRA could not generate that video. Try again later." }, 503, origin);
       }
@@ -445,7 +422,7 @@ export default {
       if (!env.AI) return json({ error: "ASTRA image generation is not configured on this Worker." }, 503, origin);
       let quota;
       try {
-        quota = await consumeImageQuota(env, authorization, authenticatedUser.id);
+        quota = await reserveCreativeUsage(env, authorization, authenticatedUser.id, "image");
       } catch (error) {
         console.error("ASTRA image quota check failed", String(error?.message || error).slice(0, 140));
         return json({ error: "ASTRA could not verify today's image allowance. Apply the image quota migration and retry." }, 503, origin);
@@ -480,7 +457,7 @@ export default {
           remainingToday: quota.remaining
         }, 200, origin);
       } catch (error) {
-        try { await releaseImageQuota(env, authorization, authenticatedUser.id); } catch {}
+        try { await releaseCreativeUsage(env, authorization, authenticatedUser.id, "image"); } catch {}
         console.error("ASTRA image generation failed", String(error?.message || error).slice(0, 180));
         return json({ error: "ASTRA could not generate that image. Try a different prompt or try again later." }, 503, origin);
       }
