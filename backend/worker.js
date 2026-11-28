@@ -150,7 +150,7 @@ async function searchPriorMessages(env, authorization, userId, query) {
 
 
 async function loadEnabledSkills(env, authorization, userId) {
-  const baseUrl = String(env.SUPABASE_URL || "").replace(/\\/+$/, "");
+  const baseUrl = String(env.SUPABASE_URL || "").replace(/\/+$/, "");
   if (!baseUrl || !env.SUPABASE_ANON_KEY) {
     return { skills: [], status: "missing_config", httpStatus: null };
   }
