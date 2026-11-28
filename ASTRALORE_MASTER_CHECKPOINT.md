@@ -569,3 +569,11 @@ After the executor is verified, continue with host capability/preflight, model-l
 - Verification is pending CI and PostgreSQL integration. Production credentials and migrations remain untouched.
 
 - Origin-isolated worker claim hardening is implemented in migration `0013_astra_origin_scoped_worker_claims.sql`: the previous all-origin claim RPC is removed, and the replacement requires a valid origin and filters the locked claim selection by persisted `request_origin`. The worker API derives origin from two distinct server-side tokens; the claim request itself cannot select an origin.
+
+
+### Origin-isolated worker claims — CI verified 2026-11-28
+- Added migration `0013_astra_origin_scoped_worker_claims.sql`. The replacement service-role-only claim RPC requires `internal` or `public`, filters the atomic `FOR UPDATE SKIP LOCKED` selection by persisted `request_origin`, and drops the old all-origin claim function. Expired lease recovery remains shared state maintenance; actual job selection is origin-scoped.
+- Worker API requires two separately configured server-side credentials: `ASTRA_INTERNAL_WORKER_TOKEN` and `ASTRA_PUBLIC_WORKER_TOKEN`. They must both be strong and different. The API derives origin by constant-time token comparison; the claim request has no origin field. Each worker process still receives its own single `ASTRA_WORKER_TOKEN` secret.
+- Queue-store claims require an explicit origin. Added unit/API tests, a full mocked worker end-to-end test update, migration contract coverage and PostgreSQL integration proving internal workers claim internal rows and public workers claim public rows only.
+- CI run `46160509289` passed both `syntax` and `model-server` on commit `813c9dddda179c764361cb22f67ac6d3ecb0418c`. Model-server suite: 264 tests passed, one expected opt-in Docker/GPU test skipped. PostgreSQL integration applied migration 0013 in CI and the origin isolation test passed.
+- No worker secrets have been created or configured, no worker deployment has been provisioned, and migrations 0012/0013 have not been applied to Supabase. Public/internal production flags remain off; no generation, deployment or merge occurred.
