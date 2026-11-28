@@ -266,3 +266,14 @@ When resuming, fetch PR #20 and this checkpoint first, inspect the latest CI sta
 - This is a configuration safeguard, not legal advice. For gated terms, an adult account owner must review the full current license before deciding whether to accept it.
 - CI verification pending.
 
+
+## Fail-closed prompt and output moderation milestone
+
+- Added `safety_gate.py` with an injected moderation-provider contract for prompts and generated files.
+- The gate accepts only a high-confidence explicit benign/none allow decision. Block/review, malformed decisions, low confidence, invalid inputs and provider failures fail closed.
+- The worker runner now refuses to claim jobs unless both an exact-revision generation adapter and a moderation gate are supplied.
+- Prompt moderation runs before inference; output moderation runs after media byte/container validation and before private storage.
+- Added tests for benign decisions, block/review/low confidence, invalid input, provider outage, and worker-level fail-closed behavior.
+- No moderation provider/model is installed. This is an enforcement interface, not proof of effective moderation. A vetted provider, adversarial tests and escalation policy remain required before enabling generation.
+- CI verification pending.
+
