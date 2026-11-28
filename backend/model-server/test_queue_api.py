@@ -153,7 +153,7 @@ class QueueApiTests(unittest.TestCase):
 
     def test_queue_api_is_disabled_by_default(self):
         with patch.dict(os.environ, {"ASTRA_QUEUE_API_ENABLED": "false"}):
-            response = self.client.post("/v1/jobs", json=self.body(), headers=self.headers())
+            response = self.client.post("/v1/internal/jobs", json=self.body(), headers=self.headers())
         self.assertEqual(response.status_code, 503)
         self.assertEqual(self.store.enqueued, [])
 
@@ -167,23 +167,23 @@ class QueueApiTests(unittest.TestCase):
             "ASTRA_COST_POLICY_APPROVED",
         ):
             with self.subTest(flag=flag), patch.dict(os.environ, {flag: "false"}):
-                response = self.client.post("/v1/jobs", json=self.body(), headers=self.headers())
+                response = self.client.post("/v1/internal/jobs", json=self.body(), headers=self.headers())
                 self.assertEqual(response.status_code, 503)
                 self.assertEqual(self.store.enqueued, [])
 
     def test_create_requires_private_server_secret(self):
-        response = self.client.post("/v1/jobs", json=self.body(), headers=self.headers(internal="wrong"))
+        response = self.client.post("/v1/internal/jobs", json=self.body(), headers=self.headers(internal="wrong"))
         self.assertEqual(response.status_code, 401)
 
     def test_create_requires_user_session(self):
         response = self.client.post(
-            "/v1/jobs", json=self.body(),
+            "/v1/internal/jobs", json=self.body(),
             headers={"X-ASTRA-Server-Token": INTERNAL},
         )
         self.assertEqual(response.status_code, 401)
 
     def test_create_derives_owner_from_verified_user_and_compiles_brief(self):
-        response = self.client.post("/v1/jobs", json=self.body(), headers=self.headers())
+        response = self.client.post("/v1/internal/jobs", json=self.body(), headers=self.headers())
         self.assertEqual(response.status_code, 202)
         self.assertEqual(response.json()["job_id"], JOB_ID)
         self.assertEqual(len(self.store.enqueued), 1)
@@ -220,30 +220,30 @@ class QueueApiTests(unittest.TestCase):
     def test_create_rejects_brief_settings_mismatch(self):
         body = self.body()
         body["brief"]["modality"] = "video"
-        response = self.client.post("/v1/jobs", json=body, headers=self.headers())
+        response = self.client.post("/v1/internal/jobs", json=body, headers=self.headers())
         self.assertEqual(response.status_code, 422)
         self.assertEqual(self.store.enqueued, [])
 
     def test_create_rejects_unknown_or_disabled_model(self):
         body = self.body()
         body["model_id"] = "unlisted-model"
-        response = self.client.post("/v1/jobs", json=body, headers=self.headers())
+        response = self.client.post("/v1/internal/jobs", json=body, headers=self.headers())
         self.assertEqual(response.status_code, 422)
         self.assertEqual(self.store.enqueued, [])
 
     def test_create_rejects_arbitrary_owner_field(self):
         body = self.body()
         body["user_id"] = "99999999-9999-4999-8999-999999999999"
-        response = self.client.post("/v1/jobs", json=body, headers=self.headers())
+        response = self.client.post("/v1/internal/jobs", json=body, headers=self.headers())
         self.assertEqual(response.status_code, 422)
 
     def test_status_is_owner_scoped_and_not_found_when_rls_hides_job(self):
-        response = self.client.get("/v1/jobs/" + JOB_ID, headers=self.headers())
+        response = self.client.get("/v1/internal/jobs/" + JOB_ID, headers=self.headers())
         self.assertEqual(response.status_code, 404)
 
     def test_status_returns_only_store_visible_job(self):
         self.store.lookup = {"id": JOB_ID, "status": "queued", "modality": "image"}
-        response = self.client.get("/v1/jobs/" + JOB_ID, headers=self.headers())
+        response = self.client.get("/v1/internal/jobs/" + JOB_ID, headers=self.headers())
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["id"], JOB_ID)
 
@@ -266,32 +266,32 @@ class QueueApiTests(unittest.TestCase):
 
     def test_status_and_cancel_reject_jobs_from_the_other_origin(self):
         self.store.lookup = {"id": JOB_ID, "status": "queued", "request_origin": "public"}
-        response = self.client.get("/v1/jobs/" + JOB_ID, headers=self.headers())
+        response = self.client.get("/v1/internal/jobs/" + JOB_ID, headers=self.headers())
         self.assertEqual(response.status_code, 404)
-        response = self.client.post("/v1/jobs/" + JOB_ID + "/cancel", headers=self.headers())
+        response = self.client.post("/v1/internal/jobs/" + JOB_ID + "/cancel", headers=self.headers())
         self.assertEqual(response.status_code, 404)
         self.assertEqual(self.store.cancel_status, "cancelled")
 
     def test_asset_url_requires_owner_visible_completed_job(self):
         self.store.lookup = self._completed_asset_job()
-        response = self.client.get("/v1/jobs/" + JOB_ID + "/asset-url", headers=self.headers())
+        response = self.client.get("/v1/internal/jobs/" + JOB_ID + "/asset-url", headers=self.headers())
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["expires_in"], 60)
         self.assertEqual(self.asset_store.paths, [(self.store.lookup["output_asset"]["storage_path"], 60)])
 
     def test_asset_url_rejects_missing_incomplete_or_mismatched_owner_asset(self):
         self.store.lookup = None
-        response = self.client.get("/v1/jobs/" + JOB_ID + "/asset-url", headers=self.headers())
+        response = self.client.get("/v1/internal/jobs/" + JOB_ID + "/asset-url", headers=self.headers())
         self.assertEqual(response.status_code, 404)
 
         self.store.lookup = {"id": JOB_ID, "status": "queued"}
-        response = self.client.get("/v1/jobs/" + JOB_ID + "/asset-url", headers=self.headers())
+        response = self.client.get("/v1/internal/jobs/" + JOB_ID + "/asset-url", headers=self.headers())
         self.assertEqual(response.status_code, 409)
 
         self.store.lookup = self._completed_asset_job(
             storage_path=f"99999999-9999-4999-8999-999999999999/{JOB_ID}/33333333-3333-4333-8333-333333333333.png"
         )
-        response = self.client.get("/v1/jobs/" + JOB_ID + "/asset-url", headers=self.headers())
+        response = self.client.get("/v1/internal/jobs/" + JOB_ID + "/asset-url", headers=self.headers())
         self.assertEqual(response.status_code, 404)
         self.assertEqual(self.asset_store.paths, [])
 
@@ -301,13 +301,13 @@ class QueueApiTests(unittest.TestCase):
                 raise __import__("asset_store").AssetStoreError("internal credential detail")
         self.store.lookup = self._completed_asset_job()
         with patch("queue_api.create_asset_store", return_value=BrokenAssetStore()):
-            response = self.client.get("/v1/jobs/" + JOB_ID + "/asset-url", headers=self.headers())
+            response = self.client.get("/v1/internal/jobs/" + JOB_ID + "/asset-url", headers=self.headers())
         self.assertEqual(response.status_code, 503)
         self.assertNotIn("credential", response.text)
 
     def test_cancel_uses_verified_user_access_token(self):
         self.store.lookup = {"id": JOB_ID, "status": "queued", "request_origin": "internal"}
-        response = self.client.post("/v1/jobs/" + JOB_ID + "/cancel", headers=self.headers())
+        response = self.client.post("/v1/internal/jobs/" + JOB_ID + "/cancel", headers=self.headers())
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["status"], "cancelled")
 
