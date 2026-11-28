@@ -80,6 +80,7 @@ class QueuePostgresIntegrationTests(unittest.TestCase):
     def setUp(self):
         with psycopg.connect(DSN, autocommit=True) as conn:
             conn.execute("delete from public.astra_generation_jobs")
+            conn.execute("update public.astra_worker_capacity set global_slots = 4, public_slots = 2 where singleton = true")
             conn.execute("delete from storage.objects")
 
     def connect(self, role=None, user_id=None):
