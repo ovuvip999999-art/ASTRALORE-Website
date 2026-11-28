@@ -7,7 +7,9 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import re
+import stat
 from pathlib import Path, PurePosixPath
 from typing import Any
 
@@ -40,18 +42,46 @@ def _safe_relative_path(value: Any) -> PurePosixPath:
     return path
 
 
-def _sha256(path: Path) -> str:
-    digest = hashlib.sha256()
+def _hash_artifact_from_root(root: Path, relative: PurePosixPath) -> tuple[str, int, str]:
+    """Hash a file through no-follow directory descriptors to resist path swaps."""
+    directory_flags = os.O_RDONLY | getattr(os, "O_DIRECTORY", 0) | getattr(os, "O_NOFOLLOW", 0)
+    file_flags = os.O_RDONLY | getattr(os, "O_NOFOLLOW", 0)
+    opened_directories: list[int] = []
+    file_fd = None
     try:
-        with path.open("rb") as handle:
+        current_fd = os.open(root, directory_flags)
+        opened_directories.append(current_fd)
+        for part in relative.parts[:-1]:
+            current_fd = os.open(part, directory_flags, dir_fd=current_fd)
+            opened_directories.append(current_fd)
+        file_fd = os.open(relative.parts[-1], file_flags, dir_fd=current_fd)
+        before = os.fstat(file_fd)
+        if not stat.S_ISREG(before.st_mode):
+            raise RuntimeManifestError("A model artifact is not a regular file.")
+        if not 1 <= before.st_size <= MAX_FILE_BYTES:
+            raise RuntimeManifestError("A model artifact size is outside permitted bounds.")
+        digest = hashlib.sha256()
+        with os.fdopen(os.dup(file_fd), "rb") as handle:
             while True:
                 block = handle.read(HASH_CHUNK)
                 if not block:
                     break
                 digest.update(block)
+        after = os.fstat(file_fd)
+        before_signature = (before.st_dev, before.st_ino, before.st_size, before.st_mtime_ns)
+        after_signature = (after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns)
+        if before_signature != after_signature:
+            raise RuntimeManifestError("A model artifact changed during verification.")
+        return digest.hexdigest(), before.st_size, str(root.joinpath(*relative.parts))
+    except RuntimeManifestError:
+        raise
     except OSError:
-        raise RuntimeManifestError("A declared model artifact could not be read.") from None
-    return digest.hexdigest()
+        raise RuntimeManifestError("A model artifact is missing, linked, or unreadable.") from None
+    finally:
+        if file_fd is not None:
+            os.close(file_fd)
+        for descriptor in reversed(opened_directories):
+            os.close(descriptor)
 
 
 def _positive_int(value: Any, *, minimum: int, maximum: int, label: str) -> int:
@@ -172,30 +202,11 @@ def verify_model_artifacts(
         verified_files = []
         for file_item in model["files"]:
             rel = _safe_relative_path(file_item["path"])
-            candidate = root
-            for part in rel.parts:
-                candidate = candidate / part
-                if candidate.is_symlink():
-                    raise RuntimeManifestError("Model artifacts cannot use symbolic links.")
-            try:
-                resolved = candidate.resolve(strict=True)
-                resolved.relative_to(root)
-                stat = resolved.stat()
-            except (OSError, ValueError, RuntimeError):
-                raise RuntimeManifestError("A model artifact is missing or outside the model root.") from None
-            if not resolved.is_file() or stat.st_size != file_item["size_bytes"]:
+            digest, size, resolved_path = _hash_artifact_from_root(root, rel)
+            if size != file_item["size_bytes"]:
                 raise RuntimeManifestError("A model artifact size does not match the manifest.")
-            digest = _sha256(resolved)
-            try:
-                after = resolved.stat()
-            except OSError:
-                raise RuntimeManifestError("A model artifact changed during verification.") from None
-            before_signature = (stat.st_dev, stat.st_ino, stat.st_size, stat.st_mtime_ns)
-            after_signature = (after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns)
-            if before_signature != after_signature:
-                raise RuntimeManifestError("A model artifact changed during verification.")
             if digest != file_item["sha256"]:
                 raise RuntimeManifestError("A model artifact checksum does not match the manifest.")
-            verified_files.append({**file_item, "resolved_path": str(resolved)})
+            verified_files.append({**file_item, "resolved_path": resolved_path})
         verified.append({**model, "files": verified_files})
     return verified
