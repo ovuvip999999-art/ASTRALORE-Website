@@ -101,7 +101,7 @@ export async function forwardQueueAction(action, {
   }
 
   const baseUrl = typeof env.ASTRA_MODEL_SERVER_URL === "string" ? env.ASTRA_MODEL_SERVER_URL.trim().replace(/\/$/, "") : "";
-  const serverToken = typeof env.ASTRA_MODEL_SERVER_TOKEN === "string" ? env.ASTRA_MODEL_SERVER_TOKEN : "";
+  const serverToken = typeof env.ASTRA_MODEL_SERVER_TOKEN === "string" ? env.ASTRA_MODEL_SERVER_TOKEN.trim() : "";
   if (!validModelServerUrl(baseUrl) || serverToken.trim().length < 32) {
     return { status: 503, body: { error: "ASTRA's private queue service is not configured." } };
   }
@@ -148,7 +148,7 @@ export async function forwardQueueAction(action, {
       redirect: "error"
     });
     const raw = await response.text();
-    if (raw.length > 65536) {
+    if (new TextEncoder().encode(raw).length > 65536) {
       return { status: 502, body: { error: "ASTRA's private queue returned an oversized response." } };
     }
     let payload;
