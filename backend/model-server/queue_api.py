@@ -106,11 +106,15 @@ def _authenticated_store(
 
 
 @router.post("/v1/jobs", status_code=202)
+@router.post("/v1/{request_origin}/jobs", status_code=202)
 def create_generation_job(
     body: CreateJobRequest,
+    request_origin: str = "internal",
     x_astra_server_token: str | None = Header(default=None),
     authorization: str | None = Header(default=None),
 ):
+    if request_origin not in {"internal", "public"}:
+        raise HTTPException(status_code=404, detail="Generation route not found.")
     store, user_id, _ = _authenticated_store(x_astra_server_token, authorization)
     _require_generation_ready()
 
@@ -151,6 +155,7 @@ def create_generation_job(
             model_id=body.model_id,
             request=job_request,
             idempotency_key=body.idempotency_key,
+            request_origin=request_origin,
         )
     except QueueStoreError:
         raise HTTPException(status_code=503, detail="ASTRA could not safely accept this generation job.") from None
@@ -165,47 +170,62 @@ def create_generation_job(
 
 
 @router.get("/v1/jobs/{job_id}")
+@router.get("/v1/{request_origin}/jobs/{job_id}")
 def get_generation_job(
     job_id: str,
+    request_origin: str = "internal",
     x_astra_server_token: str | None = Header(default=None),
     authorization: str | None = Header(default=None),
 ):
+    if request_origin not in {"internal", "public"}:
+        raise HTTPException(status_code=404, detail="Generation route not found.")
     store, _, access_token = _authenticated_store(x_astra_server_token, authorization)
     try:
         job = store.get_user_job(job_id=job_id, access_token=access_token)
     except QueueStoreError:
         raise HTTPException(status_code=422, detail="Invalid generation job identifier or lookup request.") from None
-    if job is None:
+    if job is None or job.get("request_origin", "internal") != request_origin:
         raise HTTPException(status_code=404, detail="Generation job not found.")
     return job
 
 
 @router.post("/v1/jobs/{job_id}/cancel")
+@router.post("/v1/{request_origin}/jobs/{job_id}/cancel")
 def cancel_generation_job(
     job_id: str,
+    request_origin: str = "internal",
     x_astra_server_token: str | None = Header(default=None),
     authorization: str | None = Header(default=None),
 ):
+    if request_origin not in {"internal", "public"}:
+        raise HTTPException(status_code=404, detail="Generation route not found.")
     store, _, access_token = _authenticated_store(x_astra_server_token, authorization)
     try:
+        visible_job = store.get_user_job(job_id=job_id, access_token=access_token)
+        if visible_job is None or visible_job.get("request_origin", "internal") != request_origin:
+            raise HTTPException(status_code=404, detail="Generation job not found.")
         status = store.cancel_user_job(job_id=job_id, access_token=access_token)
     except QueueStoreError:
         raise HTTPException(status_code=422, detail="Invalid generation job identifier or cancellation request.") from None
     return {"job_id": job_id, "status": status}
 
 @router.get("/v1/jobs/{job_id}/asset-url")
+@router.get("/v1/{request_origin}/jobs/{job_id}/asset-url")
 def get_generation_asset_url(
     job_id: str,
+    request_origin: str = "internal",
     x_astra_server_token: str | None = Header(default=None),
     authorization: str | None = Header(default=None),
 ):
+    if request_origin not in {"internal", "public"}:
+        raise HTTPException(status_code=404, detail="Generation route not found.")
     store, user_id, access_token = _authenticated_store(x_astra_server_token, authorization)
     try:
         canonical_job_id = store._uuid(job_id, "job_id")
         job = store.get_user_job(job_id=canonical_job_id, access_token=access_token)
     except QueueStoreError:
         raise HTTPException(status_code=422, detail="Invalid generation job identifier or lookup request.") from None
-    if job is None:
+    if job is None or job.get("request_origin", "internal") != request_origin:
         raise HTTPException(status_code=404, detail="Generation job not found.")
     if job.get("status") != "succeeded":
         raise HTTPException(status_code=409, detail="Generation job has no completed asset.")
