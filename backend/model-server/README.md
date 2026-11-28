@@ -301,3 +301,23 @@ The upstream Diffusers Wan guide reports about 13 GB VRAM for its T2V example; u
 - Empty queues use a bounded idle wait; private API transport failures use capped exponential backoff; a supplied stop event allows clean shutdown.
 - Unexpected programming/runtime errors are not silently swallowed and can be handled by the process supervisor.
 - The loop does not create a worker, configure secrets, or deploy anything. It can only be used after `worker_bootstrap.py` has verified local models and a reviewed moderation provider.
+
+
+## Isolated GPU runtime image (build definition only)
+
+The model runtime has a separate image definition in `Dockerfile.runtime`; do not use the API-server `Dockerfile` for inference. The runtime image contains only the trusted entrypoint, manifest/registry code, code-owned SD3.5/Wan adapters, and pinned direct Python dependencies. Model weights are **not** copied into the image and must be mounted read-only at `/models`.
+
+The base PyTorch/CUDA image must be supplied as an immutable digest reference. First verify the selected upstream image and its digest through the administrator's trusted registry process, then build:
+
+```bash
+docker build \
+  --build-arg PYTORCH_BASE_IMAGE="pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime@sha256:<verified-64-hex-digest>" \
+  -f Dockerfile.runtime \
+  -t astra-model-runtime:local .
+```
+
+The build checks the PyTorch/CUDA version, installs the exact direct dependency pins from `requirements-runtime.txt`, runs `pip check`, compiles the trusted modules, and checks runtime imports. This definition has **not** been built or tested on a CUDA host yet. The final built image must itself be pushed to an approved private registry, inspected, and referenced by its immutable SHA-256 digest in `SandboxConfig`; a mutable tag is not accepted by the executor.
+
+The parent worker supplies `python -m astra_sandbox_entrypoint`, a bounded one-job JSON request, and the GPU device. The container runs without network access, with a read-only model mount, bounded writable tmpfs output, a non-root UID, and resource limits from the sandbox policy. The API server and worker remain separate from this image.
+
+No model weights are downloaded by this build. Do not accept model licenses, acquire weights, provision GPU compute, or enable generation without adult account-owner review of the applicable license and infrastructure costs. No deployment or generation flag is enabled by adding these files.
