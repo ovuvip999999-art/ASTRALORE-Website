@@ -226,3 +226,7 @@ Before any inference adapter can be registered:
 - This is preflight verification only. It does not download, load, execute, or enable a model. No runtime manifest is configured by default.
 
 Do not accept gated model licenses, download weights, or enable inference until the full license and every model component have been reviewed, immutable revisions/checksums are recorded, and measured host resource limits are approved.
+
+- `runtime_registry.py` binds verified manifest entries only to code-owned runtime factories. The manifest can name an allowlisted runtime label, but cannot import a module or select an arbitrary Python entry point.
+- If no trusted factory is installed for a runtime, that model is omitted from the adapter registry; the worker therefore cannot claim jobs for it.
+- Factory output must expose `generate` and report the exact model ID/revision from the verified manifest.
