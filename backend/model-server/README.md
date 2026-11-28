@@ -169,3 +169,17 @@ All three routes require `ASTRA_QUEUE_API_ENABLED=true`, a server-only `ASTRA_MO
 - Unit tests use real generated PNG/JPEG/WebP fixtures and mocked ffprobe results/failures.
 
 This validator is not yet called by a generation worker because no worker or model runtime exists. The future worker must run media inspection in a restricted process/container, then upload validated bytes to private storage, and only then call the database completion RPC. No model generation or deployment is enabled.
+
+## Private generated-media storage foundation (migration 0011)
+
+ASTRA now has a server-only storage path for future validated generation outputs:
+
+- Migration `0011_astra_private_generated_assets.sql` creates the `astra-generated-private` Supabase Storage bucket with public access disabled, a 512 MiB object limit, and PNG/JPEG/WebP/MP4/WebM MIME allowlist.
+- A restrictive Storage RLS policy prevents any broader permissive `anon` or `authenticated` policy from granting access to this bucket. The private worker uses the server-side `service_role` credential.
+- `asset_store.py` streams validated local files to Storage; it does not buffer full media files in memory, create public/signed URLs, or expose the service-role credential to clients.
+- Object keys are deterministic owner/job/asset partitions: `{user_uuid}/{job_uuid}/{asset_uuid}.{extension}`.
+- The adapter rechecks file identity, size, and SHA-256 while streaming. It uses `x-upsert: false`; an object conflict never triggers deletion of the pre-existing object.
+- Migration 0010's completion RPC now requires the storage path to match the job owner, job ID, asset ID, and MIME extension before accepting success.
+- Unit tests cover streaming, private headers/path, file mutation, digest mismatch cleanup, path traversal, and conflict safety. PostgreSQL CI simulates a broad permissive Storage policy and verifies the restrictive rule still blocks this bucket.
+
+Migrations 0010 and 0011 are source files only and have NOT been applied to Supabase. There is no worker, Worker integration, signed-download endpoint, or generation runtime yet. Generation remains disabled.
