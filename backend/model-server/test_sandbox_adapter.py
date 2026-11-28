@@ -84,6 +84,12 @@ class SandboxGenerationAdapterTests(unittest.TestCase):
         self.assertNotIn("owner-secret", json.dumps(payload))
         self.assertNotIn("internal_control", json.dumps(payload))
 
+    def test_rejects_runtime_modality_mismatch(self):
+        invalid_model = dict(self.model)
+        invalid_model["runtime"] = "wan-video"
+        with self.assertRaises(ValueError):
+            SandboxGenerationAdapter(executor=self.executor, verified_model=invalid_model)
+
     def test_rejects_model_revision_mismatch_before_container_launch(self):
         job = self.job()
         job["request"]["model_revision"] = "c" * 40
