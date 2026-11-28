@@ -259,6 +259,8 @@ declare
   v_width integer;
   v_height integer;
   v_duration integer;
+  v_storage_path text;
+  v_expected_ext text;
 begin
   select * into v_job
   from public.astra_generation_jobs
@@ -274,8 +276,8 @@ begin
     raise exception 'Invalid output asset metadata' using errcode = '22023';
   end if;
 
-  if not (p_output_asset ?& array['asset_id','sha256','mime_type','size_bytes','width','height'])
-     or (select count(*) from jsonb_object_keys(p_output_asset)) not in (6,7) then
+  if not (p_output_asset ?& array['asset_id','sha256','mime_type','size_bytes','width','height','storage_path'])
+     or (select count(*) from jsonb_object_keys(p_output_asset)) not in (7,8) then
     raise exception 'Invalid output asset metadata' using errcode = '22023';
   end if;
 
@@ -283,6 +285,7 @@ begin
   v_size := (p_output_asset->>'size_bytes')::bigint;
   v_width := (p_output_asset->>'width')::integer;
   v_height := (p_output_asset->>'height')::integer;
+  v_storage_path := p_output_asset->>'storage_path';
 
   if p_output_asset->>'asset_id' is null
      or p_output_asset->>'sha256' is null
@@ -291,28 +294,43 @@ begin
      or v_width is null or v_width not between 1 and 16384
      or v_height is null or v_height not between 1 and 16384
      or (p_output_asset->>'asset_id') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
-
      or (p_output_asset->>'sha256') !~* '^[0-9a-f]{64}$'
      or v_width::bigint * v_height::bigint > 100000000 then
     raise exception 'Output asset metadata exceeds safety bounds' using errcode = '22023';
   end if;
 
   if v_job.modality = 'image' then
-    if v_mime not in ('image/png','image/jpeg','image/webp')
+    v_expected_ext := case v_mime
+      when 'image/png' then 'png'
+      when 'image/jpeg' then 'jpg'
+      when 'image/webp' then 'webp'
+      else null
+    end;
+    if v_expected_ext is null
        or p_output_asset ? 'duration_ms'
-       or (select count(*) from jsonb_object_keys(p_output_asset)) <> 6 then
+       or (select count(*) from jsonb_object_keys(p_output_asset)) <> 7 then
       raise exception 'Image output metadata does not match job modality' using errcode = '22023';
     end if;
   else
-    if v_mime not in ('video/mp4','video/webm')
+    v_expected_ext := case v_mime
+      when 'video/mp4' then 'mp4'
+      when 'video/webm' then 'webm'
+      else null
+    end;
+    if v_expected_ext is null
        or not (p_output_asset ? 'duration_ms')
-       or (select count(*) from jsonb_object_keys(p_output_asset)) <> 7 then
+       or (select count(*) from jsonb_object_keys(p_output_asset)) <> 8 then
       raise exception 'Video output metadata does not match job modality' using errcode = '22023';
     end if;
     v_duration := (p_output_asset->>'duration_ms')::integer;
     if v_duration is null or v_duration not between 1 and 120000 then
       raise exception 'Video duration exceeds safety bounds' using errcode = '22023';
     end if;
+  end if;
+
+  if v_storage_path <> v_job.user_id::text || '/' || p_job_id::text || '/'
+       || lower(p_output_asset->>'asset_id') || '.' || v_expected_ext then
+    raise exception 'Output asset storage path is not owner/job scoped' using errcode = '22023';
   end if;
 
   update public.astra_generation_jobs
