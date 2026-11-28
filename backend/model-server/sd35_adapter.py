@@ -196,10 +196,10 @@ class SD35MediumAdapter:
         if output_path.exists() or output_path.is_symlink():
             raise GenerationError("OUTPUT_VALIDATION_FAILED", retryable=False)
 
-        def on_step_end(_pipeline, _step, _timestep):
+        def on_step_end(_pipeline, _step, _timestep, callback_kwargs):
             if cancel_event.is_set():
                 raise GenerationError("CANCELLED_BY_USER", retryable=False)
-            return None
+            return callback_kwargs
 
         try:
             generator = self.torch.Generator(device="cuda").manual_seed(seed)
