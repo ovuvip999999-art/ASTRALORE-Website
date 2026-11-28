@@ -231,7 +231,8 @@ async function reserveCreativeUsage(env, authorization, userId, kind) {
   return {
     allowed: row.allowed,
     remaining: Number.isInteger(row.remaining) ? row.remaining : 0,
-    budgetRemainingUsd: Number(row.budget_remaining_usd || 0)
+    budgetRemainingUsd: Number(row.budget_remaining_usd || 0),
+    unlimited: row.unlimited === true
   };
 }
 
