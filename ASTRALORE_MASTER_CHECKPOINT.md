@@ -577,3 +577,11 @@ After the executor is verified, continue with host capability/preflight, model-l
 - Queue-store claims require an explicit origin. Added unit/API tests, a full mocked worker end-to-end test update, migration contract coverage and PostgreSQL integration proving internal workers claim internal rows and public workers claim public rows only.
 - CI run `46160509289` passed both `syntax` and `model-server` on commit `813c9dddda179c764361cb22f67ac6d3ecb0418c`. Model-server suite: 264 tests passed, one expected opt-in Docker/GPU test skipped. PostgreSQL integration applied migration 0013 in CI and the origin isolation test passed.
 - No worker secrets have been created or configured, no worker deployment has been provisioned, and migrations 0012/0013 have not been applied to Supabase. Public/internal production flags remain off; no generation, deployment or merge occurred.
+
+
+## Worker scheduling and resource fairness — implementation added, CI pending
+- Added migration `0014_astra_worker_capacity_fairness.sql` with a service-role-only capacity row. Default logical capacity is four total running jobs, with public jobs capped at two; this leaves two slots reserved from public consumption for internal work.
+- Internal jobs may use any free slot (including idle public capacity), while public claims are bounded by both the public cap and the global cap. Claims serialize capacity accounting with a transaction-scoped advisory lock before counting active leases and atomically selecting queued jobs.
+- Expired leases are recovered before capacity is counted. Batch claims are reduced to the number of available slots. A PostgreSQL integration test exercises a saturated public pool while proving two internal slots remain claimable; migration contract coverage checks the reservation and serialization invariants.
+- Added README documentation distinguishing logical concurrency limits from physical GPU reservation. Defaults are placeholders requiring benchmark-based tuning; this does not create separate GPUs or provision capacity.
+- Migration 0014 remains unapplied to Supabase. No worker secrets, GPU host, moderation service, deployment, paid resource, generation, or merge was activated. CI verification is pending.
