@@ -5,6 +5,7 @@ downloads weights, accepts remote code, or bypasses the ASTRA moderation gate.
 """
 from __future__ import annotations
 
+import hashlib
 from pathlib import Path
 from typing import Any
 
@@ -13,10 +14,25 @@ from worker_runner import GenerationError
 MODEL_ID = "stabilityai/stable-diffusion-3.5-medium"
 MAX_SIDE = 1024
 MAX_PIXELS = 1_048_576
+HASH_CHUNK = 1024 * 1024
 
 
 class SD35AdapterError(RuntimeError):
     """Sanitized local SD3.5 runtime initialization error."""
+
+
+def _hash_file(path: Path) -> str:
+    digest = hashlib.sha256()
+    try:
+        with path.open("rb") as handle:
+            while True:
+                block = handle.read(HASH_CHUNK)
+                if not block:
+                    break
+                digest.update(block)
+    except OSError:
+        raise SD35AdapterError("A verified SD3.5 model artifact could not be read.") from None
+    return digest.hexdigest()
 
 
 def _verified_model_directory(model: dict[str, Any], model_dir: str | Path) -> Path:
@@ -56,6 +72,16 @@ def _verified_model_directory(model: dict[str, Any], model_dir: str | Path) -> P
             raise SD35AdapterError("SD3.5 model artifact is outside its local model directory.") from None
         if not resolved.is_file():
             raise SD35AdapterError("SD3.5 model artifact is not a regular file.")
+        before = resolved.stat()
+        if type(item.get("size_bytes")) is not int or before.st_size != item["size_bytes"]:
+            raise SD35AdapterError("SD3.5 model artifact size changed after verification.")
+        if not isinstance(item.get("sha256"), str) or _hash_file(resolved) != item["sha256"]:
+            raise SD35AdapterError("SD3.5 model artifact checksum changed after verification.")
+        after = resolved.stat()
+        if (before.st_dev, before.st_ino, before.st_size, before.st_mtime_ns) != (
+            after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns
+        ):
+            raise SD35AdapterError("SD3.5 model artifact changed while loading.")
         expected.add(relative.as_posix())
 
     actual: set[str] = set()
