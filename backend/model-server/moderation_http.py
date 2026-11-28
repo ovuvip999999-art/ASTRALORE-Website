@@ -127,6 +127,44 @@ class HTTPSModerationProvider:
             raise ModerationTransportError("MODERATION_RESPONSE_INVALID")
         return SafetyDecision(action, category, float(confidence))
 
+    def check_ready(self) -> dict[str, str]:
+        """Require the service to confirm all ASTRA moderation modalities at startup."""
+        request = urllib.request.Request(
+            self.config.base_url.rstrip("/") + "/health/ready",
+            headers={
+                "Authorization": "Bearer " + self.config.bearer_token,
+                "Accept": "application/json",
+            },
+            method="GET",
+        )
+        try:
+            with self.opener.open(request, timeout=self.config.timeout_seconds) as response:
+                if getattr(response, "status", 200) != 200:
+                    raise ModerationTransportError("MODERATION_NOT_READY")
+                raw = response.read(MAX_RESPONSE_BYTES + 1)
+        except ModerationTransportError:
+            raise
+        except (urllib.error.URLError, TimeoutError, OSError, ValueError):
+            raise ModerationTransportError("MODERATION_NOT_READY") from None
+        if len(raw) > MAX_RESPONSE_BYTES:
+            raise ModerationTransportError("MODERATION_RESPONSE_TOO_LARGE")
+        try:
+            value = json.loads(raw.decode("utf-8"))
+        except (UnicodeDecodeError, ValueError):
+            raise ModerationTransportError("MODERATION_RESPONSE_INVALID") from None
+        if (
+            not isinstance(value, dict)
+            or set(value) != {"status", "model_version", "capabilities"}
+            or value.get("status") != "ready"
+            or not isinstance(value.get("model_version"), str)
+            or not 1 <= len(value["model_version"]) <= 128
+            or not isinstance(value.get("capabilities"), list)
+            or not {"prompt", "image", "video"}.issubset(value["capabilities"])
+            or any(not isinstance(item, str) for item in value["capabilities"])
+        ):
+            raise ModerationTransportError("MODERATION_NOT_READY")
+        return {"status": "ready", "model_version": value["model_version"]}
+
     def moderate_prompt(self, prompt: str, modality: str) -> SafetyDecision:
         if (
             not isinstance(prompt, str)
