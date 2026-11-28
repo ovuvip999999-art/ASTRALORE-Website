@@ -194,3 +194,12 @@ The model server now mounts a separate internal worker API:
 - `POST /internal/v1/worker/fail`: records a safe machine-readable error code and bounded retry decision.
 
 Every route requires `ASTRA_WORKER_API_ENABLED=true` and a separate `ASTRA_WORKER_TOKEN` of at least 32 characters, compared in constant time. The worker token is distinct from the Worker-to-server token. The API is disabled by default and is intended for private server-to-server traffic only; it is not a browser API. There is still no polling worker process, inference runtime, or deployed private network. Never enable this flag on a publicly reachable server.
+
+### Owner-authorized private asset retrieval
+
+- `GET /v1/jobs/{job_id}/asset-url` uses the caller's verified Supabase session and RLS-scoped job lookup.
+- It returns a 60-second signed URL only for a succeeded job whose stored object path exactly matches the authenticated user UUID, job UUID, asset UUID and MIME-derived extension.
+- The server validates the signed URL response as a relative URL for the exact private bucket/object; it never accepts or returns an arbitrary external URL.
+- The Storage bucket remains private. Signed URLs are bearer links and should not be logged or shared; no long-lived/public URL is created.
+
+The route is part of the authenticated queue API and remains disabled by default with `ASTRA_QUEUE_API_ENABLED` unset/false.
