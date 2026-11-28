@@ -23,7 +23,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 ```
 
-Set a development-only token in the shell, then start the API:
+Set a development-only random token of at least 32 characters in the shell, then start the API:
 
 ```bash
 # PowerShell
