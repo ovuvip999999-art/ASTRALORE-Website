@@ -1191,6 +1191,15 @@ function renderAnswer(container, text) {
       } else if (status) {
         status.textContent = "ONLINE";
       }
+      if (status && data.skillDiagnostics) {
+        const diagnostics = data.skillDiagnostics;
+        const skillLabel = diagnostics.status === "loaded"
+          ? "SKILLS LOADED · " + diagnostics.enabledSkillCount + " · " + diagnostics.skillNames.join(", ")
+          : diagnostics.status === "none_enabled"
+            ? "NO ENABLED SKILLS"
+            : "SKILL LOAD ERROR · " + diagnostics.status + (diagnostics.httpStatus ? " · HTTP " + diagnostics.httpStatus : "");
+        status.textContent += " · " + skillLabel;
+      }
 
       typing.remove();
       addMessage(reply, "bot");
