@@ -321,3 +321,25 @@ The build checks the PyTorch/CUDA version, installs the exact direct dependency 
 The parent worker supplies `python -m astra_sandbox_entrypoint`, a bounded one-job JSON request, and the GPU device. The container runs without network access, with a read-only model mount, bounded writable tmpfs output, a non-root UID, and resource limits from the sandbox policy. The API server and worker remain separate from this image.
 
 No model weights are downloaded by this build. Do not accept model licenses, acquire weights, provision GPU compute, or enable generation without adult account-owner review of the applicable license and infrastructure costs. No deployment or generation flag is enabled by adding these files.
+
+
+### Opt-in Docker host integration probe
+
+`test_sandbox_executor_docker.py` is skipped in normal CI. It can be enabled only on an authorized Linux host with Docker, NVIDIA Container Toolkit, and an available GPU. It uses a tiny test-only entrypoint and does not load model weights or call a generation provider.
+
+Build the fixture from a verified immutable Python base image, publish it only to an approved registry, and use the resulting immutable image digest:
+
+```bash
+docker build \
+  --build-arg FIXTURE_BASE_IMAGE="python:3.12-slim@sha256:<verified-64-hex-digest>" \
+  -f tests/sandbox-runtime-fixture/Dockerfile \
+  -t astra-sandbox-probe:local .
+```
+
+After the fixture is available by immutable digest to the test host, set `ASTRA_DOCKER_INTEGRATION=1`, `ASTRA_SANDBOX_TEST_IMAGE` to that digest reference, and `ASTRA_SANDBOX_TEST_GPU` to the selected numeric GPU device, then run:
+
+```bash
+python -m unittest -v test_sandbox_executor_docker
+```
+
+This test exercises the real Docker CLI lifecycle, restricted GPU device request, stdin protocol, bounded stdout result, output copy, and container cleanup. It is intentionally not enabled in GitHub-hosted CI because that runner is not an authorized ASTRA GPU host. Do not provision or publish infrastructure solely for this test without adult account-owner approval.
