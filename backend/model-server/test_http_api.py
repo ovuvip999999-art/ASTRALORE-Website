@@ -7,7 +7,7 @@ from fastapi.testclient import TestClient
 
 from app import app
 
-TOKEN = "integration-test-secret"
+TOKEN = "integration-test-secret-value-at-least-32-characters"
 
 
 class ModelServerHttpTests(unittest.TestCase):
