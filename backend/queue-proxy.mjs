@@ -126,7 +126,7 @@ export async function forwardQueueAction(action, {
   let body;
   if (normalized.operation === "create") {
     method = "POST";
-    path = "/v1/jobs";
+    path = "/v1/public/jobs";
     body = {
       modality: normalized.modality,
       model_id: normalized.modelId,
@@ -138,12 +138,12 @@ export async function forwardQueueAction(action, {
       duration_seconds: normalized.durationSeconds
     };
   } else if (normalized.operation === "status") {
-    path = "/v1/jobs/" + normalized.jobId;
+    path = "/v1/public/jobs/" + normalized.jobId;
   } else if (normalized.operation === "cancel") {
     method = "POST";
-    path = "/v1/jobs/" + normalized.jobId + "/cancel";
+    path = "/v1/public/jobs/" + normalized.jobId + "/cancel";
   } else {
-    path = "/v1/jobs/" + normalized.jobId + "/asset-url";
+    path = "/v1/public/jobs/" + normalized.jobId + "/asset-url";
   }
 
   const headers = {
