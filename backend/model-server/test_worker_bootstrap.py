@@ -116,6 +116,26 @@ class WorkerBootstrapTests(unittest.TestCase):
             with self.assertRaises(WorkerStartupError):
                 self.build(root, owner_reviewed=True, executor=object())
 
+    def test_startup_refuses_sandbox_mount_mismatch(self):
+        with tempfile.TemporaryDirectory() as root, tempfile.TemporaryDirectory() as other:
+            manifest = self.build_manifest(root)
+            executor = DockerSandboxExecutor(config=SandboxConfig(
+                image="registry.example/astra/runtime@sha256:" + "b" * 64,
+                model_directory=other,
+                gpu_device="0",
+            ))
+            with self.assertRaises(WorkerStartupError):
+                build_generation_worker(
+                    manifest_json=manifest,
+                    model_root=root,
+                    sandbox_executor=executor,
+                    moderation_provider=FakeModerationProvider(),
+                    client=FakeClient(),
+                    asset_store=FakeAssetStore(),
+                    worker_id="test",
+                    output_root=Path(root) / "output",
+                )
+
     def test_startup_refuses_model_artifact_tampering(self):
         with tempfile.TemporaryDirectory() as root:
             manifest = self.build_manifest(root)
