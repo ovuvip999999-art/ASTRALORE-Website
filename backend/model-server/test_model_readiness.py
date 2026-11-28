@@ -129,8 +129,13 @@ class ModelReadinessTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             model = self.build_package(root, WAN_ID, reviewed=True)
+            manifest_model_keys = (
+                "model_id", "revision", "modality", "min_vram_mb",
+                "max_width", "max_height", "max_pixels", "runtime",
+                "allow_remote_code", "license_id", "license_reviewed_by_owner",
+            )
             raw_model = {
-                **model,
+                **{key: model[key] for key in manifest_model_keys},
                 "files": [
                     {key: item[key] for key in ("path", "sha256", "size_bytes")}
                     for item in model["files"]
