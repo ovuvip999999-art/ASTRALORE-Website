@@ -4,6 +4,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
+from runtime_manifest import verify_model_artifacts
 from model_readiness import (
     ModelReadinessError,
     inspect_manifest,
@@ -63,7 +64,7 @@ class ModelReadinessTests(unittest.TestCase):
                 "sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
                 "size_bytes": path.stat().st_size,
             })
-        return {
+        model = {
             "model_id": model_id,
             "revision": REVISION,
             "modality": "image" if is_image else "video",
@@ -77,6 +78,7 @@ class ModelReadinessTests(unittest.TestCase):
             "license_id": "stabilityai-community-license" if is_image else "apache-2.0",
             "license_reviewed_by_owner": reviewed,
         }
+        return verify_model_artifacts([model], model_root=root)[0]
 
     def test_sd35_structure_valid_but_unreviewed_license_is_not_inference_eligible(self):
         with tempfile.TemporaryDirectory() as temp:
