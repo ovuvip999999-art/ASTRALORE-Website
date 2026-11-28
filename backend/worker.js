@@ -407,7 +407,6 @@ export default {
       }
       const provider = createCreativeProviderRegistry(env).get("image");
       if (!provider) return json({ error: "No approved image provider is configured. Generation remains paused." }, 503, origin);
-      if (!env.AI) return json({ error: "The selected image provider is not configured." }, 503, origin);
       let quota;
       try {
         quota = await reserveCreativeUsage(env, authorization, authenticatedUser.id, "image");
