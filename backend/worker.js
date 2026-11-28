@@ -235,20 +235,6 @@ async function reserveCreativeUsage(env, authorization, userId, kind) {
   };
 }
 
-async function releaseCreativeUsage(env, authorization, userId, kind) {
-  const baseUrl = String(env.SUPABASE_URL || "").replace(/\/+$/, "");
-  if (!baseUrl || !env.SUPABASE_ANON_KEY) return;
-  await fetch(baseUrl + "/rest/v1/rpc/astra_release_creative_usage", {
-    method: "POST",
-    headers: {
-      "apikey": env.SUPABASE_ANON_KEY,
-      "Authorization": authorization,
-      "Content-Type": "application/json"
-    },
-    body: JSON.stringify({ p_user_id: userId, p_kind: kind })
-  });
-}
-
 export default {
   async fetch(request, env) {
     const origin = request.headers.get("Origin") || "";
@@ -409,7 +395,6 @@ export default {
           remainingToday: quota.remaining
         }, 200, origin);
       } catch (error) {
-        try { await releaseCreativeUsage(env, authorization, authenticatedUser.id, "video"); } catch {}
         console.error("ASTRA video generation failed", String(error?.message || error).slice(0, 180));
         return json({ error: "ASTRA could not generate that video. Try again later." }, 503, origin);
       }
@@ -457,7 +442,6 @@ export default {
           remainingToday: quota.remaining
         }, 200, origin);
       } catch (error) {
-        try { await releaseCreativeUsage(env, authorization, authenticatedUser.id, "image"); } catch {}
         console.error("ASTRA image generation failed", String(error?.message || error).slice(0, 180));
         return json({ error: "ASTRA could not generate that image. Try a different prompt or try again later." }, 503, origin);
       }
