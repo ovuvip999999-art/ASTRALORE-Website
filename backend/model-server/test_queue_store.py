@@ -130,7 +130,7 @@ class QueueStoreTests(unittest.TestCase):
                 request={}, idempotency_key="request-1234",
             )
         with self.assertRaises(QueueStoreError):
-            store.claim_jobs(worker_id="worker", batch_size=5)
+            store.claim_jobs(worker_id="worker", request_origin="internal", batch_size=5)
         with self.assertRaises(QueueStoreError):
             store.heartbeat(job_id=JOB_ID, lease_token="bad")
 
