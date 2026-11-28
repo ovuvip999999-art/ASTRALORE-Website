@@ -55,7 +55,7 @@ def validate_output_asset(asset: Any, modality: str) -> dict[str, Any]:
         raise JobStateError("asset sha256 must be a 64-character hexadecimal digest")
     mime = asset["mime_type"]
     allowed = {"image/png", "image/jpeg", "image/webp"} if modality == "image" else {"video/mp4", "video/webm"}
-    if mime not in allowed:
+    if not isinstance(mime, str) or mime not in allowed:
         raise JobStateError("output MIME type does not match job modality")
     for field in ("size_bytes", "width", "height"):
         value = asset[field]
@@ -84,9 +84,9 @@ def validate_job(job: dict[str, Any]) -> dict[str, Any]:
             raise JobStateError(f"{field} must be a UUID")
     if not isinstance(job["model_id"], str) or not job["model_id"].strip() or len(job["model_id"]) > 128:
         raise JobStateError("model_id must be non-empty text up to 128 characters")
-    if job["modality"] not in {"image", "video"}:
+    if not isinstance(job["modality"], str) or job["modality"] not in {"image", "video"}:
         raise JobStateError("modality must be image or video")
-    if job["status"] not in STATUSES:
+    if not isinstance(job["status"], str) or job["status"] not in STATUSES:
         raise JobStateError("job status is invalid")
     created = _timestamp(job["created_at"], "created_at")
     updated = _timestamp(job["updated_at"], "updated_at")
@@ -116,7 +116,7 @@ def transition_job(
     error_code: str | None = None,
 ) -> dict[str, Any]:
     current = validate_job(job)
-    if target_status not in STATUSES:
+    if not isinstance(target_status, str) or target_status not in STATUSES:
         raise JobStateError("target status is invalid")
     if target_status == current["status"]:
         if output_asset is None and error_code is None:
