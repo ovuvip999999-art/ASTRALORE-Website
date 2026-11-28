@@ -40,6 +40,7 @@ def _verified_model_directory(model: dict[str, Any], model_dir: str | Path) -> P
         or model.get("modality") != "video"
         or model.get("runtime") != "wan-video"
         or model.get("license_reviewed_by_owner") is not True
+        or model.get("license_id") != "apache-2.0"
         or model.get("allow_remote_code") is not False
     ):
         raise WanAdapterError("Wan model identity, license review, or runtime policy is not approved.")
@@ -53,6 +54,13 @@ def _verified_model_directory(model: dict[str, Any], model_dir: str | Path) -> P
         raise WanAdapterError("Wan local model directory is unavailable.") from None
     if not root.is_dir():
         raise WanAdapterError("Wan local model directory must be a directory.")
+
+    if (
+        type(model.get("max_width")) is not int or model["max_width"] < WIDTH
+        or type(model.get("max_height")) is not int or model["max_height"] < HEIGHT
+        or type(model.get("max_pixels")) is not int or model["max_pixels"] < MAX_PIXELS
+    ):
+        raise WanAdapterError("Wan model capability manifest does not support the 480p baseline.")
 
     files = model.get("files")
     if not isinstance(files, list) or not files:
