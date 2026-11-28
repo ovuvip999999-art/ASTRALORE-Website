@@ -107,3 +107,6 @@ When resuming, fetch PR #20 and this checkpoint first, inspect the latest CI sta
 
 - Added `run-tests.ps1` for the user's Windows environment. It creates a local Python virtual environment, installs API/test dependencies, compiles the server modules, and runs all unit and HTTP integration tests.
 - It does not download model weights, access a GPU, call paid services, or activate generation.
+
+- CI runs #565 (`46137927013`) and #566 (`46137935611`) passed both `syntax` and `model-server` jobs on the Windows test-runner checkpoint head `f77eb3b71d5619ab4c52943862704280d6d2be28`.
+- The PowerShell runner itself is documented but has not yet been executed on the user's Windows machine.
