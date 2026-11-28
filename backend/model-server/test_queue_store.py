@@ -138,7 +138,7 @@ class QueueStoreTests(unittest.TestCase):
         def handler(request):
             return httpx.Response(500, text="service_role_secret_should_not_escape")
         with self.assertRaises(QueueStoreError) as raised:
-            self.store(handler).claim_jobs(worker_id="worker")
+            self.store(handler).claim_jobs(worker_id="worker", request_origin="internal")
         self.assertNotIn("service_role_secret", str(raised.exception))
 
 
