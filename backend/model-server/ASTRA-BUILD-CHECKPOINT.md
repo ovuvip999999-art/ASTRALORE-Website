@@ -364,3 +364,14 @@ When resuming, fetch PR #20 and this checkpoint first, inspect the latest CI sta
 - Added the tests to CI and the Windows runner. Verification pending.
 - This is a composition root, not a daemon; no worker process is deployed or running.
 
+
+
+## Container sandbox policy foundation — 28 November 2026
+
+- Added `sandbox_policy.py` and tests for an immutable digest-pinned Docker image, explicit numeric GPU selection, no network, read-only root, non-root UID, dropped capabilities, no-new-privileges, bounded memory/swap, CPU, PID count, shared memory, and writable size-limited tmpfs output.
+- Model files are mounted read-only. Container output and temporary storage are bounded tmpfs mounts, owned by the unprivileged runtime UID.
+- Added an execution-plan object that exposes the wall-clock deadline for a parent supervisor to enforce.
+- Included the new module/tests in GitHub Actions and the Windows test runner.
+- **Not yet integrated:** this is a command/policy builder, not a launched container or hard runtime sandbox. The current worker runner still invokes adapters in-process. A supervised Docker executor must enforce the wall-clock deadline and stream bounded I/O before any worker can be considered isolated.
+- No Docker command was run, no image was pulled, no model weights downloaded, no GPU or paid host used, and no deployment or migration applied. Generation remains blocked.
+- CI verification for the current head is pending.
