@@ -48,11 +48,12 @@ class QueueStoreTests(unittest.TestCase):
 
     def test_enqueue_uses_service_role_only_on_server_rpc(self):
         def handler(request):
-            self.assertEqual(request.url.path, "/rest/v1/rpc/astra_enqueue_generation_job")
+            self.assertEqual(request.url.path, "/rest/v1/rpc/astra_enqueue_generation_job_v2")
             self.assertEqual(request.headers["apikey"], SERVICE)
             self.assertEqual(request.headers["authorization"], "Bearer " + SERVICE)
             body = json.loads(request.content)
             self.assertEqual(body["p_user_id"], USER_ID)
+            self.assertEqual(body["p_request_origin"], "internal")
             return httpx.Response(200, json={"id": JOB_ID, "status": "queued"})
         result = self.store(handler).enqueue_job(
             user_id=USER_ID, modality="image", model_id="astra-image-v1",
