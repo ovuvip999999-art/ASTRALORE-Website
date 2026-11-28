@@ -74,6 +74,33 @@ class FakeAssetStore:
         self.deleted.append(object_path)
 
 
+class FakeSafetyGate:
+    def __init__(self, *, block_prompt=False, block_output=False, unavailable=False):
+        self.block_prompt = block_prompt
+        self.block_output = block_output
+        self.unavailable = unavailable
+        self.prompt_checks = 0
+        self.output_checks = 0
+
+    def check_prompt(self, prompt, modality):
+        self.prompt_checks += 1
+        if self.unavailable:
+            from safety_gate import SafetyGateError
+            raise SafetyGateError("MODERATION_UNAVAILABLE", retryable=True)
+        if self.block_prompt:
+            from safety_gate import SafetyGateError
+            raise SafetyGateError("SAFETY_REVIEW_REQUIRED", retryable=False)
+
+    def check_output(self, media_path, modality):
+        self.output_checks += 1
+        if self.unavailable:
+            from safety_gate import SafetyGateError
+            raise SafetyGateError("MODERATION_UNAVAILABLE", retryable=True)
+        if self.block_output:
+            from safety_gate import SafetyGateError
+            raise SafetyGateError("SAFETY_REVIEW_REQUIRED", retryable=False)
+
+
 class PngAdapter:
     def __init__(self, *, dimensions=(32, 24), cancel=False, error=None):
         self.dimensions = dimensions
@@ -91,14 +118,16 @@ class PngAdapter:
 
 
 class WorkerRunnerTests(unittest.TestCase):
-    def build_worker(self, root, *, adapter=None, client=None, asset_store=None):
+    def build_worker(self, root, *, adapter=None, client=None, asset_store=None, safety_gate=True):
         client = client or FakeClient()
         asset_store = asset_store or FakeAssetStore()
         adapters = {(MODEL_ID, REVISION): adapter} if adapter else {}
+        gate = FakeSafetyGate() if safety_gate is True else safety_gate
         worker = GenerationWorker(
             client=client,
             asset_store=asset_store,
             adapters=adapters,
+            safety_gate=gate,
             worker_id="test-worker",
             output_root=root,
             heartbeat_interval=1,
@@ -110,6 +139,41 @@ class WorkerRunnerTests(unittest.TestCase):
             worker, client, _ = self.build_worker(root)
             self.assertEqual(worker.run_once(), 0)
             self.assertEqual(client.claim_calls, 0)
+
+    def test_worker_does_not_claim_without_a_moderation_provider(self):
+        with tempfile.TemporaryDirectory() as root:
+            worker, client, _ = self.build_worker(root, adapter=PngAdapter(), safety_gate=None)
+            self.assertEqual(worker.run_once(), 0)
+            self.assertEqual(client.claim_calls, 0)
+
+    def test_prompt_moderation_blocks_before_inference(self):
+        gate = FakeSafetyGate(block_prompt=True)
+        with tempfile.TemporaryDirectory() as root:
+            worker, client, assets = self.build_worker(root, adapter=PngAdapter(), safety_gate=gate)
+            worker.run_once()
+        self.assertEqual(client.failures[0]["error_code"], "SAFETY_REVIEW_REQUIRED")
+        self.assertEqual(gate.prompt_checks, 1)
+        self.assertEqual(gate.output_checks, 0)
+        self.assertEqual(assets.uploads, [])
+
+    def test_output_moderation_blocks_before_private_upload(self):
+        gate = FakeSafetyGate(block_output=True)
+        with tempfile.TemporaryDirectory() as root:
+            worker, client, assets = self.build_worker(root, adapter=PngAdapter(), safety_gate=gate)
+            worker.run_once()
+        self.assertEqual(client.failures[0]["error_code"], "SAFETY_REVIEW_REQUIRED")
+        self.assertEqual(gate.prompt_checks, 1)
+        self.assertEqual(gate.output_checks, 1)
+        self.assertEqual(assets.uploads, [])
+
+    def test_moderation_outage_is_retryable_and_fails_closed(self):
+        gate = FakeSafetyGate(unavailable=True)
+        with tempfile.TemporaryDirectory() as root:
+            worker, client, assets = self.build_worker(root, adapter=PngAdapter(), safety_gate=gate)
+            worker.run_once()
+        self.assertEqual(client.failures[0]["error_code"], "MODERATION_UNAVAILABLE")
+        self.assertTrue(client.failures[0]["retryable"])
+        self.assertEqual(assets.uploads, [])
 
     def test_worker_claims_validated_job_and_completes_with_private_asset(self):
         with tempfile.TemporaryDirectory() as root:
