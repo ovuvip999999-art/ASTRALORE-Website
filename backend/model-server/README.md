@@ -203,3 +203,14 @@ Every route requires `ASTRA_WORKER_API_ENABLED=true` and a separate `ASTRA_WORKE
 - The Storage bucket remains private. Signed URLs are bearer links and should not be logged or shared; no long-lived/public URL is created.
 
 The route is part of the authenticated queue API and remains disabled by default with `ASTRA_QUEUE_API_ENABLED` unset/false.
+
+## Fail-closed worker orchestration foundation
+
+- `worker_client.py` is the authenticated client for the private worker API; it validates claim/lease responses and distinguishes confirmed HTTP 409 lease loss from ambiguous transport failures.
+- `worker_runner.py` provides a testable orchestration loop: exact `(model_id, model_revision)` adapter lookup, heartbeat renewal, cooperative cancellation, actual media validation, requested-dimension checks, private asset upload, and lease-scoped completion/failure.
+- The runner refuses to claim any jobs when its adapter map is empty. There are currently no installed or registered inference adapters, so this code cannot generate media.
+- A confirmed lost lease after upload causes cleanup of the uncommitted private object. An ambiguous completion network failure does not delete the object, because the database may already have committed; orphan cleanup will require a later reconciler.
+- The runner is a library foundation, not a deployed daemon. OS/container-level CPU, RAM, disk, GPU, and wall-clock limits plus process isolation are still required before running untrusted/model code.
+- Added mocked adapter tests for no-adapter fail-closed behavior, exact revision matching, successful image pipeline, dimension mismatch, cancellation, safe inference errors, and lease-loss cleanup.
+
+Generation remains disabled. No model weights or GPU runtime have been installed.
