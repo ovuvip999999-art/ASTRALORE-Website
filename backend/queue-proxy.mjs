@@ -19,7 +19,7 @@ export function normalizeQueueAction(value) {
   }
 
   if (value.operation === "create") {
-    const keys = ["operation", "modality", "modelId", "aspectRatio", "width", "height", "brief", "idempotencyKey", "costAcknowledged"];
+    const keys = ["operation", "modality", "modelId", "aspectRatio", "width", "height", "brief", "idempotencyKey", "costAcknowledged", "durationSeconds"];
     if (!hasExactKeys(value, keys)) throw new TypeError("Queue create action contains missing or unknown fields.");
     if (!["image", "video"].includes(value.modality)) throw new TypeError("Invalid queue modality.");
     if (typeof value.modelId !== "string" || !MODEL_ID_RE.test(value.modelId)) throw new TypeError("Invalid model ID.");
@@ -42,6 +42,13 @@ export function normalizeQueueAction(value) {
     }
     if (briefSize < 2 || briefSize > 32768) throw new TypeError("Creative brief is too large.");
     if (value.costAcknowledged !== true) throw new TypeError("Confirm the generation cost before submitting a job.");
+    if (value.modality === "video") {
+      if (!Number.isInteger(value.durationSeconds) || value.durationSeconds < 1 || value.durationSeconds > 120) {
+        throw new TypeError("Video duration must be between 1 and 120 seconds.");
+      }
+    } else if (value.durationSeconds !== null) {
+      throw new TypeError("Image jobs cannot specify a video duration.");
+    }
     if (typeof value.idempotencyKey !== "string" || !IDEMPOTENCY_RE.test(value.idempotencyKey)) {
       throw new TypeError("Invalid idempotency key.");
     }
@@ -54,7 +61,8 @@ export function normalizeQueueAction(value) {
       height: value.height,
       brief: value.brief,
       idempotencyKey: value.idempotencyKey,
-      costAcknowledged: true
+      costAcknowledged: true,
+      durationSeconds: value.durationSeconds
     };
   }
 
@@ -126,7 +134,8 @@ export async function forwardQueueAction(action, {
       width: normalized.width,
       height: normalized.height,
       brief: normalized.brief,
-      idempotency_key: normalized.idempotencyKey
+      idempotency_key: normalized.idempotencyKey,
+      duration_seconds: normalized.durationSeconds
     };
   } else if (normalized.operation === "status") {
     path = "/v1/jobs/" + normalized.jobId;
