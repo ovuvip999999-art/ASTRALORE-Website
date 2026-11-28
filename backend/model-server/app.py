@@ -6,9 +6,10 @@ from urllib.parse import urlparse
 
 from fastapi import FastAPI, Header, HTTPException
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, StrictInt, StrictStr
 
 from creative_brief import BriefValidationError, compile_brief
+from model_registry import ModelRegistryError, load_catalog_json, route_model
 
 app = FastAPI(title="ASTRA Private Model Server", version="0.1.0")
 
@@ -19,6 +20,14 @@ IMAGE_MIME_TYPES = {"image/png", "image/jpeg", "image/webp"}
 
 class BriefCompileRequest(BaseModel):
     brief: dict
+
+
+class ModelRouteRequest(BaseModel):
+    model_id: StrictStr
+    modality: Literal["image", "video"]
+    aspect_ratio: Literal["1:1", "9:16", "16:9"]
+    width: StrictInt
+    height: StrictInt
 
 
 class ImageRequest(BaseModel):
@@ -58,6 +67,24 @@ def compile_creative_brief(body: BriefCompileRequest, authorization: str | None 
     try:
         return compile_brief(body.brief)
     except BriefValidationError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+
+
+@app.post("/v1/models/route")
+def route_creative_model(body: ModelRouteRequest, authorization: str | None = Header(default=None)):
+    """Resolve one explicitly requested catalog model; never fall back silently."""
+    verify_token(authorization)
+    try:
+        catalog = load_catalog_json(os.environ.get("ASTRA_MODEL_CATALOG_JSON", ""))
+        return route_model(
+            catalog,
+            model_id=body.model_id,
+            modality=body.modality,
+            aspect_ratio=body.aspect_ratio,
+            width=body.width,
+            height=body.height,
+        )
+    except ModelRegistryError as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
