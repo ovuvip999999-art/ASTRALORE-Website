@@ -231,3 +231,9 @@ When resuming, fetch PR #20 and this checkpoint first, inspect the latest CI sta
 - No inference adapter exists or is registered. No model weights, GPU runtime, worker daemon, resource-limited container, or deployment exists. Generation remains blocked.
 - Latest worker orchestration CI coverage is pending.
 
+
+## Verified CI — worker orchestration
+
+- CI run #766 (`46140532387`) passed both `syntax` and `model-server` jobs on head `9c30692b2a0a44e82b42f1e39cccd4235b2ebb25`.
+- Model-server suite ran 132 tests successfully, including PostgreSQL 16 integration for queue and private Storage migrations.
+- The worker runner was tested with mocked adapters only; no real inference runtime or model weights were used.
