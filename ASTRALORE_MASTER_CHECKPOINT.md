@@ -280,3 +280,28 @@ After the executor is verified, continue with host capability/preflight, model-l
 5. Add worker-level integration proving a heartbeat lease loss stops the running Docker container and prevents upload/completion.
 6. Only after adult account-owner license and infrastructure-cost review, acquire local model artifacts, measure VRAM/latency, run one image smoke test and then one short-video smoke test.
 7. Keep Worker generation guards, queue/worker flags, migrations 0010/0011, secrets, production and deployment untouched until explicit approval.
+
+
+## 15. Opt-in real Docker host probe and final CI expansion — 2026-11-28
+
+### Commits
+- `4ee023cefe02bca28e8d49c9719ef192cf58db8b`: test-only sandbox entrypoint fixture that reads one probe request, writes one small output file, and returns the exact bounded result JSON.
+- `1206bec821f9b29925b9b17a209e762f6853dc0b` and `5d7ea43b09a5e2bc88393cfc8b38e220e37e9d53`: fixture Dockerfile requires a digest-pinned Python base image and sets its import path for the supervisor's `python -m astra_sandbox_entrypoint` command.
+- `9857fc99754b25081ce81a46c773e30d8dbfd32a`: added `test_sandbox_executor_docker.py`, skipped unless `ASTRA_DOCKER_INTEGRATION=1`, requiring an immutable fixture image digest and explicit numeric GPU device.
+- `8ec170aa06c63060952db1765d55e1cd31ba0860`: added the opt-in host test to CI compile coverage.
+- `f20800707f714dab72b534261e53e3f08fecc1b3`: documented fixture build and opt-in host test procedure.
+- Current PR head at this checkpoint: `f20800707f714dab72b534261e53e3f08fecc1b3`; PR #20 remains OPEN, DRAFT, NOT MERGED, base `feature/astra-cloud-memory`.
+
+### Verification
+- CI run `46149455970` completed successfully at checkpoint `210dea279be17ee7d1f88115c66c08ca99684279`: syntax and model-server jobs passed; model-server reported 209 tests passing. It included sandbox bootstrap, bounded stdout/result matching, secret stripping, and PostgreSQL 16 integration.
+- Runs `46149596427`, `46149600593`, and `46149615000` were observed in progress after adding the opt-in host fixture, its test module, and expanded compile list. Inspect the newest run before claiming the latest additions green.
+- The opt-in Docker test is intentionally skipped in ordinary CI and has not been run against a real Docker/NVIDIA GPU host.
+- Runtime Dockerfile has not been built. The selected PyTorch base image digest has not been supplied or verified. No weights, license acceptance, GPU host, moderation provider, deployment, production flags, or database migrations have been configured.
+
+### Current technical state
+- Worker bootstrap now requires the supervised Docker executor and never accepts arbitrary in-process generation factories.
+- Lease heartbeat cancellation/loss is propagated through the worker cancellation event to the executor's container-kill path; worker checks lease loss before storage/completion.
+- Container stdout is drained concurrently with a 4 KiB cap and parsed as exact JSON; returned filename must equal the single validated copied file.
+- Model request payload excludes owner IDs, lease tokens, storage paths and unrecognized fields.
+- Model runtime source is separated from the API/worker dependency graph through `runtime_errors.py`; a separate digest-pinned-base Dockerfile and pinned direct dependency list exist.
+- Remaining blockers are real host/GPU integration, exact runtime dependency validation, real moderation-provider deployment, owner license/cost approval, model artifact installation and controlled inference benchmarks.
