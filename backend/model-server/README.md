@@ -105,3 +105,16 @@ ASTRA includes a server-configured model catalog and authenticated `POST /v1/mod
 - The response exposes only capability metadata, not local paths or credentials.
 
 This is a capability/preflight decision, not proof that a GPU is available. The eventual inference worker must measure actual free VRAM and enforce concurrency/resource limits immediately before loading or running a model. No model is enabled by default, and no weights are installed by this registry.
+
+## Generation job lifecycle contract
+
+`job_lifecycle.py` defines the storage-neutral state machine for future asynchronous image/video jobs:
+
+- States: `queued`, `running`, `succeeded`, `failed`, `cancelled`.
+- Legal transitions are explicit; terminal states cannot be reopened.
+- Duplicate same-state transitions are idempotent.
+- Timestamps must be timezone-aware and monotonic.
+- Successful jobs require validated output metadata, including MIME type, dimensions, bounded size, and SHA-256; video also requires a bounded duration.
+- Failed jobs expose only a safe machine-readable error code, not raw exception text or filesystem paths.
+
+This is a pure contract and validator, not a durable queue or API endpoint. Production requires a transactional database/queue, ownership checks, atomic claims, worker leases, retry policy, cancellation signaling, and concurrency/resource limits. An in-memory queue must not be used as a production substitute.
