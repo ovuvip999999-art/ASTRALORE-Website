@@ -1,7 +1,7 @@
 """Fail-closed composition root for the ASTRA generation worker.
 
-Callers must supply code-owned runtime factories and a reviewed moderation
-provider. Manifest data never imports code or downloads model artifacts.
+Callers must supply a supervised Docker executor and reviewed moderation
+provider. Model manifests never import or execute host-side adapter code.
 """
 from __future__ import annotations
 
