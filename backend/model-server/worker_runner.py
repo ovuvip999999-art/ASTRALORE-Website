@@ -13,7 +13,7 @@ from typing import Any, Protocol
 from asset_store import AssetStoreError, SupabasePrivateAssetStore
 from media_validation import MediaValidationError, inspect_media_file
 from safety_gate import SafetyGate, SafetyGateError
-from worker_client import PrivateWorkerClient, WorkerClientError, WorkerLeaseLost
+from worker_client import PrivateWorkerClient, WorkerLeaseLost
 
 from runtime_errors import GenerationError
 
