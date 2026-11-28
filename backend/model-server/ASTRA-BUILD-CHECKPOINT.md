@@ -257,3 +257,12 @@ When resuming, fetch PR #20 and this checkpoint first, inspect the latest CI sta
 - Added tests to CI and Windows runner. Latest CI verification pending.
 - No model weights downloaded, no runtime factory installed, no GPU process or deployment. Generation remains disabled.
 
+
+## Model license owner-attestation gate
+
+- Extended the runtime manifest with mandatory `license_id` and `license_reviewed_by_owner` fields.
+- The code-owned runtime registry skips every model unless the owner-review attestation is explicitly true; the manifest cannot trigger license acceptance or download weights.
+- Added tests for missing/invalid license fields and for preventing an unreviewed model from entering the adapter registry.
+- This is a configuration safeguard, not legal advice. For gated terms, an adult account owner must review the full current license before deciding whether to accept it.
+- CI verification pending.
+
