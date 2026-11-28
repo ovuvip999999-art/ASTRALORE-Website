@@ -66,10 +66,11 @@ class DockerSandboxExecutor:
         self.poll_interval = poll_interval
         self.cleanup_timeout = cleanup_timeout
 
-    def _docker(self, *args: str) -> None:
+    def _docker(self, *args: str) -> bool:
+        """Run a bounded Docker control command and report its real exit status."""
         command = [self.config.docker_executable, *args]
         try:
-            self.run_command(
+            result = self.run_command(
                 command,
                 stdin=subprocess.DEVNULL,
                 stdout=subprocess.DEVNULL,
@@ -78,8 +79,9 @@ class DockerSandboxExecutor:
                 check=False,
                 shell=False,
             )
+            return getattr(result, "returncode", 1) == 0
         except Exception:
-            return
+            return False
 
     def _prepare_output_dir(self, value: str | Path) -> Path:
         raw = Path(value)
@@ -94,7 +96,10 @@ class DockerSandboxExecutor:
         return root
 
     def _collect_outputs(self, name: str, output_root: Path) -> Path:
-        self._docker("cp", f"{name}:/outputs/.", str(output_root))
+        # docker cp can fail while leaving a partial destination. Never infer
+        # success merely because a file happens to exist in the output folder.
+        if not self._docker("cp", f"{name}:/outputs/.", str(output_root)):
+            raise SandboxExecutionError("SANDBOX_OUTPUT_INVALID", retryable=True)
         total = 0
         files: list[Path] = []
         try:
@@ -174,7 +179,12 @@ class DockerSandboxExecutor:
 
             if process.returncode != 0:
                 raise SandboxExecutionError("SANDBOX_EXIT_FAILED", retryable=True)
-            return self._collect_outputs(name, output_root)
+            output_path = self._collect_outputs(name, output_root)
+            # A successful generation is not reported until Docker confirms
+            # that the stopped container can be removed.
+            if not self._docker("rm", "-f", name):
+                raise SandboxExecutionError("SANDBOX_EXIT_FAILED", retryable=True)
+            return output_path
         except SandboxExecutionError:
             raise
         except Exception:
