@@ -5,6 +5,8 @@ import unittest
 from pathlib import Path
 
 from safety_gate import SafetyDecision
+from sandbox_executor import DockerSandboxExecutor
+from sandbox_policy import SandboxConfig
 from worker_bootstrap import WorkerStartupError, build_generation_worker
 
 MODEL_ID = "astra/test-image"
@@ -59,7 +61,7 @@ class WorkerBootstrapTests(unittest.TestCase):
                 "max_width": 512,
                 "max_height": 512,
                 "max_pixels": 262144,
-                "runtime": "custom",
+                "runtime": "diffusers",
                 "allow_remote_code": False,
                 "license_id": "test-license",
                 "license_reviewed_by_owner": owner_reviewed,
@@ -67,12 +69,19 @@ class WorkerBootstrapTests(unittest.TestCase):
         }
         return json.dumps(payload)
 
-    def build(self, root, *, owner_reviewed=True, factories=None, moderation=FakeModerationProvider()):
+    def build(self, root, *, owner_reviewed=True, moderation=FakeModerationProvider(), executor=None):
         client = FakeClient()
+        sandbox = executor or DockerSandboxExecutor(
+            config=SandboxConfig(
+                image="registry.example/astra/runtime@sha256:" + "b" * 64,
+                model_directory=root,
+                gpu_device="0",
+            )
+        )
         worker = build_generation_worker(
             manifest_json=self.build_manifest(root, owner_reviewed=owner_reviewed),
             model_root=root,
-            runtime_factories=factories if factories is not None else {"custom": lambda model: FakeAdapter(model)},
+            sandbox_executor=sandbox,
             moderation_provider=moderation,
             client=client,
             asset_store=FakeAssetStore(),
@@ -85,6 +94,7 @@ class WorkerBootstrapTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as root:
             worker, client = self.build(root)
             self.assertEqual(list(worker.adapters), [(MODEL_ID, REVISION)])
+            self.assertEqual(type(worker.adapters[(MODEL_ID, REVISION)]).__name__, "SandboxGenerationAdapter")
             self.assertIsNotNone(worker.safety_gate)
             self.assertEqual(client.claim_calls, 0)
 
@@ -95,7 +105,11 @@ class WorkerBootstrapTests(unittest.TestCase):
                 build_generation_worker(
                     manifest_json=manifest,
                     model_root=root,
-                    runtime_factories={"custom": lambda model: FakeAdapter(model)},
+                    sandbox_executor=DockerSandboxExecutor(config=SandboxConfig(
+                        image="registry.example/astra/runtime@sha256:" + "b" * 64,
+                        model_directory=root,
+                        gpu_device="0",
+                    )),
                     moderation_provider=None,
                     client=FakeClient(),
                     asset_store=FakeAssetStore(),
@@ -109,7 +123,7 @@ class WorkerBootstrapTests(unittest.TestCase):
                 self.build(root, owner_reviewed=False)
         with tempfile.TemporaryDirectory() as root:
             with self.assertRaises(WorkerStartupError):
-                self.build(root, factories={})
+                self.build(root, owner_reviewed=True, executor=object())
 
     def test_startup_refuses_model_artifact_tampering(self):
         with tempfile.TemporaryDirectory() as root:
@@ -119,7 +133,11 @@ class WorkerBootstrapTests(unittest.TestCase):
                 build_generation_worker(
                     manifest_json=manifest,
                     model_root=root,
-                    runtime_factories={"custom": lambda model: FakeAdapter(model)},
+                    sandbox_executor=DockerSandboxExecutor(config=SandboxConfig(
+                        image="registry.example/astra/runtime@sha256:" + "b" * 64,
+                        model_directory=root,
+                        gpu_device="0",
+                    )),
                     moderation_provider=FakeModerationProvider(),
                     client=FakeClient(),
                     asset_store=FakeAssetStore(),
@@ -134,7 +152,11 @@ class WorkerBootstrapTests(unittest.TestCase):
                 build_generation_worker(
                     manifest_json=manifest,
                     model_root=root,
-                    runtime_factories={"custom": lambda model: FakeAdapter(model)},
+                    sandbox_executor=DockerSandboxExecutor(config=SandboxConfig(
+                        image="registry.example/astra/runtime@sha256:" + "b" * 64,
+                        model_directory=root,
+                        gpu_device="0",
+                    )),
                     moderation_provider=FakeModerationProvider(),
                     client=None,
                     asset_store=FakeAssetStore(),
