@@ -357,7 +357,7 @@ python host_preflight.py \
   --min-vram-mb 16000
 ```
 
-It checks Docker daemon availability, confirms the exact image digest is present locally, and verifies the selected NVIDIA device has the required total and currently free VRAM. It does not start a container, download weights, or activate generation. The VRAM threshold must come from the reviewed model manifest and actual benchmark requirements; the example value is illustrative, not a recommendation for SD3.5 or Wan.
+It checks Docker daemon availability, confirms the exact image digest is present locally, verifies the selected NVIDIA device has the required total and currently free VRAM, then starts a short-lived network-disabled/read-only container using only that GPU. Inside the container it verifies the pinned CUDA runtime, initializes CUDA, performs a small GPU matrix multiplication, synchronizes, and requires the exact `ASTRA_CUDA_GPU_OK` success marker. The container is removed automatically; no model directory is mounted and no model weights are loaded. This is a CUDA execution smoke test, not an inference or production-host security certification. The VRAM threshold must come from the reviewed model manifest and actual benchmark requirements; the example value is illustrative, not a recommendation for SD3.5 or Wan.
 
 
 ## Separate worker process and moderation service integration
