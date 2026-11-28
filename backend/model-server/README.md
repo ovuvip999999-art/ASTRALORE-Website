@@ -454,3 +454,12 @@ The origin-specific feature gates are independent: set `ASTRA_INTERNAL_QUEUE_API
 ### Origin-isolated worker identities and claims
 
 The private worker API now requires two distinct administrator-provisioned secrets: `ASTRA_INTERNAL_WORKER_TOKEN` and `ASTRA_PUBLIC_WORKER_TOKEN`. Both must be at least 32 characters and must not match. Each worker deployment continues to receive one token as its own `ASTRA_WORKER_TOKEN`; the API identifies the worker's origin by constant-time comparison of that credential. The claim request has no origin field. The server passes the authenticated origin to the origin-scoped database claim RPC, which only selects queued jobs with that persisted origin. A public worker therefore cannot claim internal jobs, and vice versa. Heartbeat/completion/failure remain lease-token-scoped. Configure separate worker deployments and secrets only after review; no secrets are created or set by this repository change.
+
+
+### Database-enforced worker capacity fairness
+
+Migration `0014_astra_worker_capacity_fairness.sql` adds service-role-only logical worker capacity settings. The default is four total concurrent jobs with public workers limited to two, leaving at least two slots unavailable to public traffic. Internal workers may use any otherwise-free slot, including idle public capacity; once public traffic reaches its cap, it cannot consume the reserved internal capacity.
+
+Capacity accounting and claims are serialized with a transaction-scoped advisory lock before counting running jobs and selecting rows. This prevents concurrent internal/public claim requests from oversubscribing the configured logical limit. Expired leases are recovered before occupancy is counted. Administrators may adjust the singleton row's `global_slots` and `public_slots`; the database constraint requires public capacity to remain below global capacity.
+
+These are database-enforced logical concurrency slots, not dedicated physical GPU reservations, GPU-memory isolation, autoscaling, or a guarantee of available compute. The default values are conservative placeholders and must be benchmarked against the actual host before deployment. Migration 0014 is a repository artifact only and has not been applied to Supabase. No worker process or GPU host is provisioned by this change.
