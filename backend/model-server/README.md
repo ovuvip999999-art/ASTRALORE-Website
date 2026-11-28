@@ -358,3 +358,28 @@ python host_preflight.py \
 ```
 
 It checks Docker daemon availability, confirms the exact image digest is present locally, and verifies the selected NVIDIA device has the required total and currently free VRAM. It does not start a container, download weights, or activate generation. The VRAM threshold must come from the reviewed model manifest and actual benchmark requirements; the example value is illustrative, not a recommendation for SD3.5 or Wan.
+
+
+## Separate worker process and moderation service integration
+
+The API server and generation worker are separate processes. The worker entrypoint is `worker_process.py`; it validates configuration and performs the Docker/image/GPU/model-artifact preflight before it can claim jobs. It then polls the private worker API, observes SIGTERM/SIGINT, and uses bounded idle/error backoff. It never runs database migrations or downloads model weights.
+
+Required worker environment:
+- `ASTRA_WORKER_API_URL`, `ASTRA_WORKER_TOKEN`
+- `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`
+- `ASTRA_MODERATION_URL`, `ASTRA_MODERATION_TOKEN`
+- `ASTRA_MODEL_ROOT`, `ASTRA_RUNTIME_MANIFEST_PATH`
+- `ASTRA_RUNTIME_IMAGE` (immutable image digest), `ASTRA_GPU_DEVICE`
+- `ASTRA_WORKER_ID`, `ASTRA_WORKER_OUTPUT_ROOT`
+
+Optional resource settings are `ASTRA_SANDBOX_MEMORY_BYTES`, `ASTRA_SANDBOX_CPU_COUNT`, `ASTRA_SANDBOX_PIDS`, `ASTRA_SANDBOX_TIMEOUT_SECONDS`, `ASTRA_SANDBOX_OUTPUT_BYTES`, `ASTRA_SANDBOX_SHM_BYTES`, `ASTRA_WORKER_BATCH_SIZE`, `ASTRA_WORKER_LEASE_SECONDS`, and `ASTRA_WORKER_HEARTBEAT_SECONDS`. Invalid values fail startup.
+
+### Moderation service contract
+
+`moderation_http.py` is a bounded HTTPS transport adapter, **not a classifier**. ASTRA requires an administrator-operated moderation service implementing:
+- `POST /v1/moderate/prompt` with `{"prompt":"...","modality":"image|video"}`
+- `POST /v1/moderate/output` with `{"modality":"image|video","filename":"...","size_bytes":N,"sha256":"...","content_base64":"..."}`
+
+Both routes must return exactly `{"action":"allow|review|block","category":"none|benign|...","confidence":0.0}`. ASTRA accepts only a high-confidence allow decision in the benign/none categories; all transport, response, size, timeout, review, and block cases fail closed. Requests use bearer authentication, fixed route paths, no redirects, TLS certificate verification, and bounded response sizes. Output bytes are capped at 64 MiB for this transport adapter; larger generated videos are rejected until a separately reviewed streaming moderation integration is implemented.
+
+No compatible moderation service is currently provisioned or configured. A test fake is not a production moderation provider. The worker therefore remains blocked until the service is supplied and independently reviewed. Do not point this setting at an arbitrary public endpoint or place its bearer token in client-side code.
