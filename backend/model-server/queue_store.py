@@ -102,7 +102,7 @@ class SupabaseQueueStore:
             return response.json()
         except QueueStoreError:
             raise
-        except (httpx.HTTPError, ValueError):
+        except (httpx.HTTPError, ValueError, TypeError):
             raise QueueStoreError("Supabase queue service is unavailable or returned invalid JSON.") from None
 
     def verify_user_access_token(self, access_token: str) -> str:
@@ -136,13 +136,13 @@ class SupabaseQueueStore:
             raise QueueStoreError("request must be a JSON object.")
         import json
         try:
-            request_size = len(json.dumps(request, ensure_ascii=False, separators=(",", ":")).encode("utf-8"))
+            request_size = len(json.dumps(request, ensure_ascii=False, separators=(",", ":"), allow_nan=False).encode("utf-8"))
         except (TypeError, ValueError):
             raise QueueStoreError("request must contain only JSON-compatible values.") from None
         if request_size > 32768:
             raise QueueStoreError("request must be an object no larger than 32 KiB.")
-        if not isinstance(idempotency_key, str) or not 8 <= len(idempotency_key) <= 128:
-            raise QueueStoreError("idempotency_key must contain 8–128 characters.")
+        if not isinstance(idempotency_key, str) or not re.fullmatch(r"[A-Za-z0-9._:-]{8,128}", idempotency_key):
+            raise QueueStoreError("idempotency_key must contain 8–128 safe characters.")
         result = self._call("POST", "/rest/v1/rpc/astra_enqueue_generation_job", body={
             "p_user_id": user_id,
             "p_modality": modality,
