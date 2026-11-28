@@ -6,6 +6,7 @@ from uuid import UUID
 from fastapi.testclient import TestClient
 
 from app import app
+from queue_api import CreateJobRequest
 
 USER_ID = "11111111-1111-4111-8111-111111111111"
 JOB_ID = "22222222-2222-4222-8222-222222222222"
@@ -114,6 +115,40 @@ class QueueApiTests(unittest.TestCase):
             },
             "idempotency_key": "api-request-0001",
         }
+
+    def test_video_job_duration_defaults_to_five_seconds_and_is_bounded(self):
+        request = CreateJobRequest(
+            modality="video",
+            model_id="astra-video-test",
+            aspect_ratio="16:9",
+            width=832,
+            height=480,
+            brief={"prompt": "A cinematic sunrise", "modality": "video", "aspect_ratio": "16:9"},
+            idempotency_key="video-request-001",
+        )
+        self.assertEqual(request.duration_seconds, 5)
+        with self.assertRaises(Exception):
+            CreateJobRequest(
+                modality="video",
+                model_id="astra-video-test",
+                aspect_ratio="16:9",
+                width=832,
+                height=480,
+                brief={"prompt": "A sunrise", "modality": "video", "aspect_ratio": "16:9"},
+                idempotency_key="video-request-002",
+                duration_seconds=121,
+            )
+        with self.assertRaises(Exception):
+            CreateJobRequest(
+                modality="image",
+                model_id="astra-image-test",
+                aspect_ratio="1:1",
+                width=512,
+                height=512,
+                brief={"prompt": "A planet", "modality": "image", "aspect_ratio": "1:1"},
+                idempotency_key="image-request-001",
+                duration_seconds=5,
+            )
 
     def test_queue_api_is_disabled_by_default(self):
         with patch.dict(os.environ, {"ASTRA_QUEUE_API_ENABLED": "false"}):
