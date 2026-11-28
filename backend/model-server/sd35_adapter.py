@@ -9,7 +9,7 @@ import hashlib
 from pathlib import Path
 from typing import Any
 
-from worker_runner import GenerationError
+from runtime_errors import GenerationError
 
 MODEL_ID = "stabilityai/stable-diffusion-3.5-medium"
 MAX_SIDE = 1024
