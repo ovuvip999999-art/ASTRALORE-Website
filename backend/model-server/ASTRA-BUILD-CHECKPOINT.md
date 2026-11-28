@@ -100,3 +100,5 @@ When resuming, fetch PR #20 and this checkpoint first, inspect the latest CI sta
 - CI run #545 (`46137702289`) passed both jobs on commit `740a2e5a129c86c8eb6c65e394eb7f63fb14f7d7`.
 
 - Output metadata safety ceiling tightened: maximum 512 MiB, 16,384 pixels per side, 100 megapixels total, and video duration up to 120 seconds. Added regression tests.
+
+- CI run #556 (`46137819590`) passed both `syntax` and `model-server` jobs on commit `e6da0d281efe3ee6409ce685efbf245bb327342d`, including output-dimension safety tests.
