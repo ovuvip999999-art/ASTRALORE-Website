@@ -249,6 +249,14 @@ class QueueApiTests(unittest.TestCase):
             },
         }
 
+    def test_status_and_cancel_reject_jobs_from_the_other_origin(self):
+        self.store.lookup = {"id": JOB_ID, "status": "queued", "request_origin": "public"}
+        response = self.client.get("/v1/jobs/" + JOB_ID, headers=self.headers())
+        self.assertEqual(response.status_code, 404)
+        response = self.client.post("/v1/jobs/" + JOB_ID + "/cancel", headers=self.headers())
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(self.store.cancel_status, "cancelled")
+
     def test_asset_url_requires_owner_visible_completed_job(self):
         self.store.lookup = self._completed_asset_job()
         response = self.client.get("/v1/jobs/" + JOB_ID + "/asset-url", headers=self.headers())
