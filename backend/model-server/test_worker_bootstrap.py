@@ -13,15 +13,6 @@ MODEL_ID = "astra/test-image"
 REVISION = "c" * 40
 
 
-class FakeAdapter:
-    def __init__(self, model):
-        self.model_id = model["model_id"]
-        self.revision = model["revision"]
-
-    def generate(self, job, *, output_dir, cancel_event):
-        return Path(output_dir) / "unused.png"
-
-
 class FakeModerationProvider:
     def moderate_prompt(self, prompt, modality):
         return SafetyDecision("allow", "benign", 0.99)
@@ -90,7 +81,7 @@ class WorkerBootstrapTests(unittest.TestCase):
         )
         return worker, client
 
-    def test_builds_worker_from_verified_manifest_and_code_owned_factory(self):
+    def test_builds_worker_with_supervised_sandbox_adapter(self):
         with tempfile.TemporaryDirectory() as root:
             worker, client = self.build(root)
             self.assertEqual(list(worker.adapters), [(MODEL_ID, REVISION)])
