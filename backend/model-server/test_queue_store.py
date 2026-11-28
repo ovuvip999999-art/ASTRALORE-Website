@@ -61,6 +61,15 @@ class QueueStoreTests(unittest.TestCase):
         )
         self.assertEqual(result["id"], JOB_ID)
 
+    def test_enqueue_rejects_unknown_origin_before_network(self):
+        store = self.store(lambda request: self.fail("Network must not be called"))
+        with self.assertRaises(QueueStoreError):
+            store.enqueue_job(
+                user_id=USER_ID, modality="image", model_id="astra-image-v1",
+                request={"prompt": "test"}, idempotency_key="request-1234",
+                request_origin="admin",
+            )
+
     def test_claim_uses_bounded_batch_and_lease(self):
         def handler(request):
             body = json.loads(request.content)
