@@ -158,15 +158,18 @@ class SupabaseQueueStore:
             raise QueueStoreError("Supabase returned an invalid generation job record.")
         return result
 
-    def claim_jobs(self, *, worker_id: str, batch_size: int = 1, lease_seconds: int = 120) -> list[dict[str, Any]]:
+    def claim_jobs(self, *, worker_id: str, request_origin: str, batch_size: int = 1, lease_seconds: int = 120) -> list[dict[str, Any]]:
         if not isinstance(worker_id, str) or not 1 <= len(worker_id.strip()) <= 100:
             raise QueueStoreError("worker_id must contain 1–100 characters.")
+        if request_origin not in {"internal", "public"}:
+            raise QueueStoreError("request_origin must be internal or public.")
         if isinstance(batch_size, bool) or not isinstance(batch_size, int) or not 1 <= batch_size <= 4:
             raise QueueStoreError("batch_size must be between 1 and 4.")
         if isinstance(lease_seconds, bool) or not isinstance(lease_seconds, int) or not 30 <= lease_seconds <= 600:
             raise QueueStoreError("lease_seconds must be between 30 and 600.")
-        result = self._call("POST", "/rest/v1/rpc/astra_claim_generation_jobs", body={
+        result = self._call("POST", "/rest/v1/rpc/astra_claim_generation_jobs_v2", body={
             "p_worker_id": worker_id.strip(),
+            "p_request_origin": request_origin,
             "p_batch_size": batch_size,
             "p_lease_seconds": lease_seconds,
         })
