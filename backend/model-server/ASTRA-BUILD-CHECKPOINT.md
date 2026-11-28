@@ -152,3 +152,13 @@ When resuming, fetch PR #20 and this checkpoint first, inspect the latest CI sta
 - Latest branch head tested: `2a68f36f5223d888341adf77a6325c75a7216f3b`.
 - CI run #653 passed both `syntax` and `model-server` jobs, including the PostgreSQL 16 migration/integration suite and all 88 Python tests.
 - PR #20 remains open/draft/unmerged; production and PR #19 remain untouched.
+
+## Actual media-byte validation foundation
+
+- Added `media_validation.py` to inspect actual local image/video files before a future worker marks jobs successful.
+- Image inspection uses Pillow to identify, verify, and fully decode PNG/JPEG/WebP bytes.
+- Video inspection uses local `ffprobe` with `shell=False`, a restricted `file,pipe` protocol whitelist, timeout, and bounded JSON output; only MP4/WebM are accepted.
+- Computes SHA-256 from the actual file and checks file identity, size, and modification time before/after inspection to detect mutation.
+- Worker limits: 512 MiB, 16K per side, 40 megapixels, 120-second video duration. The 40 MP cap is stricter than the database's 100 MP metadata ceiling to reduce decode-memory risk.
+- Added tests using real Pillow-generated image fixtures and mocked ffprobe success/failure responses. Added Pillow to runtime requirements and included tests in CI/Windows runner.
+- This is not yet wired to a worker or private storage. A future worker must run inspection in a restricted process/container, upload validated bytes privately, then complete the job. Generation remains disabled.
