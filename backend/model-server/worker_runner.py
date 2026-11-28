@@ -5,7 +5,6 @@ has been explicitly supplied by a separately reviewed inference runtime.
 """
 from __future__ import annotations
 
-import re
 import tempfile
 import threading
 from pathlib import Path
