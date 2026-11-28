@@ -401,7 +401,7 @@ The runtime image can be built and import-smoke-tested on an authorized Linux/AM
 ```bash
 cd backend/model-server
 python runtime_image_build.py \
-  --base-image 'pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime@sha256:c8268a92a69bd500f8be0e665b2630ee006dadaf7bfbc24249141b15ff622755' \
+  --base-image 'pytorch/pytorch@sha256:c8268a92a69bd500f8be0e665b2630ee006dadaf7bfbc24249141b15ff622755' \
   --tag astra-model-runtime:validation
 ```
 
