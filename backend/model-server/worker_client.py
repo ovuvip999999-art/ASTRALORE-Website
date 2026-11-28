@@ -16,6 +16,10 @@ class WorkerClientError(RuntimeError):
     """Sanitized private worker API client error."""
 
 
+class WorkerLeaseLost(WorkerClientError):
+    """The API confirmed that the current lease cannot be used."""
+
+
 @dataclass(frozen=True)
 class WorkerClientConfig:
     base_url: str
@@ -80,6 +84,8 @@ class PrivateWorkerClient:
                     },
                     json=body,
                 )
+            if response.status_code == 409:
+                raise WorkerLeaseLost("ASTRA worker lease is no longer valid.")
             if response.status_code < 200 or response.status_code >= 300:
                 raise WorkerClientError(f"ASTRA worker API rejected the request (HTTP {response.status_code}).")
             return response.json()
