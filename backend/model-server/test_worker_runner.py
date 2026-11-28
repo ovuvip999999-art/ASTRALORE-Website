@@ -1,10 +1,9 @@
 import io
 import json
 import tempfile
-import time
 import unittest
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 from threading import Event
 
 from PIL import Image
@@ -320,7 +319,7 @@ class WorkerRunnerTests(unittest.TestCase):
     def test_lost_lease_terminates_supervised_container_before_upload(self):
         class FakeProcess:
             def __init__(self):
-                self.stdin = unittest.mock.Mock()
+                self.stdin = Mock()
                 self.stdout = io.BytesIO(json.dumps({
                     "ok": True, "filename": "generated.png"
                 }).encode("utf-8"))
@@ -351,7 +350,7 @@ class WorkerRunnerTests(unittest.TestCase):
                 commands.append(command)
                 if command[1] == "kill":
                     process.killed = True
-                return unittest.mock.Mock(returncode=0)
+                return Mock(returncode=0)
 
             executor = DockerSandboxExecutor(
                 config=SandboxConfig(
