@@ -66,3 +66,30 @@ python quality_eval.py --runs runs.jsonl --ratings ratings.jsonl --output report
 The run manifest and rating file are JSONL: one JSON object per line. Run metadata records the model revision, runtime version, seed, dimensions, generation time, peak VRAM, and output SHA-256. Ratings use a blind model label and integer scores from 1–5. Image and video use separate rubrics; video explicitly scores temporal coherence and motion quality.
 
 The evaluator does not generate media, anonymize files, or claim statistical significance. Keep the prompt set, generation settings, and review process consistent when comparing models. Do not put private media URLs, user secrets, or personal data in benchmark manifests.
+
+## Creative Brief Compiler
+
+ASTRA also exposes an authenticated, provider-neutral structured brief endpoint:
+
+- `POST /v1/brief/compile` with JSON body `{"brief": {"prompt": "...", "modality": "image"}}`.
+- Optional fields: `aspect_ratio`, `style`, `subjects`, `environment`, `composition`, `camera`, `lighting`, `motion` (video only), and `negative_constraints`.
+- The response includes a normalized brief, deterministic compiled prompt, schema version, and SHA-256 fingerprint.
+- Unknown fields, invalid modality/ratio, duplicate list entries, and overlong values are rejected.
+- The original user prompt remains first. The compiler adds only explicitly supplied fields and does not invent scene details.
+
+This is a deterministic structured-input compiler, not an LLM parser or a guarantee of better model output. It does not call a generation model and can be tested without GPU hardware.
+
+Example:
+
+```json
+{
+  "brief": {
+    "prompt": "A lone explorer at the edge of an ancient observatory",
+    "modality": "image",
+    "aspect_ratio": "16:9",
+    "style": "hand-painted cinematic illustration",
+    "lighting": "warm light from a low sun",
+    "composition": "wide establishing shot"
+  }
+}
+```
