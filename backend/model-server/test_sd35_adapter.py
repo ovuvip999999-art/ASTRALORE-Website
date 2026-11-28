@@ -179,6 +179,18 @@ class SD35AdapterTests(unittest.TestCase):
         adapter = registry[(MODEL_ID, REVISION)]
         self.assertIsInstance(adapter, SD35MediumAdapter)
 
+    def test_load_rechecks_sha256_if_model_file_changes_after_manifest_verification(self):
+        with tempfile.TemporaryDirectory() as root:
+            model = self.build_model(root)
+            (Path(root) / "transformer" / "weights.safetensors").write_bytes(b"changed")
+            with self.assertRaises(SD35AdapterError):
+                SD35MediumAdapter.load(
+                    model,
+                    model_dir=root,
+                    pipeline_class=FakePipelineClass,
+                    torch_module=FakeTorch,
+                )
+
     def test_generate_uses_bounded_deterministic_settings_and_saves_png(self):
         with tempfile.TemporaryDirectory() as model_root, tempfile.TemporaryDirectory() as output_root:
             model = self.build_model(model_root)
