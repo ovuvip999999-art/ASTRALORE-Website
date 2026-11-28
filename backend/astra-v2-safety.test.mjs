@@ -43,6 +43,9 @@ test("creative endpoints enforce owner, free, premium, and rolling 24-hour plans
   const config = await read("./wrangler.toml");
 
   assert.match(worker, /env\.ASTRA_CREATIVE_ENABLED !== "true"/);
+  assert.match(worker, /if \(creativeAction\) \{[\s\S]*?No creative model request was sent\./);
+  assert.ok(worker.indexOf("if (creativeAction) {") < worker.indexOf('env.AI.run("@cf/black-forest-labs/flux-2-klein-4b"'));
+  assert.ok(worker.indexOf("if (creativeAction) {") < worker.indexOf('env.AI.run("xai/grok-imagine-video"'));
   assert.match(worker, /env\.ASTRA_VIDEO_ENABLED !== "true"/);
   assert.match(worker, /reserveCreativeUsage\(env, authorization, authenticatedUser\.id, "image"\)/);
   assert.match(worker, /reserveCreativeUsage\(env, authorization, authenticatedUser\.id, "video"\)/);
@@ -74,7 +77,11 @@ test("creative prompts are validated and failed model calls keep their reservati
   assert.match(worker, /generate-video/);
   assert.match(worker, /ASTRA video generation failed/);
   assert.match(worker, /ASTRA image generation failed/);
-  assert.match(html, /Image generation is free for me/i);
-  assert.ok(html.includes("Video generation is free for me"));
+  assert.match(html, /IMAGE GENERATION PAUSED/);
+  assert.match(html, /VIDEO GENERATION DISABLED/);
+  assert.match(html, /id="astraImageGenerate"[^>]*disabled/);
+  assert.match(html, /id="astraVideoGenerate"[^>]*disabled/);
+  assert.match(html, /temporarily paused/i);
+  assert.match(html, /No video model requests are currently sent/i);
   assert.match(studio, /prompt/i);
 });
