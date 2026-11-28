@@ -184,3 +184,19 @@ When resuming, fetch PR #20 and this checkpoint first, inspect the latest CI sta
 5. Add private Worker-to-model-server job submission/status integration only behind the existing fail-closed generation guard and an additional explicit disabled-by-default flag.
 6. Review and select model revisions/licenses, then build a small isolated inference adapter and benchmark actual outputs.
 
+
+## Private worker control plane milestone
+
+- Added `worker_api.py`, mounted in FastAPI separately from the user/Worker job API.
+- Internal routes: claim bounded batch, heartbeat lease/cancellation, complete with output metadata, and fail with safe error code/retryable flag.
+- Uses separate `ASTRA_WORKER_TOKEN` (minimum 32 characters, constant-time compare) and explicit `ASTRA_WORKER_API_ENABLED=true`. Default disabled.
+- Worker control endpoints are not exposed through the Cloudflare Worker or browser; they are intended only for a future private server-to-server network.
+- Added HTTP tests for disabled default, missing/weak/wrong credentials, bounded claims, lease expiry/cancellation, completion, failure codes, and malformed IDs.
+- Added test module to CI and Windows runner. CI verification is pending.
+- No polling process, inference, public worker endpoints, secrets, or deployment have been added.
+
+
+## Latest resume checkpoint
+
+- Worker control plane and private asset storage code are committed to `feature/astra-creative-skills`; verify latest head and CI before further edits.
+- Migrations 0010/0011 remain unapplied. Queue API and worker API remain disabled by default. Generation remains blocked at the Cloudflare Worker.
