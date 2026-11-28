@@ -282,7 +282,7 @@ When resuming, fetch PR #20 and this checkpoint first, inspect the latest CI sta
 
 - Added `backend/queue-proxy.mjs` with strict create/status/cancel/asset-url validation and fixed model-server routes; no caller-controlled URL or owner UUID is accepted.
 - Updated `backend/worker.js` to forward queue actions only after Supabase user authentication. It forwards the user's original access token and the private server token held only in Worker environment.
-- Queue creation requires `costAcknowledged: true` and six explicit Worker flags: queue API, model runtime, moderation, worker process, generation approval, and zero-cost approval.
+- Queue creation requires `costAcknowledged: true` and six explicit Worker flags: queue API, model runtime, moderation, worker process, generation approval, and cost-policy approval.
 - The model server has its own independent queue API flag, disabled by default.
 - The existing direct creativeAction generation route remains fail-closed before any provider call.
 - Added `backend/queue-proxy.test.mjs` for strict payload validation, disabled defaults, readiness flags, fixed routes, credentials, response bounds and sanitized errors. Added syntax/test coverage to GitHub Actions and the Windows runner.
@@ -290,3 +290,5 @@ When resuming, fetch PR #20 and this checkpoint first, inspect the latest CI sta
 - Readiness flags are explicit deployment approvals, not automatic health checks; they must stay false until actual model, moderation and worker runtime checks pass.
 - CI verification for the Worker bridge is pending.
 
+
+- Cost flag naming clarified to `ASTRA_COST_POLICY_APPROVED`: this is not a claim that self-hosted infrastructure is free; actual GPU/hosting/storage/bandwidth costs must be reviewed by the account owner.
