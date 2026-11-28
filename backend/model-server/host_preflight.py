@@ -115,17 +115,20 @@ def run_host_preflight(
     probe = CUDA_PROBE.replace(
         "REQUIRED_VRAM_BYTES", str(required_vram_mb * 1024 * 1024)
     )
-    probe_output = _run(
-        [
-            config.docker_executable, "run", "--rm",
-            "--network", "none", "--read-only",
-            "--tmpfs", "/tmp:rw,noexec,nosuid,nodev,size=67108864",
-            "--gpus", f"device={config.gpu_device}",
-            "--entrypoint", "python", config.image, "-c", probe,
-        ],
-        docker_runner,
-        timeout=120,
-    )
+    try:
+        probe_output = _run(
+            [
+                config.docker_executable, "run", "--rm",
+                "--network", "none", "--read-only",
+                "--tmpfs", "/tmp:rw,noexec,nosuid,nodev,size=67108864",
+                "--gpus", f"device={config.gpu_device}",
+                "--entrypoint", "python", config.image, "-c", probe,
+            ],
+            docker_runner,
+            timeout=120,
+        )
+    except HostPreflightError:
+        raise HostPreflightError("CUDA_CONTAINER_PROBE_FAILED") from None
     if "ASTRA_CUDA_GPU_OK" not in probe_output:
         raise HostPreflightError("CUDA_CONTAINER_PROBE_FAILED")
 
