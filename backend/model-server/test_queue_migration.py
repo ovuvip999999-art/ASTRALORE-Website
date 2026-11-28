@@ -12,6 +12,7 @@ class QueueMigrationContractTests(unittest.TestCase):
         cls.storage_sql = (MIGRATION.parent / "0011_astra_private_generated_assets.sql").read_text(encoding="utf-8").lower()
         cls.access_sql = (MIGRATION.parent / "0012_astra_job_access_modes.sql").read_text(encoding="utf-8").lower()
         cls.worker_claim_sql = (MIGRATION.parent / "0013_astra_origin_scoped_worker_claims.sql").read_text(encoding="utf-8").lower()
+        cls.capacity_sql = (MIGRATION.parent / "0014_astra_worker_capacity_fairness.sql").read_text(encoding="utf-8").lower()
 
     def test_private_table_has_owner_scoped_rls(self):
         self.assertIn("alter table public.astra_generation_jobs enable row level security", self.sql)
@@ -74,6 +75,17 @@ class QueueMigrationContractTests(unittest.TestCase):
         self.assertIn("from public, anon, authenticated", self.worker_claim_sql)
         self.assertIn("to service_role", self.worker_claim_sql)
         self.assertIn("drop function if exists public.astra_claim_generation_jobs", self.worker_claim_sql)
+
+    def test_worker_capacity_has_reserved_internal_slots_and_atomic_accounting(self):
+        self.assertIn("astra_worker_capacity", self.capacity_sql)
+        self.assertIn("global_slots integer not null default 4", self.capacity_sql)
+        self.assertIn("public_slots integer not null default 2", self.capacity_sql)
+        self.assertIn("public_slots < global_slots", self.capacity_sql)
+        self.assertIn("pg_advisory_xact_lock(0, 10011)", self.capacity_sql)
+        self.assertIn("v_public_slots - v_running_public", self.capacity_sql)
+        self.assertIn("v_global_slots - v_running_total", self.capacity_sql)
+        self.assertIn("for update skip locked", self.capacity_sql)
+        self.assertIn("to service_role", self.capacity_sql)
 
     def test_generated_asset_bucket_is_private_and_user_policies_are_restricted(self):
         self.assertIn("'astra-generated-private'", self.storage_sql)
