@@ -9,6 +9,7 @@ on:
     types: [opened, synchronize, reopened, edited]
     paths:
       - "backend/worker.js"
+      - "backend/*.test.mjs"
       - "backend/migrations/**"
       - "backend/wrangler.toml"
       - "astra-page.js"
