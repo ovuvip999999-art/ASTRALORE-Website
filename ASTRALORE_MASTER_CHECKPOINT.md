@@ -139,10 +139,10 @@ After the executor is verified, continue with host capability/preflight, model-l
 - The current API Dockerfile is not the GPU model-runtime image. Do not use it as the model runtime.
 - The executor uses the existing policy's container command, but host bind-mount collection, Docker daemon trust, host integration behavior, timeout/lease race handling and Windows/Linux host behavior still need dedicated review and tests.
 - No Docker daemon or GPU execution was run in this environment. No model weights downloaded. No inference performed. Generation remains disabled.
-- The workflow run for commit `2c06aaa8e795915c70d7b3d484223a8e288c1955` was observed in progress at checkpoint time (run `46145488449`; duplicate run `46145484297`). Do not mark tests green until the model-server job completes successfully.
+- GitHub Actions run `46145488449` for commit `2c06aaa8e795915c70d7b3d484223a8e288c1955` completed successfully: both `syntax` and `model-server` jobs passed, including compile and full `python -m unittest -v` discovery. Duplicate PR run `46145484297` also passed both jobs. Earlier run `46145458942` for the test-file commit also passed both jobs. The final checkpoint-only commit below triggered run `46145535179`; its syntax job passed and its model-server job was still running when last checked.
 
 ### Exact next engineering actions
-1. Inspect CI results for runs `46145488449` and `46145484297`; fix any compile/test failures before extending the design.
+1. Confirm the model-server job in run `46145535179` completes successfully; the equivalent full test suite already passed in run `46145488449` for the code/workflow commit.
 2. Harden executor tests: verify Docker copy failures, symlink/path traversal behavior, output byte cap, timeout cleanup, container name handling and cleanup failures.
 3. Resolve a key architecture issue: existing SD3.5/Wan adapters load and run inside the worker process. Define a strict request/response protocol and a dedicated trusted model-runtime image that initializes only code-owned model adapters from the verified model manifest, with no model downloads or remote code.
 4. Wire a sandbox-backed adapter into worker bootstrap so no model adapter can execute in-process in production. Keep fake adapters available only to tests.
