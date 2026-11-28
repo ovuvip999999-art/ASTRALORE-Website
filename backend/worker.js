@@ -14,6 +14,18 @@ const ALLOWED_ORIGINS = new Set([
   "http://127.0.0.1:5500"
 ]);
 
+function isAllowedOrigin(origin) {
+  if (ALLOWED_ORIGINS.has(origin)) return true;
+  try {
+    const parsed = new URL(origin);
+    return parsed.protocol === "https:" &&
+      parsed.origin === origin &&
+      /^[a-f0-9]{8}\\.astralore-aeb\\.pages\\.dev$/i.test(parsed.hostname);
+  } catch {
+    return false;
+  }
+}
+
 const ASTRALORE_KNOWLEDGE = `
 VERIFIED ASTRALORE WEBSITE ARCHIVE:
 1. "A Day Longer Than a Year" — Venus rotates once in about 243 Earth days and orbits the Sun in about 225 Earth days, so its sidereal rotation period is longer than its year.
@@ -270,7 +282,7 @@ async function consumeImageQuota(env, authorization, userId) {
 export default {
   async fetch(request, env) {
     const origin = request.headers.get("Origin") || "";
-    if (!ALLOWED_ORIGINS.has(origin)) {
+    if (!isAllowedOrigin(origin)) {
       return new Response("Origin not allowed", { status: 403 });
     }
 
