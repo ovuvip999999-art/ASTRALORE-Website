@@ -19,6 +19,7 @@ MIGRATIONS = [
     Path(__file__).resolve().parents[1] / "migrations" / "0011_astra_private_generated_assets.sql",
     Path(__file__).resolve().parents[1] / "migrations" / "0012_astra_job_access_modes.sql",
     Path(__file__).resolve().parents[1] / "migrations" / "0013_astra_origin_scoped_worker_claims.sql",
+    Path(__file__).resolve().parents[1] / "migrations" / "0014_astra_worker_capacity_fairness.sql",
 ]
 
 
@@ -188,6 +189,39 @@ class QueuePostgresIntegrationTests(unittest.TestCase):
                     "select * from public.astra_claim_generation_jobs_v2(%s, %s, 1, 90)",
                     ("worker", "all"),
                 )
+
+    def test_public_capacity_cannot_consume_reserved_internal_slots(self):
+        with self.connect("service_role") as conn:
+            conn.execute(
+                "update public.astra_worker_capacity set global_slots = 3, public_slots = 1 where singleton = true"
+            )
+            public_one = self.enqueue(conn, user_id=USER_A, key="fair-public-0001", request_origin="public")
+            public_two = self.enqueue(conn, user_id=USER_B, key="fair-public-0002", request_origin="public")
+            internal_one = self.enqueue(conn, user_id=USER_A, key="fair-internal-0001", request_origin="internal")
+            internal_two = self.enqueue(conn, user_id=USER_A, key="fair-internal-0002", request_origin="internal")
+
+            claimed_public = self.claim(conn, worker="public-worker", request_origin="public")
+            self.assertEqual(claimed_public["id"], public_one["id"])
+            self.assertIsNone(self.claim(conn, worker="public-worker", request_origin="public"))
+
+            claimed_internal_one = self.claim(conn, worker="internal-worker-1", request_origin="internal")
+            claimed_internal_two = self.claim(conn, worker="internal-worker-2", request_origin="internal")
+            self.assertEqual(claimed_internal_one["id"], internal_one["id"])
+            self.assertEqual(claimed_internal_two["id"], internal_two["id"])
+
+            # Three slots are occupied: one public and two internal. A second
+            # public job remains queued and cannot take either reserved slot.
+            self.assertEqual(
+                conn.execute(
+                    "select status from public.astra_generation_jobs where id = %s",
+                    (public_two["id"],),
+                ).fetchone()["status"],
+                "queued",
+            )
+            self.assertEqual(
+                conn.execute("select count(*) as n from public.astra_generation_jobs where status = 'running'").fetchone()["n"],
+                3,
+            )
 
     def test_claim_lease_heartbeat_and_expired_lease_recovery(self):
         with self.connect("service_role") as conn:
