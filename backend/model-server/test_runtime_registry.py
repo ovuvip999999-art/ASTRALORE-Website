@@ -6,6 +6,8 @@ MODEL = {
     "model_id": "astra/test-image",
     "revision": "a" * 40,
     "runtime": "diffusers",
+    "license_id": "apache-2.0",
+    "license_reviewed_by_owner": True,
     "files": [{"path": "weights.bin", "resolved_path": "/private/models/weights.bin"}],
 }
 
@@ -20,6 +22,15 @@ class FakeAdapter:
 
 
 class RuntimeRegistryTests(unittest.TestCase):
+    def test_unreviewed_license_cannot_register_an_adapter(self):
+        pending = dict(MODEL)
+        pending["license_reviewed_by_owner"] = False
+        registry = build_adapter_registry(
+            [pending],
+            factories={"diffusers": lambda model: FakeAdapter(model["model_id"], model["revision"])},
+        )
+        self.assertEqual(registry, {})
+
     def test_no_trusted_factory_means_model_is_not_available(self):
         self.assertEqual(build_adapter_registry([MODEL], factories={}), {})
 
