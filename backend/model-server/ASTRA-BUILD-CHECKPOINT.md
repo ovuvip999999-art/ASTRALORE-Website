@@ -237,3 +237,13 @@ When resuming, fetch PR #20 and this checkpoint first, inspect the latest CI sta
 - CI run #766 (`46140532387`) passed both `syntax` and `model-server` jobs on head `9c30692b2a0a44e82b42f1e39cccd4235b2ebb25`.
 - Model-server suite ran 132 tests successfully, including PostgreSQL 16 integration for queue and private Storage migrations.
 - The worker runner was tested with mocked adapters only; no real inference runtime or model weights were used.
+
+## Model candidate and artifact preflight milestone
+
+- Added `MODEL-CANDIDATE-REVIEW.md` using primary model-card/repository sources. Initial image evaluation candidate: Stable Diffusion 3.5 Medium (Stability Community License; gated terms require adult account-owner review). Initial video evaluation candidate: Wan2.1 T2V 1.3B (Apache 2.0; upstream reports 8.19 GB VRAM and ~4 minutes for 5 seconds at 480p on RTX 4090).
+- These are evaluation candidates, not final production selections. No gated license has been accepted and no weights have been downloaded.
+- Added `runtime_manifest.py` to validate immutable model revisions, allowed runtime identifiers, modality/capability bounds, artifact paths, file sizes and SHA-256 checksums inside a local model root.
+- Manifest rejects remote code execution, path traversal, symlinks, missing/mismatched files, duplicate entries, and oversized model bundles.
+- Added unit tests and included manifest validation in CI and Windows runner. Verification pending.
+- This module does not download/load weights or activate inference. No runtime manifest or model adapter is configured. Generation remains disabled.
+
