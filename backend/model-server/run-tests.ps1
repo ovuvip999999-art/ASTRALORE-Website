@@ -1,4 +1,6 @@
 $ErrorActionPreference = "Stop"
+node --test ..\queue-proxy.test.mjs
+if ($LASTEXITCODE -ne 0) { throw "ASTRA Worker queue proxy tests failed." }
 
 Write-Host "ASTRA model-server checks (API/scaffold only; no model weights or GPU required)" -ForegroundColor Cyan
 
