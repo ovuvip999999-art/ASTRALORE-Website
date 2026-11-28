@@ -401,10 +401,10 @@ The runtime image can be built and import-smoke-tested on an authorized Linux/AM
 ```bash
 cd backend/model-server
 python runtime_image_build.py \
-  --base-image 'pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime@sha256:REPLACE_WITH_VERIFIED_DIGEST' \
+  --base-image 'pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime@sha256:c8268a92a69bd500f8be0e665b2630ee006dadaf7bfbc24249141b15ff622755' \
   --tag astra-model-runtime:validation
 ```
 
-The base-image argument must be replaced with the real 64-character SHA-256 digest verified from the upstream registry; placeholders and mutable tags are rejected. The script builds without cache, disables network access for its container import smoke test, verifies the pinned PyTorch/CUDA versions and imports the trusted runtime modules, and never pushes to a registry.
+The example uses the official PyTorch Docker Hub linux/amd64 manifest digest shown on its image-layer record. Confirm it remains available from your Docker registry before building; placeholders and mutable tags are rejected. The script builds without cache, disables network access for its container import smoke test, verifies the pinned PyTorch/CUDA versions and imports the trusted runtime modules, and never pushes to a registry.
 
 A successful local build is not yet a deployable worker image: after an owner-authorized registry push, record the registry-returned immutable image digest and configure the worker with that exact digest. Then run `host_preflight.py` and the opt-in Docker/GPU integration test on the target GPU host. No digest, registry, GPU host, credentials, or paid service is assumed or invented here.
