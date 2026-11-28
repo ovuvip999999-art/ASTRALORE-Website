@@ -1,3 +1,5 @@
+import io
+import json
 import tempfile
 import threading
 import unittest
@@ -11,10 +13,13 @@ IMAGE = "registry.example/astra/runtime@sha256:" + "b" * 64
 
 
 class FakeProcess:
-    def __init__(self, *, returncode=0, never_exit=False):
+    def __init__(self, *, returncode=0, never_exit=False, stdout_data=None):
         self.returncode = returncode
         self.never_exit = never_exit
         self.stdin = Mock()
+        if stdout_data is None:
+            stdout_data = json.dumps({"ok": True, "filename": "result.png"}).encode("utf-8")
+        self.stdout = io.BytesIO(stdout_data)
         self.pid = 12345
         self.killed = False
 
@@ -106,6 +111,28 @@ class SandboxExecutorTests(unittest.TestCase):
                 cancel_event=threading.Event(),
             )
         self.assertEqual(caught.exception.error_code, "SANDBOX_OUTPUT_INVALID")
+
+    def test_reported_filename_must_match_collected_output(self):
+        process = FakeProcess(stdout_data=json.dumps({
+            "ok": True, "filename": "different.png"
+        }).encode("utf-8"))
+        with self.assertRaises(SandboxExecutionError) as caught:
+            self.executor(process=process).execute(
+                {"model_id": "test-model"},
+                output_dir=self.output,
+                cancel_event=threading.Event(),
+            )
+        self.assertEqual(caught.exception.error_code, "SANDBOX_PROTOCOL_INVALID")
+
+    def test_oversized_result_protocol_is_rejected(self):
+        process = FakeProcess(stdout_data=b"x" * 5000)
+        with self.assertRaises(SandboxExecutionError) as caught:
+            self.executor(process=process).execute(
+                {"model_id": "test-model"},
+                output_dir=self.output,
+                cancel_event=threading.Event(),
+            )
+        self.assertEqual(caught.exception.error_code, "SANDBOX_PROTOCOL_INVALID")
 
     def test_failed_docker_copy_is_rejected_even_if_partial_file_exists(self):
         def failed_copy(command, **kwargs):
