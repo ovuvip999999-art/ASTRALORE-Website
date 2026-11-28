@@ -144,7 +144,7 @@ class WorkerEndToEndTests(unittest.TestCase):
 
     def test_private_worker_api_rejects_wrong_token_through_real_client(self):
         client = PrivateWorkerClient(
-            WorkerClientConfig("https://worker.internal.example", "wrong-token-value-that-is-too-short"),
+            WorkerClientConfig("https://worker.internal.example", "wrong-but-long-enough-worker-token-value-123456"),
             transport=self.transport(),
         )
         # The client itself enforces a strong token before it can make a request.
