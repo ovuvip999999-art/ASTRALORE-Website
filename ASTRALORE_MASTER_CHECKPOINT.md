@@ -550,3 +550,6 @@ After the executor is verified, continue with host capability/preflight, model-l
 - Migration 0012 is a repository artifact only; it has NOT been applied to Supabase. No secrets, routes in the public Cloudflare Worker, feature flags, deployment, or generation settings were changed.
 - The existing worker can continue claiming both origins through the shared queue. Worker-side prioritization/fairness and a distinct internal service identity remain follow-up work; this milestone does not claim complete end-to-end isolation from a compromised shared credential.
 - CI must pass against the new migration and route changes before this milestone is considered verified.
+
+- Follow-up hardening: added independent `ASTRA_INTERNAL_QUEUE_API_ENABLED` and `ASTRA_PUBLIC_QUEUE_API_ENABLED` gates in addition to the global queue flag. Both origin modes remain disabled unless their own server-side flag is explicitly true; the public Worker proxy also fails closed unless its public-mode flag is enabled. Tests cover public-mode default-off behavior.
+- The Cloudflare queue proxy now uses only `/v1/public/jobs` for create/status/cancel/asset retrieval. The internal legacy routes are not selected by the browser-facing Worker.
