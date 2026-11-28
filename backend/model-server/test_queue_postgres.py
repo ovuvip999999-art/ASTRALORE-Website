@@ -152,9 +152,14 @@ class QueuePostgresIntegrationTests(unittest.TestCase):
             ).fetchone()
             self.assertEqual(internal["request_origin"], "internal")
             self.assertEqual(public["request_origin"], "public")
+            with self.assertRaises(psycopg.Error):
+                conn.execute(
+                    "select public.astra_enqueue_generation_job_v2(%s, %s, %s, %s, %s, %s)",
+                    (USER_A, "image", "astra-image-test", Jsonb({"prompt": "public two"}), "origin-key-0003", "public"),
+                )
             conn.execute(
                 "select public.astra_enqueue_generation_job_v2(%s, %s, %s, %s, %s, %s)",
-                (USER_A, "image", "astra-image-test", Jsonb({"prompt": "public two"}), "origin-key-0003", "public"),
+                (USER_A, "image", "astra-image-test", Jsonb({"prompt": "internal two"}), "origin-key-0004", "internal"),
             )
             with self.assertRaises(psycopg.Error):
                 conn.execute(
