@@ -9,6 +9,8 @@ on:
     types: [opened, synchronize, reopened, edited]
     paths:
       - "backend/worker.js"
+      - "backend/creative-providers.js"
+      - "backend/CREATIVE-GENERATION-SAFETY.md"
       - "backend/*.test.mjs"
       - "backend/migrations/**"
       - "backend/wrangler.toml"
