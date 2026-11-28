@@ -79,6 +79,22 @@ class PrivateAssetStoreTests(unittest.TestCase):
             )
         self.assertEqual(calls, ["POST", "DELETE"])
 
+    def test_conflicting_object_is_never_deleted(self):
+        calls = []
+        wrong = dict(self.asset)
+        wrong["sha256"] = "0" * 64
+
+        def handler(request):
+            calls.append(request.method)
+            return httpx.Response(409, json={"message": "Object already exists"})
+        store = SupabasePrivateAssetStore(self.config(), transport=httpx.MockTransport(handler))
+        with self.assertRaises(AssetStoreError):
+            store.upload_validated_file(
+                self.file, work_dir=self.root, user_id=USER_ID, job_id=JOB_ID,
+                validated_asset=wrong,
+            )
+        self.assertEqual(calls, ["POST"])
+
     def test_outside_file_and_invalid_owner_ids_are_rejected(self):
         with tempfile.TemporaryDirectory() as outside_dir:
             outside = Path(outside_dir) / "outside.png"
