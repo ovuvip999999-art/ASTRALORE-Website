@@ -7,7 +7,7 @@ const read = path => readFile(new URL(path, import.meta.url), "utf8");
 test("enabled skills are retrieved only for the authenticated owner", async () => {
   const worker = await read("./worker.js");
   const loaderStart = worker.indexOf("async function loadEnabledSkills");
-  const loaderEnd = worker.indexOf("\nasync function releaseImageQuota", loaderStart);
+  const loaderEnd = worker.indexOf("\nasync function reserveCreativeUsage", loaderStart);
   assert.notEqual(loaderStart, -1, "Worker must define the skill loader");
   assert.notEqual(loaderEnd, -1, "Skill loader boundary must remain identifiable");
   const loader = worker.slice(loaderStart, loaderEnd);
@@ -63,7 +63,7 @@ test("creative endpoints fail closed and enforce per-account quotas", async () =
   assert.match(config, /ASTRA_VIDEO_ENABLED = "false"/);
 });
 
-test("creative prompts are validated before generation and model failures release quota", async () => {
+test("creative prompts are validated and failed model calls keep their reservation", async () => {
   const worker = await read("./worker.js");
   const studio = await read("../astra-creative-studio.js");
   const html = await read("../astra.html");
