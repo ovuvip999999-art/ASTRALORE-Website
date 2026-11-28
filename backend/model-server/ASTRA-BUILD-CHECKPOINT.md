@@ -200,3 +200,14 @@ When resuming, fetch PR #20 and this checkpoint first, inspect the latest CI sta
 
 - Worker control plane and private asset storage code are committed to `feature/astra-creative-skills`; verify latest head and CI before further edits.
 - Migrations 0010/0011 remain unapplied. Queue API and worker API remain disabled by default. Generation remains blocked at the Cloudflare Worker.
+
+## Owner-authorized private asset retrieval milestone
+
+- Added `GET /v1/jobs/{job_id}/asset-url` to the authenticated queue API.
+- It first verifies the internal server secret and the caller's Supabase access token, then reads the job using the caller's RLS context.
+- Only succeeded jobs with a storage path exactly matching the authenticated user, job, asset UUID and MIME extension can receive a URL.
+- The asset adapter requests a 60-second signed URL using the server-only service-role credential and validates that the returned URL is relative and points to the exact private bucket/object.
+- Added tests for success, missing jobs, incomplete jobs, cross-owner path rejection, signing failures, invalid paths, external signed URL rejection and lifetime bounds.
+- The bucket remains private; signed URLs are bearer links and must not be logged. The queue API remains disabled by default.
+- CI verification for the newest signed-URL and worker API tests is pending.
+
