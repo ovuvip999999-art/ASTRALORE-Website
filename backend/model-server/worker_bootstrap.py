@@ -9,7 +9,8 @@ from pathlib import Path
 from typing import Any, Callable
 
 from runtime_manifest import RuntimeManifestError, load_manifest_json, verify_model_artifacts
-from runtime_registry import RuntimeRegistryError, build_adapter_registry
+from sandbox_adapter import build_sandbox_adapter_registry
+from sandbox_executor import DockerSandboxExecutor
 from safety_gate import SafetyGate
 from worker_runner import GenerationWorker
 
@@ -22,7 +23,7 @@ def build_generation_worker(
     *,
     manifest_json: str,
     model_root: str | Path,
-    runtime_factories: dict[str, Callable[[dict[str, Any]], Any]],
+    sandbox_executor: DockerSandboxExecutor,
     moderation_provider: Any,
     client: Any,
     asset_store: Any,
@@ -37,16 +38,22 @@ def build_generation_worker(
     if client is None or asset_store is None:
         raise WorkerStartupError("Private queue client and asset storage must be configured.")
     try:
+        if not isinstance(sandbox_executor, DockerSandboxExecutor):
+            raise ValueError("A supervised Docker sandbox executor is required.")
         manifest = load_manifest_json(manifest_json)
         verified = verify_model_artifacts(manifest, model_root=model_root)
-        adapters = build_adapter_registry(verified, factories=runtime_factories)
-    except (RuntimeManifestError, RuntimeRegistryError, OSError, ValueError):
+        configured_root = Path(sandbox_executor.config.model_directory).resolve(strict=True)
+        supplied_root = Path(model_root).resolve(strict=True)
+        if configured_root != supplied_root:
+            raise ValueError("Sandbox model mount must match the verified model root.")
+        adapters = build_sandbox_adapter_registry(verified, executor=sandbox_executor)
+    except (RuntimeManifestError, OSError, ValueError):
         raise WorkerStartupError("ASTRA model manifest or trusted runtime registry failed verification.") from None
     except Exception:
         raise WorkerStartupError("ASTRA model runtime initialization failed.") from None
 
     if not adapters:
-        raise WorkerStartupError("No owner-reviewed model with an installed trusted runtime adapter is available.")
+        raise WorkerStartupError("No owner-reviewed model with a supported supervised sandbox runtime is available.")
 
     try:
         gate = SafetyGate(moderation_provider)
