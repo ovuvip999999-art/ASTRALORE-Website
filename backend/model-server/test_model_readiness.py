@@ -129,7 +129,14 @@ class ModelReadinessTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp:
             root = Path(temp)
             model = self.build_package(root, WAN_ID, reviewed=True)
-            raw = json.dumps({"models": [model]})
+            raw_model = {
+                **model,
+                "files": [
+                    {key: item[key] for key in ("path", "sha256", "size_bytes")}
+                    for item in model["files"]
+                ],
+            }
+            raw = json.dumps({"models": [raw_model]})
             reports = inspect_manifest(raw, model_root=root)
         self.assertEqual(len(reports), 1)
         self.assertTrue(reports[0]["structure_valid"])
