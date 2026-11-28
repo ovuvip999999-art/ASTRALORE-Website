@@ -105,6 +105,10 @@ class QueuePostgresIntegrationTests(unittest.TestCase):
                 "update public.astra_generation_jobs set lease_expires_at = now() - interval '1 second' where id = %s",
                 (claimed["id"],),
             )
+            conn.execute(
+                "update public.astra_generation_jobs set available_at = now() where id = %s",
+                (claimed["id"],),
+            )
             reclaimed = self.claim(conn)
             self.assertEqual(reclaimed["id"], created["id"])
             self.assertEqual(reclaimed["attempts"], 2)
@@ -211,7 +215,7 @@ class QueuePostgresIntegrationTests(unittest.TestCase):
         with ThreadPoolExecutor(max_workers=2) as pool:
             ids = list(pool.map(claim_for, ["worker-one", "worker-two"]))
         self.assertEqual(len(set(ids)), 2)
-        self.assertTrue(all(UUID(value) for value in ids))
+        self.assertTrue(all(isinstance(value, UUID) for value in ids))
 
 
 if __name__ == "__main__":
