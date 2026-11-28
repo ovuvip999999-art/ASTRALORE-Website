@@ -121,7 +121,7 @@ This is a pure contract and validator, not a durable queue or API endpoint. Prod
 
 ## HTTP integration tests
 
-Install test dependencies with `pip install -r requirements-dev.txt`. The CI suite uses FastAPI's TestClient to exercise actual HTTP routing, bearer authentication, brief compilation, model-catalog routing, schema rejection, health output, and the intentionally disabled image/video inference endpoints. The generation endpoints are expected to return HTTP 503 until reviewed runtimes are installed.
+Install test dependencies with `pip install -r requirements-dev.txt`. The CI suite uses FastAPI's TestClient to exercise actual HTTP routing, bearer authentication, brief compilation, model-catalog routing, schema rejection, health output, and the intentionally disabled image/video inference endpoints. CI also starts an isolated PostgreSQL 16 service and executes migration 0010 against it, testing queue admission/idempotency, atomic claims, leases, retries, completion validation, owner RLS, cancellation, and concurrent worker claims. The generation endpoints are expected to return HTTP 503 until reviewed runtimes are installed.
 
 ### Run the checks on Windows
 
@@ -145,6 +145,6 @@ The next queue milestone is scaffolded but **not yet active**:
 - Worker-only RPCs are granted to `service_role`; user cancellation checks `auth.uid()`.
 - Output metadata has MIME, digest, dimensions, byte-size, and video-duration checks. The database cannot inspect the actual media bytes; the future worker must validate bytes/container before calling completion.
 - `queue_store.py` is a server-side Supabase REST adapter. It keeps the service-role key server-only, verifies user access tokens through Supabase Auth, and uses the user's token for RLS-protected reads/cancellation.
-- Unit tests use mocked HTTP; migration contract tests check the security and queue invariants.
+- Unit tests use mocked HTTP; migration contract tests check the security and queue invariants; CI also starts an ephemeral PostgreSQL 16 service and executes the migration plus real queue/RLS/lease/concurrency integration tests.
 
 **Important:** migration 0010 is a new SQL file only. It has NOT been applied to Supabase. Do not apply migrations 0008 or 0009. The queue adapter is not wired to public API endpoints, there is no worker process, and generation remains blocked. No database, Worker, or production deployment has been performed.
