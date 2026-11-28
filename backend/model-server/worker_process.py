@@ -17,7 +17,7 @@ from moderation_http import moderation_provider_from_env
 from sandbox_executor import DockerSandboxExecutor
 from sandbox_policy import SandboxConfig, SandboxLimits
 from worker_bootstrap import WorkerStartupError, build_generation_worker
-from worker_client import PrivateWorkerClient, WorkerClientConfig, WorkerClientError
+from worker_client import PrivateWorkerClient, WorkerClientConfig
 from worker_runner import GenerationWorker
 
 MAX_MANIFEST_BYTES = 1_000_000
