@@ -37,6 +37,8 @@ def _safe_local_file(path: str | Path, work_dir: str | Path) -> tuple[Path, int]
     try:
         root = Path(work_dir).resolve(strict=True)
         candidate = Path(path)
+        if not candidate.is_absolute():
+            candidate = root / candidate
         if candidate.is_symlink():
             raise MediaValidationError("Media output cannot be a symbolic link.")
         resolved = candidate.resolve(strict=True)
@@ -179,25 +181,33 @@ def inspect_media_file(
     if modality not in {"image", "video"}:
         raise MediaValidationError("modality must be image or video.")
     resolved, size_bytes = _safe_local_file(path, work_dir)
+    try:
+        before = resolved.stat()
+    except OSError:
+        raise MediaValidationError("Media output could not be inspected.") from None
     if modality == "image":
         mime, width, height = _inspect_image(resolved)
-        result = {
-            "asset_id": str(uuid4()),
-            "sha256": _sha256(resolved),
-            "mime_type": mime,
-            "size_bytes": size_bytes,
-            "width": width,
-            "height": height,
-        }
     else:
         mime, width, height, duration_ms = _inspect_video(resolved, ffprobe, video_timeout_seconds)
-        result = {
-            "asset_id": str(uuid4()),
-            "sha256": _sha256(resolved),
-            "mime_type": mime,
-            "size_bytes": size_bytes,
-            "width": width,
-            "height": height,
-            "duration_ms": duration_ms,
-        }
+
+    digest = _sha256(resolved)
+    try:
+        after = resolved.stat()
+    except OSError:
+        raise MediaValidationError("Media output changed during validation.") from None
+    before_signature = (before.st_dev, before.st_ino, before.st_size, before.st_mtime_ns)
+    after_signature = (after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns)
+    if before_signature != after_signature or after.st_size != size_bytes:
+        raise MediaValidationError("Media output changed during validation.")
+
+    result = {
+        "asset_id": str(uuid4()),
+        "sha256": digest,
+        "mime_type": mime,
+        "size_bytes": size_bytes,
+        "width": width,
+        "height": height,
+    }
+    if modality == "video":
+        result["duration_ms"] = duration_ms
     return result
