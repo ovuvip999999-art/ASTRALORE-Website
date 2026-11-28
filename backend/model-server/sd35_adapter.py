@@ -206,3 +206,20 @@ class SD35MediumAdapter:
             raise
         except Exception:
             raise GenerationError("INFERENCE_FAILED", retryable=False) from None
+
+
+def make_sd35_factory(
+    *,
+    model_dir: str | Path,
+    pipeline_class: Any | None = None,
+    torch_module: Any | None = None,
+):
+    """Return a code-owned factory suitable for runtime_registry.build_adapter_registry."""
+    def factory(model: dict[str, Any]) -> SD35MediumAdapter:
+        return SD35MediumAdapter.load(
+            model,
+            model_dir=model_dir,
+            pipeline_class=pipeline_class,
+            torch_module=torch_module,
+        )
+    return factory
