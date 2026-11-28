@@ -7,6 +7,7 @@ from worker_client import (
     PrivateWorkerClient,
     WorkerClientConfig,
     WorkerClientError,
+    WorkerLeaseLost,
 )
 
 TOKEN = "private-worker-client-token-value-with-32chars"
@@ -88,6 +89,18 @@ class WorkerClientTests(unittest.TestCase):
             "/internal/v1/worker/complete",
             "/internal/v1/worker/fail",
         ])
+
+    def test_http_409_is_reported_as_a_confirmed_lost_lease(self):
+        client = PrivateWorkerClient(
+            self.config(),
+            transport=httpx.MockTransport(lambda request: httpx.Response(409, json={"detail": "lease expired"})),
+        )
+        with self.assertRaises(WorkerLeaseLost):
+            client.complete(
+                job_id=JOB_ID,
+                lease_token=LEASE_ID,
+                output_asset={"asset_id": "44444444-4444-4444-8444-444444444444"},
+            )
 
     def test_http_errors_are_sanitized_and_do_not_leak_response_body(self):
         client = PrivateWorkerClient(
