@@ -462,3 +462,23 @@ After the executor is verified, continue with host capability/preflight, model-l
 - No actual CUDA host has been exercised in this session.
 - No model weights downloaded or licensed, no real moderation classifier provisioned, no image/video inference run.
 - Generation remains disabled; no paid compute or external registry push; no migrations, deployment, or PR merge.
+
+
+## 23. Local model artifact checksum inventory — 2026-11-28
+
+### Implementation
+- Added `model_artifact_inventory.py` to inventory model files already staged in an administrator-controlled directory. It computes deterministic SHA-256 hashes and exact byte sizes, sorts relative paths, and applies the same file-count and size ceilings as `runtime_manifest.py`.
+- Rejects symlinks, non-regular files, empty directories, mutable model revisions, invalid model/runtime/capability metadata, oversized files/models, and output paths inside the model directory.
+- Output is created exclusively and never overwrites an existing manifest. The generated JSON is validated through the existing `load_manifest_json` schema before writing.
+- Critically, the tool always sets `license_reviewed_by_owner=false`. It never downloads weights, executes model code, or accepts/attests a license.
+- Added `test_model_artifact_inventory.py`, included both tool and tests in CI compile checks, and documented the local inventory workflow in the model-server README.
+
+### Verification state
+- The new inventory implementation and tests are committed on `feature/astra-creative-skills`.
+- CI for the latest inventory changes is pending at checkpoint creation; do not report the new tests as passed until the matching workflow completes.
+- Tests use small local fixture files; they do not inspect real SD3.5/Wan weights or perform inference.
+
+### Remaining external gates
+- A model directory must first be supplied by an appropriately authorized account owner after reviewing current model terms and deciding whether to obtain the weights.
+- The inventory only creates hashes and metadata. The license attestation must remain false until owner review is genuinely complete.
+- GPU runtime, moderation service, first image inference, and first video inference remain outstanding. Generation flags stay off.
