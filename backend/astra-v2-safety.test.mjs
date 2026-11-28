@@ -38,18 +38,26 @@ test("skill table migration enforces per-user row-level security", async () => {
 test("creative endpoints fail closed and enforce per-account quotas", async () => {
   const worker = await read("./worker.js");
   const migration = await read("./migrations/0007_astra_image_generation_quota.sql");
+  const budgetMigration = await read("./migrations/0008_astra_creative_owner_budget.sql");
   const config = await read("./wrangler.toml");
 
   assert.match(worker, /env\.ASTRA_CREATIVE_ENABLED !== "true"/);
   assert.match(worker, /env\.ASTRA_VIDEO_ENABLED !== "true"/);
-  assert.match(worker, /consumeImageQuota\(env, authorization, authenticatedUser\.id\)/);
-  assert.match(worker, /consumeVideoQuota\(env, authorization, authenticatedUser\.id\)/);
-  assert.match(worker, /releaseImageQuota\(env, authorization, authenticatedUser\.id\)/);
-  assert.match(worker, /releaseVideoQuota\(env, authorization, authenticatedUser\.id\)/);
+  assert.match(worker, /reserveCreativeUsage\(env, authorization, authenticatedUser\.id, "image"\)/);
+  assert.match(worker, /reserveCreativeUsage\(env, authorization, authenticatedUser\.id, "video"\)/);
+  assert.match(worker, /releaseCreativeUsage\(env, authorization, authenticatedUser\.id, "image"\)/);
+  assert.match(worker, /releaseCreativeUsage\(env, authorization, authenticatedUser\.id, "video"\)/);
+  assert.match(worker, /env\.ASTRA_CREATIVE_OWNER_USER_ID/);
+  assert.match(worker, /authenticatedUser\.id !== env\.ASTRA_CREATIVE_OWNER_USER_ID\.trim\(\)/);
 
   assert.match(migration, /auth\.uid\(\) is null or auth\.uid\(\) <> p_user_id/i);
   assert.match(migration, /images_generated < 3/);
   assert.match(migration, /videos_generated < 1/);
+  assert.match(budgetMigration, /estimated_spend_usd/);
+  assert.match(budgetMigration, /estimated_spend_usd \+ v_cost <= 0\.30/);
+  assert.match(budgetMigration, /v_cost := 0\.002/);
+  assert.match(budgetMigration, /v_cost := 0\.25/);
+  assert.match(budgetMigration, /auth\.uid\(\) is null or auth\.uid\(\) <> p_user_id/i);
   assert.match(config, /ASTRA_CREATIVE_ENABLED = "false"/);
   assert.match(config, /ASTRA_VIDEO_ENABLED = "false"/);
 });
