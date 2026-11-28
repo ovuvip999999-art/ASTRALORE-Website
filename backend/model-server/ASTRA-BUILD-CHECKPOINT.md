@@ -409,3 +409,11 @@ When resuming, fetch PR #20 and this checkpoint first, inspect the latest CI sta
 - These are unit/integration tests with mocked model/GPU components; no real model weights, CUDA inference, moderation provider, or deployed worker are active.
 - PR #20 remains open/draft/unmerged. No deployment, production change, billing change, or Supabase migration application.
 
+
+
+## Latest verified PR head — 28 November 2026
+
+- PR #20 head `df49e92ce5dd5d696afbaf4c92641953756d86e6` passed CI run #1020: both `syntax` and `model-server` jobs succeeded.
+- Node suite: 35 tests passed. Python model-server suite: 193 tests passed, including PostgreSQL 16 integration and the sandbox policy tests.
+- This verifies the current code state on that head; it does not mean a Docker sandbox has been launched or that real GPU inference has occurred.
+- PR #20 remains open/draft/unmerged. Production and PR #19 remain untouched. Migrations 0010/0011 remain unapplied, and generation remains blocked.
