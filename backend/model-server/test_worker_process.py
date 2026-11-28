@@ -1,7 +1,12 @@
+import json
+import tempfile
 import unittest
+from pathlib import Path
+from unittest.mock import Mock, patch
 
 from worker_client import WorkerClientError
-from worker_process import run_worker_loop
+from worker_bootstrap import WorkerStartupError
+from worker_process import _read_manifest, build_worker_from_env, run_worker_loop
 
 
 class FakeStopEvent:
@@ -59,6 +64,59 @@ class WorkerProcessTests(unittest.TestCase):
         run_worker_loop(worker, stop)
         self.assertEqual(worker.calls, 0)
         self.assertEqual(stop.waits, [])
+
+    def test_startup_requires_all_worker_configuration(self):
+        with self.assertRaises(WorkerStartupError):
+            build_worker_from_env({})
+
+    def test_manifest_reader_rejects_symlinks_and_oversized_files(self):
+        with tempfile.TemporaryDirectory() as root, tempfile.TemporaryDirectory() as other:
+            target = Path(other) / "manifest.json"
+            target.write_text('{"models":[]}', encoding="utf-8")
+            link = Path(root) / "manifest.json"
+            try:
+                link.symlink_to(target)
+            except (OSError, NotImplementedError):
+                self.skipTest("Symlinks unavailable on this test host.")
+            with self.assertRaises(WorkerStartupError):
+                _read_manifest(str(link))
+        with tempfile.TemporaryDirectory() as root:
+            path = Path(root) / "manifest.json"
+            path.write_text("x" * 1_000_001, encoding="utf-8")
+            with self.assertRaises(WorkerStartupError):
+                _read_manifest(str(path))
+
+    def test_worker_startup_checks_moderation_readiness_before_worker_build(self):
+        with tempfile.TemporaryDirectory() as root:
+            model_root = Path(root) / "models"
+            model_root.mkdir()
+            manifest_path = Path(root) / "manifest.json"
+            manifest_path.write_text(json.dumps({"models": []}), encoding="utf-8")
+            env = {
+                "ASTRA_MODEL_ROOT": str(model_root),
+                "ASTRA_RUNTIME_MANIFEST_PATH": str(manifest_path),
+                "ASTRA_RUNTIME_IMAGE": "registry.example/astra/runtime@sha256:" + "a" * 64,
+                "ASTRA_GPU_DEVICE": "0",
+                "ASTRA_WORKER_API_URL": "https://worker.example",
+                "ASTRA_WORKER_TOKEN": "w" * 40,
+                "SUPABASE_URL": "https://project.supabase.co",
+                "SUPABASE_SERVICE_ROLE_KEY": "s" * 40,
+                "ASTRA_MODERATION_URL": "https://moderation.example",
+                "ASTRA_MODERATION_TOKEN": "m" * 40,
+                "ASTRA_WORKER_ID": "test-worker",
+                "ASTRA_WORKER_OUTPUT_ROOT": str(Path(root) / "output"),
+            }
+            moderation = Mock()
+            sentinel = object()
+            with patch("worker_process.DockerSandboxExecutor"), \
+                 patch("worker_process.PrivateWorkerClient"), \
+                 patch("worker_process.SupabasePrivateAssetStore"), \
+                 patch("worker_process.moderation_provider_from_env", return_value=moderation), \
+                 patch("worker_process.build_generation_worker", return_value=sentinel) as build:
+                result = build_worker_from_env(env)
+            self.assertIs(result, sentinel)
+            moderation.check_ready.assert_called_once_with()
+            build.assert_called_once()
 
     def test_invalid_worker_result_and_invalid_bounds_are_rejected(self):
         worker = FakeWorker([True])
