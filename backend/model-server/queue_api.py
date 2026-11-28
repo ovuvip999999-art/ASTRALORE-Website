@@ -52,9 +52,12 @@ def create_asset_store() -> SupabasePrivateAssetStore:
     return SupabasePrivateAssetStore(AssetStoreConfig.from_env())
 
 
-def _require_enabled() -> None:
+def _require_enabled(request_origin: str) -> None:
     if os.environ.get("ASTRA_QUEUE_API_ENABLED", "").strip().lower() != "true":
         raise HTTPException(status_code=503, detail="ASTRA queue API is disabled.")
+    origin_flag = "ASTRA_PUBLIC_QUEUE_API_ENABLED" if request_origin == "public" else "ASTRA_INTERNAL_QUEUE_API_ENABLED"
+    if os.environ.get(origin_flag, "").strip().lower() != "true":
+        raise HTTPException(status_code=503, detail="ASTRA queue access mode is disabled.")
 
 
 def _require_generation_ready() -> None:
@@ -90,8 +93,9 @@ def _user_access_token(value: str | None) -> str:
 def _authenticated_store(
     internal_secret: str | None,
     authorization: str | None,
+    request_origin: str,
 ) -> tuple[SupabaseQueueStore, str, str]:
-    _require_enabled()
+    _require_enabled(request_origin)
     _verify_internal_secret(internal_secret)
     access_token = _user_access_token(authorization)
     try:
@@ -115,7 +119,7 @@ def create_generation_job(
 ):
     if request_origin not in {"internal", "public"}:
         raise HTTPException(status_code=404, detail="Generation route not found.")
-    store, user_id, _ = _authenticated_store(x_astra_server_token, authorization)
+    store, user_id, _ = _authenticated_store(x_astra_server_token, authorization, request_origin)
     _require_generation_ready()
 
     try:
