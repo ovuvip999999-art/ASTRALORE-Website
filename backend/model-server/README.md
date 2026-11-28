@@ -343,3 +343,18 @@ python -m unittest -v test_sandbox_executor_docker
 ```
 
 This test exercises the real Docker CLI lifecycle, restricted GPU device request, stdin protocol, bounded stdout result, output copy, and container cleanup. It is intentionally not enabled in GitHub-hosted CI because that runner is not an authorized ASTRA GPU host. Do not provision or publish infrastructure solely for this test without adult account-owner approval.
+
+
+### Read-only GPU host preflight
+
+Before enabling a real worker on a controlled Linux GPU host, run the read-only preflight against the final digest-pinned runtime image and administrator-controlled model directory:
+
+```bash
+python host_preflight.py \
+  --image "registry.example/astra/model-runtime@sha256:<verified-image-digest>" \
+  --model-root "/srv/astra/models" \
+  --gpu-device "0" \
+  --min-vram-mb 16000
+```
+
+It checks Docker daemon availability, confirms the exact image digest is present locally, and verifies the selected NVIDIA device has the required total and currently free VRAM. It does not start a container, download weights, or activate generation. The VRAM threshold must come from the reviewed model manifest and actual benchmark requirements; the example value is illustrative, not a recommendation for SD3.5 or Wan.
