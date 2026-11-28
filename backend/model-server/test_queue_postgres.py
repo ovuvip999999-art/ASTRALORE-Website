@@ -17,6 +17,7 @@ ASSET_ID = "33333333-3333-4333-8333-333333333333"
 MIGRATIONS = [
     Path(__file__).resolve().parents[1] / "migrations" / "0010_astra_generation_jobs.sql",
     Path(__file__).resolve().parents[1] / "migrations" / "0011_astra_private_generated_assets.sql",
+    Path(__file__).resolve().parents[1] / "migrations" / "0012_astra_job_access_modes.sql",
 ]
 
 
@@ -138,6 +139,33 @@ class QueuePostgresIntegrationTests(unittest.TestCase):
             self.assertEqual(self.enqueue(conn, key="request-key-0001")["id"], first["id"])
             with self.assertRaises(psycopg.Error):
                 self.enqueue(conn, key="request-key-0003")
+
+    def test_internal_and_public_jobs_are_separated_with_independent_user_caps(self):
+        with self.connect("service_role") as conn:
+            internal = conn.execute(
+                "select * from public.astra_enqueue_generation_job_v2(%s, %s, %s, %s, %s, %s)",
+                (USER_A, "image", "astra-image-test", Jsonb({"prompt": "internal"}), "origin-key-0001", "internal"),
+            ).fetchone()
+            public = conn.execute(
+                "select * from public.astra_enqueue_generation_job_v2(%s, %s, %s, %s, %s, %s)",
+                (USER_A, "image", "astra-image-test", Jsonb({"prompt": "public"}), "origin-key-0002", "public"),
+            ).fetchone()
+            self.assertEqual(internal["request_origin"], "internal")
+            self.assertEqual(public["request_origin"], "public")
+            conn.execute(
+                "select public.astra_enqueue_generation_job_v2(%s, %s, %s, %s, %s, %s)",
+                (USER_A, "image", "astra-image-test", Jsonb({"prompt": "public two"}), "origin-key-0003", "public"),
+            )
+            with self.assertRaises(psycopg.Error):
+                conn.execute(
+                    "select public.astra_enqueue_generation_job_v2(%s, %s, %s, %s, %s, %s)",
+                    (USER_A, "image", "astra-image-test", Jsonb({"prompt": "public three"}), "origin-key-0004", "public"),
+                )
+            with self.assertRaises(psycopg.Error):
+                conn.execute(
+                    "select public.astra_enqueue_generation_job_v2(%s, %s, %s, %s, %s, %s)",
+                    (USER_A, "image", "astra-image-test", Jsonb({"prompt": "internal"}), "origin-key-0001", "public"),
+                )
 
     def test_claim_lease_heartbeat_and_expired_lease_recovery(self):
         with self.connect("service_role") as conn:
