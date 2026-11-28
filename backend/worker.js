@@ -1,5 +1,6 @@
 import { buildDocumentChunks } from "./document-utils.js";
 import { createDocumentStore } from "./document-store.js";
+import { createCreativeProviderRegistry } from "./creative-providers.js";
 
 const ALLOWED_ORIGINS = new Set([
   "https://86d63a08.astralore-aeb.pages.dev",
@@ -376,38 +377,24 @@ export default {
 
     if (creativeAction?.operation === "generate-video") {
       if (env.ASTRA_VIDEO_ENABLED !== "true") {
-        return json({ error: "ASTRA Video Studio is disabled on this preview Worker. Review billing and enable it explicitly first." }, 503, origin);
+        return json({ error: "ASTRA Video Studio is disabled until a verified no-cost provider and shared budget are configured." }, 503, origin);
       }
-      if (!env.AI) return json({ error: "ASTRA video generation is not configured on this Worker." }, 503, origin);
+      const provider = createCreativeProviderRegistry(env).get("video");
+      if (!provider) return json({ error: "No approved video provider is configured. Generation remains paused." }, 503, origin);
       let quota;
       try {
         quota = await reserveCreativeUsage(env, authorization, authenticatedUser.id, "video");
       } catch (error) {
         console.error("ASTRA video quota check failed", String(error?.message || error).slice(0, 140));
-        return json({ error: "ASTRA could not verify today's video allowance. Apply the video quota migration and retry." }, 503, origin);
+        return json({ error: "ASTRA could not verify the video allowance. Generation remains paused." }, 503, origin);
       }
-      if (!quota.allowed) return json({ error: "Your 10-video allowance for the last 24 hours has been used. Try again after your oldest generation is more than 24 hours old." }, 429, origin);
+      if (!quota.allowed) return json({ error: "The current video allowance has been reached." }, 429, origin);
       try {
-        const result = await env.AI.run("xai/grok-imagine-video", {
+        const generated = await provider.generateVideo({
           prompt: creativeAction.prompt.trim(),
-          aspect_ratio: creativeAction.aspectRatio,
-          duration: 5,
-          resolution: "480p"
+          aspectRatio: creativeAction.aspectRatio
         });
-        const videoUrl = typeof result?.result?.video === "string"
-          ? result.result.video
-          : typeof result?.video === "string" ? result.video : "";
-        if (!videoUrl || new URL(videoUrl).protocol !== "https:") {
-          throw new Error("Video model returned no valid HTTPS video URL.");
-        }
-        return json({
-          videoUrl,
-          durationSeconds: 5,
-          resolution: "480p",
-          estimatedCostUsd: 0.25,
-          remainingToday: quota.remaining,
-          unlimited: false
-        }, 200, origin);
+        return json({ ...generated, remainingToday: quota.remaining, unlimited: false }, 200, origin);
       } catch (error) {
         console.error("ASTRA video generation failed", String(error?.message || error).slice(0, 180));
         return json({ error: "ASTRA could not generate that video. Try again later." }, 503, origin);
@@ -416,50 +403,25 @@ export default {
 
     if (creativeAction?.operation === "generate-image") {
       if (env.ASTRA_CREATIVE_ENABLED !== "true") {
-        return json({ error: "ASTRA Image Studio is not enabled on this preview Worker yet." }, 503, origin);
+        return json({ error: "ASTRA Image Studio is disabled until a verified no-cost provider and shared budget are configured." }, 503, origin);
       }
-      if (!env.AI) return json({ error: "ASTRA image generation is not configured on this Worker." }, 503, origin);
+      const provider = createCreativeProviderRegistry(env).get("image");
+      if (!provider) return json({ error: "No approved image provider is configured. Generation remains paused." }, 503, origin);
+      if (!env.AI) return json({ error: "The selected image provider is not configured." }, 503, origin);
       let quota;
-      if (isCreativeOwner) {
-        quota = { allowed: true, remaining: -1, unlimited: true };
-      } else {
-        try {
-          quota = await reserveCreativeUsage(env, authorization, authenticatedUser.id, "image");
-        } catch (error) {
-          console.error("ASTRA image quota check failed", String(error?.message || error).slice(0, 140));
-          return json({ error: "ASTRA could not verify your image allowance. The account plan migration may be missing." }, 503, origin);
-        }
-      }
-      if (!quota.allowed) return json({ error: "Your 10-image allowance for the last 24 hours has been used. Try again after your oldest generation is more than 24 hours old, or upgrade to Premium for unlimited images." }, 429, origin);
-
-      const dimensions = {
-        "1:1": [1024, 1024],
-        "9:16": [768, 1365],
-        "16:9": [1365, 768]
-      };
-      const [width, height] = dimensions[creativeAction.aspectRatio];
       try {
-        const form = new FormData();
-        form.append("prompt", creativeAction.prompt.trim());
-        form.append("width", String(width));
-        form.append("height", String(height));
-        const serialized = new Response(form);
-        const result = await env.AI.run("@cf/black-forest-labs/flux-2-klein-4b", {
-          multipart: {
-            body: serialized.body,
-            contentType: serialized.headers.get("content-type")
-          }
+        quota = await reserveCreativeUsage(env, authorization, authenticatedUser.id, "image");
+      } catch (error) {
+        console.error("ASTRA image quota check failed", String(error?.message || error).slice(0, 140));
+        return json({ error: "ASTRA could not verify the image allowance. Generation remains paused." }, 503, origin);
+      }
+      if (!quota.allowed) return json({ error: "The current image allowance has been reached." }, 429, origin);
+      try {
+        const generated = await provider.generateImage({
+          prompt: creativeAction.prompt.trim(),
+          aspectRatio: creativeAction.aspectRatio
         });
-        if (typeof result?.image !== "string" || !result.image) {
-          throw new Error("Image model returned no image data.");
-        }
-        return json({
-          image: result.image,
-          mimeType: "image/png",
-          model: "@cf/black-forest-labs/flux-2-klein-4b",
-          remainingToday: quota.remaining >= 0 ? quota.remaining : null,
-          unlimited: quota.unlimited === true
-        }, 200, origin);
+        return json({ ...generated, remainingToday: quota.remaining, unlimited: false }, 200, origin);
       } catch (error) {
         console.error("ASTRA image generation failed", String(error?.message || error).slice(0, 180));
         return json({ error: "ASTRA could not generate that image. Try a different prompt or try again later." }, 503, origin);
