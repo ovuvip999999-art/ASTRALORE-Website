@@ -1,6 +1,7 @@
 import os
 import unittest
 from unittest.mock import patch
+from uuid import UUID
 
 from fastapi.testclient import TestClient
 
@@ -17,6 +18,10 @@ class FakeQueueStore:
         self.enqueued = []
         self.lookup = None
         self.cancel_status = "cancelled"
+
+    @staticmethod
+    def _uuid(value, field):
+        return str(UUID(value))
 
     def verify_user_access_token(self, token):
         if token != USER_TOKEN:
@@ -40,6 +45,15 @@ class FakeQueueStore:
         return self.cancel_status
 
 
+class FakeAssetStore:
+    def __init__(self):
+        self.paths = []
+
+    def create_signed_url(self, path, *, expires_in):
+        self.paths.append((path, expires_in))
+        return "https://example.supabase.co/storage/v1/object/sign/astra-generated-private/" + path + "?token=short-lived"
+
+
 CATALOG = [{
     "model_id": "astra-image-test",
     "revision": "sha256:immutable-test-revision",
@@ -58,6 +72,7 @@ class QueueApiTests(unittest.TestCase):
     def setUp(self):
         self.client = TestClient(app)
         self.store = FakeQueueStore()
+        self.asset_store = FakeAssetStore()
         self.env = patch.dict(os.environ, {
             "ASTRA_QUEUE_API_ENABLED": "true",
             "ASTRA_MODEL_SERVER_TOKEN": INTERNAL,
@@ -68,6 +83,9 @@ class QueueApiTests(unittest.TestCase):
         self.store_patch = patch("queue_api.create_store", return_value=self.store)
         self.store_patch.start()
         self.addCleanup(self.store_patch.stop)
+        self.asset_patch = patch("queue_api.create_asset_store", return_value=self.asset_store)
+        self.asset_patch.start()
+        self.addCleanup(self.asset_patch.stop)
 
     def headers(self, *, internal=INTERNAL, user=USER_TOKEN):
         return {
@@ -148,6 +166,56 @@ class QueueApiTests(unittest.TestCase):
         response = self.client.get("/v1/jobs/" + JOB_ID, headers=self.headers())
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["id"], JOB_ID)
+
+    def _completed_asset_job(self, storage_path=None):
+        asset_id = "33333333-3333-4333-8333-333333333333"
+        path = storage_path or f"{USER_ID}/{JOB_ID}/{asset_id}.png"
+        return {
+            "id": JOB_ID,
+            "status": "succeeded",
+            "output_asset": {
+                "asset_id": asset_id,
+                "sha256": "a" * 64,
+                "mime_type": "image/png",
+                "size_bytes": 1024,
+                "width": 64,
+                "height": 64,
+                "storage_path": path,
+            },
+        }
+
+    def test_asset_url_requires_owner_visible_completed_job(self):
+        self.store.lookup = self._completed_asset_job()
+        response = self.client.get("/v1/jobs/" + JOB_ID + "/asset-url", headers=self.headers())
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["expires_in"], 60)
+        self.assertEqual(self.asset_store.paths, [(self.store.lookup["output_asset"]["storage_path"], 60)])
+
+    def test_asset_url_rejects_missing_incomplete_or_mismatched_owner_asset(self):
+        self.store.lookup = None
+        response = self.client.get("/v1/jobs/" + JOB_ID + "/asset-url", headers=self.headers())
+        self.assertEqual(response.status_code, 404)
+
+        self.store.lookup = {"id": JOB_ID, "status": "queued"}
+        response = self.client.get("/v1/jobs/" + JOB_ID + "/asset-url", headers=self.headers())
+        self.assertEqual(response.status_code, 409)
+
+        self.store.lookup = self._completed_asset_job(
+            storage_path=f"99999999-9999-4999-8999-999999999999/{JOB_ID}/33333333-3333-4333-8333-333333333333.png"
+        )
+        response = self.client.get("/v1/jobs/" + JOB_ID + "/asset-url", headers=self.headers())
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(self.asset_store.paths, [])
+
+    def test_asset_url_signing_failure_is_sanitized(self):
+        class BrokenAssetStore:
+            def create_signed_url(self, path, *, expires_in):
+                raise __import__("asset_store").AssetStoreError("internal credential detail")
+        self.store.lookup = self._completed_asset_job()
+        with patch("queue_api.create_asset_store", return_value=BrokenAssetStore()):
+            response = self.client.get("/v1/jobs/" + JOB_ID + "/asset-url", headers=self.headers())
+        self.assertEqual(response.status_code, 503)
+        self.assertNotIn("credential", response.text)
 
     def test_cancel_uses_verified_user_access_token(self):
         response = self.client.post("/v1/jobs/" + JOB_ID + "/cancel", headers=self.headers())
