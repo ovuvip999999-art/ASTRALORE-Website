@@ -354,3 +354,13 @@ When resuming, fetch PR #20 and this checkpoint first, inspect the latest CI sta
 - No weights downloaded, no licenses accepted, no GPU runtime, no moderation provider, no worker daemon, no flags/secrets, no migration application, and no deployment.
 - PR #20 remains open/draft/unmerged; production and PR #19 remain untouched.
 
+
+## Fail-closed worker bootstrap composition root
+
+- Added `worker_bootstrap.py` to compose a verified local model manifest, code-owned adapter factories, moderation provider, private worker API client and private asset store into a `GenerationWorker`.
+- Startup fails before queue claims if moderation, queue client, asset storage, owner-reviewed models, verified artifacts, or trusted adapters are missing.
+- No dynamic module imports are allowed from model manifest or environment data.
+- Added tests for successful composition and startup refusal on missing moderation/client, unreviewed license, missing adapter and artifact tampering.
+- Added the tests to CI and the Windows runner. Verification pending.
+- This is a composition root, not a daemon; no worker process is deployed or running.
+
