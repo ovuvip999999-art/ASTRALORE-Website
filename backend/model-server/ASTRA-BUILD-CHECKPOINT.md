@@ -343,3 +343,14 @@ When resuming, fetch PR #20 and this checkpoint first, inspect the latest CI sta
 - Queue API now supports optional video duration (default 5 seconds for video, forbidden for images; 1–120 second generic bound). Wan adapter currently supports only its five-second baseline.
 - CI verification pending.
 
+
+## Verified CI — both local model adapter foundations
+
+- CI run #955 passed both jobs on head `04ce32d6ef366cbe64310b4427eea8a3f63f8eba`.
+- Node suite: 35 passed, 0 failed.
+- Python model-server suite: 176 tests passed, including PostgreSQL 16 integration, queue/video-duration checks, end-to-end worker orchestration, and mocked SD3.5/Wan adapter tests.
+- These adapter tests use fake pipelines and fake CUDA; no actual image/video model inference was performed.
+- The Wan baseline is 832×480, 81 frames at 16 fps (~5.06 sec); the worker verifies probed duration within 250 ms of the requested five seconds.
+- No weights downloaded, no licenses accepted, no GPU runtime, no moderation provider, no worker daemon, no flags/secrets, no migration application, and no deployment.
+- PR #20 remains open/draft/unmerged; production and PR #19 remain untouched.
+
