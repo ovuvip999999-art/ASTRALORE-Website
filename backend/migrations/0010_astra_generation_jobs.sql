@@ -270,8 +270,11 @@ begin
     return false;
   end if;
 
-  if p_output_asset is null or jsonb_typeof(p_output_asset) <> 'object'
-     or not (p_output_asset ?& array['asset_id','sha256','mime_type','size_bytes','width','height'])
+  if p_output_asset is null or jsonb_typeof(p_output_asset) <> 'object' then
+    raise exception 'Invalid output asset metadata' using errcode = '22023';
+  end if;
+
+  if not (p_output_asset ?& array['asset_id','sha256','mime_type','size_bytes','width','height'])
      or (select count(*) from jsonb_object_keys(p_output_asset)) not in (6,7) then
     raise exception 'Invalid output asset metadata' using errcode = '22023';
   end if;
