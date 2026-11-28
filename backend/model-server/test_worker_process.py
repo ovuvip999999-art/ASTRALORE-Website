@@ -118,6 +118,15 @@ class WorkerProcessTests(unittest.TestCase):
             moderation.check_ready.assert_called_once_with()
             build.assert_called_once()
 
+    def test_unexpected_worker_errors_use_bounded_backoff_without_leaking_details(self):
+        worker = FakeWorker([RuntimeError("sensitive backend response"), 0])
+        stop = FakeStopEvent(stop_after_waits=2)
+        with patch("builtins.print") as output:
+            run_worker_loop(worker, stop, idle_seconds=2, max_backoff_seconds=5)
+        self.assertEqual(worker.calls, 2)
+        self.assertEqual(stop.waits, [2.0, 2.0])
+        output.assert_called_once_with("ASTRA_WORKER_LOOP_ERROR", flush=True)
+
     def test_invalid_worker_result_and_invalid_bounds_are_rejected(self):
         worker = FakeWorker([True])
         with self.assertRaises(RuntimeError):
