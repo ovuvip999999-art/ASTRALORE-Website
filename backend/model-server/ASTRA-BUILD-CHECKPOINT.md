@@ -384,3 +384,11 @@ When resuming, fetch PR #20 and this checkpoint first, inspect the latest CI sta
 - Added tests to CI and the Windows runner. Verification pending.
 - The loop only accepts an already bootstrapped worker; no daemon has been started or deployed.
 
+
+
+## Verified CI — container sandbox policy foundation
+
+- CI run `46143086681` passed both `syntax` and `model-server` jobs on head `b47fb0d896fe95e2fa3c4c7cfbbb419c57034986`.
+- The model-server suite ran 193 tests successfully, including 8 new sandbox policy tests and the PostgreSQL 16 queue/private-storage integration tests.
+- This verifies the policy command builder and its validation tests only. It does not run Docker, enforce a real process timeout, or isolate `GenerationWorker`; the current worker still invokes its adapter in-process.
+- PR #20 remains open/draft/unmerged. No migrations 0010/0011 applied, no Docker image pulled, no model weights, no GPU host, no secrets, no paid service, and no deployment.
