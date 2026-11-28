@@ -311,3 +311,16 @@ When resuming, fetch PR #20 and this checkpoint first, inspect the latest CI sta
 - This validates the orchestration contract, not real model inference. PostgreSQL queue/storage integration remains in the same CI suite.
 - No model weights, moderation provider, model server host, worker daemon, or deployment is active. All queue/readiness flags remain unset; generation remains blocked.
 
+
+## First model-specific adapter foundation — SD 3.5 Medium
+
+- Added `sd35_adapter.py` for the initial image evaluation candidate, using the built-in Diffusers SD3 pipeline.
+- Requires exact model ID, image modality, Diffusers runtime, owner-attested license review, exact enumerated model directory, per-file SHA-256/size recheck, CUDA, and manifest-declared free VRAM.
+- Loads local files only, safetensors only, and requires model CPU offload. It does not download weights or execute remote model code.
+- Generation limits: 256–1024 pixels per side, 1 MP total, 10–50 inference steps, one image, bounded guidance and deterministic seed. Step callbacks support cancellation.
+- Exposed through a code-owned runtime factory; not automatically registered.
+- Tests use mocked Diffusers and CUDA components. No actual inference or model download.
+- Current Diffusers SD3 documentation describes three text encoders and notes full-pipeline use can be challenging below 24 GB VRAM; host minimum must be measured and declared in the manifest.
+- No gated license accepted, no weights downloaded, no PyTorch/Diffusers GPU runtime installed. Adult account-owner review required before accepting gated terms.
+- CI verification pending.
+
