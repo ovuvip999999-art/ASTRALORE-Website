@@ -370,3 +370,24 @@ After the executor is verified, continue with host capability/preflight, model-l
 4. Validate model artifact layout, checksums and the exact SD3.5/Wan adapter compatibility with actual local weights only after appropriate adult account-owner license review.
 5. Run a controlled image smoke test, then a short-video smoke test and the existing blinded quality benchmark.
 6. Only after those gates pass should API routes, queue admission and deployment be considered. Keep PR #20 unmerged and production unchanged until explicit approval.
+
+
+## 19. Fail-closed heartbeat and worker-loop recovery — 2026-11-28
+
+### Commits
+- `226bfec3c851e91b8f278f34d8ee30313a717ce4`: worker heartbeat loop now treats any exception as uncertain lease ownership, sets the lease-lost and cancellation events, and returns. This ensures a container is terminated rather than continuing inference if the heartbeat path fails unexpectedly.
+- `06f5d777cb59e46e8e4f144e9a7990d3588fc563`: worker process now catches unexpected polling exceptions, emits only a fixed safe status string, and applies bounded exponential backoff.
+- `c734a31b6d65d29d5116edbb015462fca6e738ee`: removed obsolete worker-client exception import.
+- `3ca41d7e7010b7c289745c5c5d5a0f70f5bdeb31`: worker integration regression test now injects an unexpected heartbeat failure and proves container termination and no upload.
+- `3eeaf46a7d8e55742b1375cee9365ffdd0a86315`: test worker-loop recovery from unexpected exceptions without leaking exception details.
+- `25fcc899618069e1b9883e4d3c37168a22115cbc`: removed unused worker-runner exception import.
+- `87518ee8567c461e4c87c27dad4c04b1071dee26`: retained fatal validation for an invalid processed-job count outside the transient-error recovery block.
+- Current PR head at this verification: `87518ee8567c461e4c87c27dad4c04b1071dee26`.
+
+### Verification and correction
+- CI initially failed on `3eeaf46a7d8e55742b1375cee9365ffdd0a86315` because the broad recovery handler also swallowed a programming-contract error for an invalid processed-job count. The check was moved outside the transient-exception handler in `87518ee8567c461e4c87c27dad4c04b1071dee26`.
+- CI run `46151755290` passed both syntax and model-server jobs on `87518ee8567c461e4c87c27dad4c04b1071dee26`: 231 tests passed, one expected opt-in Docker/GPU host test skipped.
+- This verifies mocked cancellation and error recovery. Real Docker daemon, GPU host, moderation service, and inference remain untested.
+
+### Current gate
+- The worker process and fail-closed safety plumbing are now connected in code, but ASTRA is not yet ready to generate media. A compatible real moderation service, digest-verified GPU runtime image, authorized GPU host, model artifacts, and owner-reviewed model licenses are still missing.
