@@ -429,3 +429,16 @@ python runtime_image_build.py \
 The example uses the official PyTorch Docker Hub linux/amd64 manifest digest shown on its image-layer record. Confirm it remains available from your Docker registry before building; placeholders and mutable tags are rejected. The script builds without cache, disables network access for its container import smoke test, verifies the pinned PyTorch/CUDA versions and imports the trusted runtime modules, and never pushes to a registry.
 
 A successful local build is not yet a deployable worker image: after an owner-authorized registry push, record the registry-returned immutable image digest and configure the worker with that exact digest. Then run `host_preflight.py` and the opt-in Docker/GPU integration test on the target GPU host. No digest, registry, GPU host, credentials, or paid service is assumed or invented here.
+
+
+## Offline model package readiness check
+
+After an administrator has staged model files and created a checksum manifest, run:
+
+```bash
+python model_readiness.py --manifest /secure/path/model-manifest.json --model-root /secure/path/models
+```
+
+The checker first verifies the manifest's SHA-256 inventory, then checks the expected local Diffusers package structure for the currently supported SD3.5 Medium and Wan2.1 T2V 1.3B adapter profiles. It reads bounded JSON metadata and checks required component/configuration files; it does not import PyTorch/Diffusers, execute model code, download weights, or perform inference.
+
+Exit code 0 means every inspected model is structurally valid and explicitly marked as owner-license-reviewed. Exit code 2 means inspection completed but at least one model is structurally invalid or still blocked by license review. Exit code 1 means the manifest or root could not be safely inspected. A structurally valid package is not proof that its weights load, that the GPU has enough memory, or that inference will succeed; those require the isolated runtime and real-host checks.
