@@ -90,12 +90,25 @@ declare
   v_job public.astra_generation_jobs;
 begin
   if p_user_id is null
-     or p_modality not in ('image', 'video')
+     or p_modality is null or p_modality not in ('image', 'video')
+     or p_request is null
      or p_model_id is null or char_length(trim(p_model_id)) not between 1 and 128
      or jsonb_typeof(p_request) <> 'object'
      or pg_column_size(p_request) > 32768
      or p_idempotency_key is null or char_length(p_idempotency_key) not between 8 and 128 then
     raise exception 'Invalid generation job request' using errcode = '22023';
+  end if;
+
+  perform pg_advisory_xact_lock(hashtextextended(p_user_id::text, 0));
+
+  if (select count(*) from public.astra_generation_jobs
+      where user_id = p_user_id and status in ('queued', 'running')) >= 2 then
+    raise exception 'Per-user active generation job limit reached' using errcode = '54000';
+  end if;
+
+  if (select count(*) from public.astra_generation_jobs
+      where status in ('queued', 'running')) >= 100 then
+    raise exception 'ASTRA generation queue is full' using errcode = '54000';
   end if;
 
   insert into public.astra_generation_jobs
@@ -136,8 +149,8 @@ set search_path = public, pg_temp
 as $$
 begin
   if p_worker_id is null or char_length(trim(p_worker_id)) not between 1 and 100
-     or p_batch_size not between 1 and 4
-     or p_lease_seconds not between 30 and 600 then
+     or p_batch_size is null or p_batch_size not between 1 and 4
+     or p_lease_seconds is null or p_lease_seconds not between 30 and 600 then
     raise exception 'Invalid worker claim parameters' using errcode = '22023';
   end if;
 
@@ -206,7 +219,7 @@ language plpgsql
 set search_path = public, pg_temp
 as $$
 begin
-  if p_lease_seconds not between 30 and 600 then
+  if p_lease_seconds is null or p_lease_seconds not between 30 and 600 then
     raise exception 'Invalid lease duration' using errcode = '22023';
   end if;
 
@@ -255,7 +268,7 @@ begin
     return false;
   end if;
 
-  if jsonb_typeof(p_output_asset) <> 'object'
+  if p_output_asset is null or jsonb_typeof(p_output_asset) <> 'object'
      or not (p_output_asset ?& array['asset_id','sha256','mime_type','size_bytes','width','height'])
      or (select count(*) from jsonb_object_keys(p_output_asset)) not in (6,7) then
     raise exception 'Invalid output asset metadata' using errcode = '22023';
