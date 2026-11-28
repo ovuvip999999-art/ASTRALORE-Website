@@ -24,7 +24,7 @@ if ($LASTEXITCODE -ne 0) { throw "Could not update pip." }
 & $venvPython -m pip install -r requirements-dev.txt
 if ($LASTEXITCODE -ne 0) { throw "Could not install model-server test dependencies." }
 
-& $venvPython -m py_compile app.py test_app.py test_http_api.py queue_api.py test_queue_api.py media_validation.py test_media_validation.py asset_store.py test_asset_store.py worker_api.py test_worker_api.py worker_client.py test_worker_client.py worker_runner.py test_worker_runner.py runtime_manifest.py test_runtime_manifest.py runtime_registry.py test_runtime_registry.py creative_brief.py test_creative_brief.py model_registry.py test_model_registry.py job_lifecycle.py test_job_lifecycle.py queue_store.py test_queue_store.py test_queue_migration.py test_queue_postgres.py quality_eval.py test_quality_eval.py
+& $venvPython -m py_compile app.py test_app.py test_http_api.py queue_api.py test_queue_api.py media_validation.py test_media_validation.py asset_store.py test_asset_store.py worker_api.py test_worker_api.py worker_client.py test_worker_client.py worker_runner.py test_worker_runner.py runtime_manifest.py test_runtime_manifest.py runtime_registry.py test_runtime_registry.py safety_gate.py test_safety_gate.py creative_brief.py test_creative_brief.py model_registry.py test_model_registry.py job_lifecycle.py test_job_lifecycle.py queue_store.py test_queue_store.py test_queue_migration.py test_queue_postgres.py quality_eval.py test_quality_eval.py
 if ($LASTEXITCODE -ne 0) { throw "Python compilation failed." }
 
 & $venvPython -m unittest -v
