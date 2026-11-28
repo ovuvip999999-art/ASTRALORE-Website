@@ -102,3 +102,8 @@ When resuming, fetch PR #20 and this checkpoint first, inspect the latest CI sta
 - Output metadata safety ceiling tightened: maximum 512 MiB, 16,384 pixels per side, 100 megapixels total, and video duration up to 120 seconds. Added regression tests.
 
 - CI run #556 (`46137819590`) passed both `syntax` and `model-server` jobs on commit `e6da0d281efe3ee6409ce685efbf245bb327342d`, including output-dimension safety tests.
+
+## Local Windows testing
+
+- Added `run-tests.ps1` for the user's Windows environment. It creates a local Python virtual environment, installs API/test dependencies, compiles the server modules, and runs all unit and HTTP integration tests.
+- It does not download model weights, access a GPU, call paid services, or activate generation.
