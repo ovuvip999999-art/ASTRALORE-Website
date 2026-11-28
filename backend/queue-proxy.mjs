@@ -30,7 +30,7 @@ export function normalizeQueueAction(value) {
       throw new TypeError("Invalid output dimensions.");
     }
     const expectedRatio = value.aspectRatio === "1:1" ? 1 : value.aspectRatio === "9:16" ? 9 / 16 : 16 / 9;
-    if (Math.abs(value.width / value.height - expectedRatio) > 0.02) {
+    if (Math.abs(value.width / value.height - expectedRatio) / expectedRatio > 0.03) {
       throw new TypeError("Output dimensions do not match the aspect ratio.");
     }
     if (!isPlainObject(value.brief)) throw new TypeError("Creative brief must be an object.");
