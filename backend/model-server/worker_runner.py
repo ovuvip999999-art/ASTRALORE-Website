@@ -22,8 +22,10 @@ class GenerationError(RuntimeError):
     def __init__(self, error_code: str, *, retryable: bool = False):
         if not isinstance(error_code, str) or not ERROR_RE.fullmatch(error_code):
             raise ValueError("GenerationError requires a safe machine-readable code.")
+        if not isinstance(retryable, bool):
+            raise ValueError("retryable must be a boolean.")
         self.error_code = error_code
-        self.retryable = bool(retryable)
+        self.retryable = retryable
         super().__init__(error_code)
 
 
@@ -234,6 +236,9 @@ class GenerationWorker:
             except AssetStoreError:
                 if not lease_lost_event.is_set():
                     self._record_failure(job_id, lease_token, "PRIVATE_STORAGE_FAILED", True)
+            except Exception:
+                if not lease_lost_event.is_set():
+                    self._record_failure(job_id, lease_token, "INFERENCE_FAILED", False)
             finally:
                 stop_event.set()
                 heartbeat.join(timeout=max(1.0, self.heartbeat_interval + 1.0))
