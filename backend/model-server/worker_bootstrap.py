@@ -6,7 +6,7 @@ provider. Manifest data never imports code or downloads model artifacts.
 from __future__ import annotations
 
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 from runtime_manifest import RuntimeManifestError, load_manifest_json, verify_model_artifacts
 from sandbox_adapter import build_sandbox_adapter_registry
