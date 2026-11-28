@@ -39,6 +39,9 @@ class SandboxGenerationAdapter:
         self.model_id = model_id
         self.revision = revision
         self.modality = verified_model.get("modality")
+        runtime = verified_model.get("runtime")
+        if (runtime, self.modality) not in {("diffusers", "image"), ("wan-video", "video")}:
+            raise ValueError("Model runtime and modality are not supported by the trusted sandbox entrypoint.")
         self.manifest_entry = {
             key: verified_model[key]
             for key in (
@@ -97,3 +100,35 @@ class SandboxGenerationAdapter:
             }
             code, retryable = code_map.get(exc.error_code, ("INFERENCE_FAILED", exc.retryable))
             raise GenerationError(code, retryable=retryable) from None
+
+
+
+def build_sandbox_adapter_registry(
+    verified_models: list[dict[str, Any]],
+    *,
+    executor: DockerSandboxExecutor,
+) -> dict[tuple[str, str], SandboxGenerationAdapter]:
+    """Bind verified model revisions only to the supervised container adapter."""
+    if not isinstance(verified_models, list) or not isinstance(executor, DockerSandboxExecutor):
+        raise ValueError("Verified models and a Docker sandbox executor are required.")
+    model_root = Path(executor.config.model_directory).resolve(strict=True)
+    registry: dict[tuple[str, str], SandboxGenerationAdapter] = {}
+    for model in verified_models:
+        if not isinstance(model, dict) or model.get("license_reviewed_by_owner") is not True:
+            continue
+        model_id, revision = model.get("model_id"), model.get("revision")
+        files = model.get("files")
+        if not isinstance(model_id, str) or not model_id or not isinstance(revision, str) or not revision:
+            raise ValueError("Verified model identity is incomplete.")
+        if not isinstance(files, list) or not files:
+            raise ValueError("Verified model artifacts are required.")
+        for item in files:
+            if not isinstance(item, dict) or not isinstance(item.get("resolved_path"), str):
+                raise ValueError("Model artifact paths must be verified before sandbox registration.")
+            resolved = Path(item["resolved_path"]).resolve(strict=True)
+            resolved.relative_to(model_root)
+        key = (model_id, revision)
+        if key in registry:
+            raise ValueError("Duplicate model ID and revision in sandbox adapter registry.")
+        registry[key] = SandboxGenerationAdapter(executor=executor, verified_model=model)
+    return registry
