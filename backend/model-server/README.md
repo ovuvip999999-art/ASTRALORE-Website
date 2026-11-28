@@ -287,3 +287,10 @@ The upstream Diffusers Wan guide reports about 13 GB VRAM for its T2V example; u
 - Startup fails before any queue claim if the moderation provider, queue client, asset store, owner-reviewed model, verified artifacts, or trusted adapter factory is missing.
 - The bootstrap accepts factories and providers as code dependencies; it does not dynamically import modules named by a manifest or environment variable.
 - Tests use temporary files and fake adapters/providers. This does not start a daemon or deploy a worker process.
+
+
+## Container sandbox policy foundation
+
+`sandbox_policy.py` builds a Docker invocation for a future model worker. It requires an administrator-pinned image digest and explicit GPU device, mounts verified model files read-only, disables networking, makes the container root filesystem read-only, drops Linux capabilities, uses a non-root UID, enables no-new-privileges, and applies Docker memory/swap, CPU, PID, shared-memory and bounded tmpfs output limits. The tmpfs output volume is capped at 512 MiB and writable only by the runtime UID.
+
+`build_execution_plan` also exposes a wall-clock deadline for the parent supervisor to enforce. **This is a policy/command-builder foundation only:** it does not launch Docker, enforce the parent timeout, isolate the existing in-process worker, or prove that a deployment host is hardened. It is not wired into `GenerationWorker`; the current worker runner still invokes its injected adapter in-process. Do not enable a worker or generation until a separate supervised container executor is integrated and tested on the target Linux/GPU host.
