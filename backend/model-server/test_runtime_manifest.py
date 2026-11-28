@@ -117,6 +117,21 @@ class RuntimeManifestTests(unittest.TestCase):
             with self.assertRaises(RuntimeManifestError):
                 verify_model_artifacts(manifest, model_root=root)
 
+    def test_artifact_verification_rejects_symlinked_parent_directory(self):
+        with tempfile.TemporaryDirectory() as root, tempfile.TemporaryDirectory() as outside:
+            outside_file = Path(outside) / "model.bin"
+            outside_file.write_bytes(b"ASTR")
+            linked_directory = Path(root) / "weights"
+            try:
+                linked_directory.symlink_to(outside, target_is_directory=True)
+            except (OSError, NotImplementedError):
+                self.skipTest("Directory symlink creation unavailable on this platform.")
+            payload = self.make_manifest()
+            payload["models"][0]["files"][0]["sha256"] = hashlib.sha256(b"ASTR").hexdigest()
+            manifest = load_manifest_json(json.dumps(payload))
+            with self.assertRaises(RuntimeManifestError):
+                verify_model_artifacts(manifest, model_root=root)
+
     def test_artifact_verification_rejects_missing_and_symlink_files(self):
         with tempfile.TemporaryDirectory() as root, tempfile.TemporaryDirectory() as outside:
             model_file = Path(root) / "weights" / "model.bin"
