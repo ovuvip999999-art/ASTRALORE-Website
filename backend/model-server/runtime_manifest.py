@@ -16,6 +16,7 @@ COMMIT_RE = re.compile(r"^[0-9a-f]{40}$")
 MODEL_ID_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._/-]{0,127}$")
 MAX_FILES_PER_MODEL = 1000
 MAX_FILE_BYTES = 50 * 1024 * 1024 * 1024
+MAX_MODEL_BYTES = 100 * 1024 * 1024 * 1024
 HASH_CHUNK = 1024 * 1024
 RUNTIMES = {"diffusers", "wan-video", "custom"}
 
@@ -32,8 +33,9 @@ def _exact_keys(value: dict[str, Any], required: set[str], label: str) -> None:
 def _safe_relative_path(value: Any) -> PurePosixPath:
     if not isinstance(value, str) or not value or "\\" in value:
         raise RuntimeManifestError("Model artifact path must be a relative POSIX path.")
+    raw_parts = value.split("/")
     path = PurePosixPath(value)
-    if path.is_absolute() or any(part in {"", ".", ".."} for part in path.parts):
+    if path.is_absolute() or any(part in {"", ".", ".."} for part in raw_parts):
         raise RuntimeManifestError("Model artifact path contains unsafe components.")
     return path
 
@@ -92,10 +94,12 @@ def load_manifest_json(raw: str) -> list[dict[str, Any]]:
         if identity in seen:
             raise RuntimeManifestError("Duplicate model ID and revision.")
         seen.add(identity)
-        if item["modality"] not in {"image", "video"}:
+        if not isinstance(item["modality"], str) or item["modality"] not in {"image", "video"}:
             raise RuntimeManifestError("Model modality must be image or video.")
-        if item["runtime"] not in RUNTIMES:
+        if not isinstance(item["runtime"], str) or item["runtime"] not in RUNTIMES:
             raise RuntimeManifestError("Model runtime is not in the approved runtime allowlist.")
+        if item["runtime"] == "wan-video" and item["modality"] != "video":
+            raise RuntimeManifestError("Wan video runtime can only serve video models.")
         if item["allow_remote_code"] is not False:
             raise RuntimeManifestError("Remote model code execution is forbidden.")
         files = item["files"]
@@ -103,6 +107,7 @@ def load_manifest_json(raw: str) -> list[dict[str, Any]]:
             raise RuntimeManifestError("Each model must declare a bounded non-empty file list.")
         seen_paths: set[str] = set()
         normalized_files = []
+        total_bytes = 0
         for file_item in files:
             if not isinstance(file_item, dict):
                 raise RuntimeManifestError("Model file entry must be an object.")
@@ -116,16 +121,24 @@ def load_manifest_json(raw: str) -> list[dict[str, Any]]:
             if not isinstance(digest, str) or not SHA256_RE.fullmatch(digest):
                 raise RuntimeManifestError("Model artifact SHA-256 must be lowercase hexadecimal.")
             size = _positive_int(file_item["size_bytes"], minimum=1, maximum=MAX_FILE_BYTES, label="Model artifact size")
+            total_bytes += size
+            if total_bytes > MAX_MODEL_BYTES:
+                raise RuntimeManifestError("Total model artifact size exceeds the 100 GiB limit.")
             normalized_files.append({"path": rel_string, "sha256": digest, "size_bytes": size})
+        max_width = _positive_int(item["max_width"], minimum=64, maximum=16384, label="max_width")
+        max_height = _positive_int(item["max_height"], minimum=64, maximum=16384, label="max_height")
+        max_pixels = _positive_int(item["max_pixels"], minimum=4096, maximum=100_000_000, label="max_pixels")
+        if max_pixels > max_width * max_height:
+            raise RuntimeManifestError("max_pixels cannot exceed max_width multiplied by max_height.")
         normalized.append({
             "model_id": model_id,
             "revision": revision,
             "modality": item["modality"],
             "files": normalized_files,
             "max_vram_mb": _positive_int(item["max_vram_mb"], minimum=1024, maximum=131072, label="max_vram_mb"),
-            "max_width": _positive_int(item["max_width"], minimum=64, maximum=16384, label="max_width"),
-            "max_height": _positive_int(item["max_height"], minimum=64, maximum=16384, label="max_height"),
-            "max_pixels": _positive_int(item["max_pixels"], minimum=4096, maximum=100_000_000, label="max_pixels"),
+            "max_width": max_width,
+            "max_height": max_height,
+            "max_pixels": max_pixels,
             "runtime": item["runtime"],
             "allow_remote_code": False,
         })
