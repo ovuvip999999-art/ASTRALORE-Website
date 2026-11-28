@@ -214,3 +214,15 @@ The route is part of the authenticated queue API and remains disabled by default
 - Added mocked adapter tests for no-adapter fail-closed behavior, exact revision matching, successful image pipeline, dimension mismatch, cancellation, safe inference errors, and lease-loss cleanup.
 
 Generation remains disabled. No model weights or GPU runtime have been installed.
+
+## Model artifact and license preflight
+
+Before any inference adapter can be registered:
+
+- Review `MODEL-CANDIDATE-REVIEW.md` for the initial image/video candidates, primary-source license notes, and upstream hardware claims.
+- `runtime_manifest.py` accepts only exact model revisions (40-character commit SHA or SHA-256 revision), explicit modality/runtime, bounded capabilities, and an explicit list of artifact paths, sizes and SHA-256 hashes.
+- Remote model code execution is forbidden. Model files must already exist under a dedicated model root; every file is checked for path traversal, symlinks, exact size and checksum.
+- Limits: 50 GiB per artifact, 100 GiB total per model, at most 1,000 files, and at most 50 model entries in one manifest.
+- This is preflight verification only. It does not download, load, execute, or enable a model. No runtime manifest is configured by default.
+
+Do not accept gated model licenses, download weights, or enable inference until the full license and every model component have been reviewed, immutable revisions/checksums are recorded, and measured host resource limits are approved.
