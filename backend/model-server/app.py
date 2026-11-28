@@ -8,11 +8,17 @@ from fastapi import FastAPI, Header, HTTPException
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
+from creative_brief import BriefValidationError, compile_brief
+
 app = FastAPI(title="ASTRA Private Model Server", version="0.1.0")
 
 IMAGE_RATIOS = {"1:1", "9:16", "16:9"}
 VIDEO_RATIOS = {"1:1", "9:16", "16:9"}
 IMAGE_MIME_TYPES = {"image/png", "image/jpeg", "image/webp"}
+
+
+class BriefCompileRequest(BaseModel):
+    brief: dict
 
 
 class ImageRequest(BaseModel):
@@ -43,6 +49,16 @@ def verify_token(authorization: str | None) -> None:
 def model_is_configured(kind: str) -> bool:
     variable = "ASTRA_" + kind.upper() + "_MODEL_ID"
     return bool(os.environ.get(variable, "").strip())
+
+
+@app.post("/v1/brief/compile")
+def compile_creative_brief(body: BriefCompileRequest, authorization: str | None = Header(default=None)):
+    """Validate and assemble a provider-neutral structured brief; no model is called."""
+    verify_token(authorization)
+    try:
+        return compile_brief(body.brief)
+    except BriefValidationError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
 
 
 @app.get("/health")
