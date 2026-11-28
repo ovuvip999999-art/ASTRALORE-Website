@@ -312,3 +312,11 @@ After the executor is verified, continue with host capability/preflight, model-l
 - The model-server job compiled `runtime_errors.py` and `test_sandbox_executor_docker.py`, then ran 212 tests successfully; the opt-in Docker/GPU host test was correctly skipped because no authorized GPU host was configured (`OK (skipped=1)`).
 - This validates the Python contract/unit/integration suite and PostgreSQL 16 tests. It does not validate an actual Docker runtime host, CUDA image build, GPU inference, model quality, license acceptance, moderation provider or production deployment.
 - The workflow run for the subsequent checkpoint-only commit is not needed to establish the code/test result above; latest verified code commit remains `f20800707f714dab72b534261e53e3f08fecc1b3`.
+
+
+## 16. Lease-loss container termination regression — 2026-11-28
+
+- Commit `3b8f953e86d82e7fdf4636174a06a38937b1a684`: added a worker-level test using the real `SandboxGenerationAdapter` and `DockerSandboxExecutor` with a deterministic fake Docker process. A heartbeat lease-loss error sets cancellation; the executor sends Docker kill/removal; the worker performs no output upload, no completion and no stale-lease failure write.
+- PR CI run `46149780292` completed successfully on commit `3b8f953e86d82e7fdf4636174a06a38937b1a684`: both syntax and model-server jobs passed. The model-server suite ran 213 tests successfully, with one expected skip for the opt-in real Docker/GPU host test.
+- This verifies the lease-loss cancellation contract with a fake Docker process; it is not a real Docker daemon/GPU host integration.
+- Current PR head at this test checkpoint: `3b8f953e86d82e7fdf4636174a06a38937b1a684`.
