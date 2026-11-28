@@ -116,3 +116,37 @@ After the executor is verified, continue with host capability/preflight, model-l
 ## 9. Resume prompt
 
 "Continue ASTRALORE/ASTRA from `ASTRALORE_MASTER_CHECKPOINT.md` in repository `ovuvip999999-art/ASTRALORE-Website`. First verify PR #20 head and latest model-server CI. Preserve PR #19 and production. The next task is the supervised Docker inference executor described in section 7. Inspect existing code before editing, work on `feature/astra-creative-skills`, test thoroughly, and update this checkpoint with the new commit and test results. Do not deploy, apply migrations, enable generation, download weights, accept licenses, or incur costs without explicit approval."
+
+## 10. Engineering checkpoint — supervised executor first implementation (2026-11-28)
+
+### Commits
+- `3906cec2421e90eec4c775acb2cc9815057ec8c9`: added `backend/model-server/sandbox_executor.py`.
+- `f4cb970e326712415d3c26c07da149d7db6b53f7`: added `backend/model-server/test_sandbox_executor.py`.
+- `2c06aaa8e795915c70d7b3d484223a8e288c1955`: updated `.github/workflows/astra-cloud-validation.yml` so the new executor and tests are included in Python compilation and unittest discovery already run by CI.
+- Active branch remains `feature/astra-creative-skills`; no merge or deployment performed.
+
+### Implemented in this batch
+- Parent-side Docker CLI supervisor starts a uniquely named container without auto-removal, writes a bounded JSON request to stdin, polls for cancellation and wall-clock timeout, and removes the container afterward.
+- Cleanup issues Docker kill on interrupted runs and force-removes the named container.
+- Output collection uses Docker copy from the container's bounded `/outputs` tmpfs and checks for exactly one non-empty regular media file, allowed media suffix, no symlinks, bounded total bytes and bounded file count.
+- Process invocation uses argument arrays, no shell, and discards container stdout/stderr to avoid unbounded log capture.
+- Added deterministic fake-process tests for successful collection, cancellation, nonzero exit, pre-populated output directory, unsupported output type and invalid JSON payload.
+- CI workflow compile list now includes `sandbox_executor.py` and `test_sandbox_executor.py`.
+
+### Important limitations — not yet production-ready
+- This is the first executor layer only. It is NOT yet wired into `GenerationWorker` or `worker_bootstrap.py`.
+- The trusted `astra_sandbox_entrypoint` module is not yet present in the repository/runtime image. A dedicated model-runtime image containing the reviewed adapters and this entrypoint must be designed and pinned by digest before real container inference.
+- The current API Dockerfile is not the GPU model-runtime image. Do not use it as the model runtime.
+- The executor uses the existing policy's container command, but host bind-mount collection, Docker daemon trust, host integration behavior, timeout/lease race handling and Windows/Linux host behavior still need dedicated review and tests.
+- No Docker daemon or GPU execution was run in this environment. No model weights downloaded. No inference performed. Generation remains disabled.
+- The workflow run for commit `2c06aaa8e795915c70d7b3d484223a8e288c1955` was observed in progress at checkpoint time (run `46145488449`; duplicate run `46145484297`). Do not mark tests green until the model-server job completes successfully.
+
+### Exact next engineering actions
+1. Inspect CI results for runs `46145488449` and `46145484297`; fix any compile/test failures before extending the design.
+2. Harden executor tests: verify Docker copy failures, symlink/path traversal behavior, output byte cap, timeout cleanup, container name handling and cleanup failures.
+3. Resolve a key architecture issue: existing SD3.5/Wan adapters load and run inside the worker process. Define a strict request/response protocol and a dedicated trusted model-runtime image that initializes only code-owned model adapters from the verified model manifest, with no model downloads or remote code.
+4. Wire a sandbox-backed adapter into worker bootstrap so no model adapter can execute in-process in production. Keep fake adapters available only to tests.
+5. Ensure heartbeat lease loss/cancellation always terminates the named container before worker cleanup returns; cover race cases with tests.
+6. Add opt-in Docker host integration tests; they must not run on ordinary CI unless a dedicated runner is configured.
+7. Update this file with exact CI run IDs, final test counts and commit SHA after each batch.
+
