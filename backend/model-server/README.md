@@ -114,7 +114,7 @@ This is a capability/preflight decision, not proof that a GPU is available. The 
 - Legal transitions are explicit; terminal states cannot be reopened.
 - Duplicate same-state transitions are idempotent.
 - Timestamps must be timezone-aware and monotonic.
-- Successful jobs require validated output metadata, including MIME type, dimensions, bounded size, and SHA-256; video also requires a bounded duration.
+- Successful jobs require validated output metadata, including MIME type, dimensions (maximum 16K per side / 100 megapixels), bounded size (512 MiB), and SHA-256; video also requires a bounded duration.
 - Failed jobs expose only a safe machine-readable error code, not raw exception text or filesystem paths.
 
 This is a pure contract and validator, not a durable queue or API endpoint. Production requires a transactional database/queue, ownership checks, atomic claims, worker leases, retry policy, cancellation signaling, and concurrency/resource limits. An in-memory queue must not be used as a production substitute.
