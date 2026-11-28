@@ -109,11 +109,10 @@ def _authenticated_store(
     return store, user_id, access_token
 
 
-@router.post("/v1/jobs", status_code=202)
 @router.post("/v1/{request_origin}/jobs", status_code=202)
 def create_generation_job(
     body: CreateJobRequest,
-    request_origin: str = "internal",
+    request_origin: str,
     x_astra_server_token: str | None = Header(default=None),
     authorization: str | None = Header(default=None),
 ):
@@ -173,11 +172,10 @@ def create_generation_job(
     }
 
 
-@router.get("/v1/jobs/{job_id}")
 @router.get("/v1/{request_origin}/jobs/{job_id}")
 def get_generation_job(
     job_id: str,
-    request_origin: str = "internal",
+    request_origin: str,
     x_astra_server_token: str | None = Header(default=None),
     authorization: str | None = Header(default=None),
 ):
@@ -193,11 +191,10 @@ def get_generation_job(
     return job
 
 
-@router.post("/v1/jobs/{job_id}/cancel")
 @router.post("/v1/{request_origin}/jobs/{job_id}/cancel")
 def cancel_generation_job(
     job_id: str,
-    request_origin: str = "internal",
+    request_origin: str,
     x_astra_server_token: str | None = Header(default=None),
     authorization: str | None = Header(default=None),
 ):
@@ -213,11 +210,10 @@ def cancel_generation_job(
         raise HTTPException(status_code=422, detail="Invalid generation job identifier or cancellation request.") from None
     return {"job_id": job_id, "status": status}
 
-@router.get("/v1/jobs/{job_id}/asset-url")
 @router.get("/v1/{request_origin}/jobs/{job_id}/asset-url")
 def get_generation_asset_url(
     job_id: str,
-    request_origin: str = "internal",
+    request_origin: str,
     x_astra_server_token: str | None = Header(default=None),
     authorization: str | None = Header(default=None),
 ):
