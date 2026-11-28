@@ -119,16 +119,17 @@ def run_worker_loop(
     while not stop_event.is_set():
         try:
             processed = worker.run_once()
-            if type(processed) is not int or processed < 0:
-                raise RuntimeError("ASTRA worker returned an invalid processed-job count.")
-            backoff = float(idle_seconds)
-            stop_event.wait(float(idle_seconds) if processed == 0 else 0.1)
         except Exception:
             # Keep the long-lived process alive, but never expose exception
             # details that may contain remote response data or secrets.
             print("ASTRA_WORKER_LOOP_ERROR", flush=True)
             stop_event.wait(backoff)
             backoff = min(float(max_backoff_seconds), backoff * 2)
+            continue
+        if type(processed) is not int or processed < 0:
+            raise RuntimeError("ASTRA worker returned an invalid processed-job count.")
+        backoff = float(idle_seconds)
+        stop_event.wait(float(idle_seconds) if processed == 0 else 0.1)
 
 
 def main() -> int:
