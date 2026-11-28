@@ -166,6 +166,24 @@ def inspect_model_package(model: dict[str, Any], *, model_root: str | Path) -> d
     if not required_metadata.issubset(declared):
         raise ModelReadinessError("MODEL_MANIFEST_OMITS_REQUIRED_METADATA")
 
+    actual_files = set()
+    try:
+        for path in root.rglob("*"):
+            info = path.lstat()
+            if stat.S_ISLNK(info.st_mode):
+                raise ModelReadinessError("MODEL_PACKAGE_SYMLINK_FORBIDDEN")
+            if stat.S_ISDIR(info.st_mode):
+                continue
+            if not stat.S_ISREG(info.st_mode):
+                raise ModelReadinessError("MODEL_PACKAGE_NONREGULAR_FILE_FORBIDDEN")
+            actual_files.add(path.relative_to(root).as_posix())
+    except ModelReadinessError:
+        raise
+    except OSError:
+        raise ModelReadinessError("MODEL_PACKAGE_TRAVERSAL_FAILED") from None
+    if actual_files != declared:
+        raise ModelReadinessError("MODEL_PACKAGE_FILES_DO_NOT_MATCH_MANIFEST")
+
     return {
         "model_id": model["model_id"],
         "revision": model["revision"],
