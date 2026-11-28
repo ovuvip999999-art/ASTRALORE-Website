@@ -482,3 +482,20 @@ After the executor is verified, continue with host capability/preflight, model-l
 - A model directory must first be supplied by an appropriately authorized account owner after reviewing current model terms and deciding whether to obtain the weights.
 - The inventory only creates hashes and metadata. The license attestation must remain false until owner review is genuinely complete.
 - GPU runtime, moderation service, first image inference, and first video inference remain outstanding. Generation flags stay off.
+
+
+## 24. Descriptor-based model artifact verification — 2026-11-28
+
+### Security hardening
+- Replaced path-based artifact hashing in `runtime_manifest.py` with descriptor-relative traversal. The verifier opens the model root and every parent directory with no-follow directory flags, then opens the final file with no-follow semantics.
+- Hashing is performed through the opened file descriptor, not by reopening a pathname after symlink checks. The verifier checks regular-file type, bounded size, SHA-256, and stable device/inode/size/mtime before and after hashing.
+- Added regression coverage for a symlinked parent directory, complementing existing missing-file and final-component symlink tests.
+- Updated README to explain the reduced symlink/path-swap race exposure.
+
+### Verification state
+- Code and tests committed to `feature/astra-creative-skills`; CI for this hardening is pending. Do not report these new changes as passed until the matching workflow completes.
+- This is startup-time artifact verification hardening. It does not replace read-only model mounts, administrator-controlled model directories, or host isolation.
+
+### Remaining external gates unchanged
+- No actual GPU runtime host, model weights, accepted/reviewed model license, moderation classifier, image inference, or video inference is available in this session.
+- Generation remains disabled; no paid compute, registry push, migrations, deployment, or merge.
