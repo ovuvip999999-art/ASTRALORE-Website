@@ -302,3 +302,12 @@ When resuming, fetch PR #20 and this checkpoint first, inspect the latest CI sta
 - No environment flags or secrets were configured, no migrations 0010/0011 applied, no frontend queue integration, and no Worker/model server deployment occurred.
 - PR #20 remains open/draft/unmerged; production and PR #19 remain untouched.
 
+
+## Verified CI — full mocked worker pipeline
+
+- CI run #874 passed both `syntax` and `model-server` jobs on head `8f63b344c131baadccefae92658cf9cee8134f10`.
+- Node suite passed 33 tests, including queue proxy validation and readiness gates.
+- Python suite passed 159 tests, including a new end-to-end test that wires `PrivateWorkerClient` through the FastAPI worker API into `GenerationWorker`, with a mocked model adapter, moderation gate, and private asset store.
+- This validates the orchestration contract, not real model inference. PostgreSQL queue/storage integration remains in the same CI suite.
+- No model weights, moderation provider, model server host, worker daemon, or deployment is active. All queue/readiness flags remain unset; generation remains blocked.
+
