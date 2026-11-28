@@ -40,7 +40,7 @@ class SandboxPolicyTests(unittest.TestCase):
         self.assertIn("--gpus", command)
         self.assertIn("no-new-privileges:true", command)
         self.assertTrue(any(item.startswith("/outputs:rw,noexec,nosuid,nodev,size=") and "uid=10001" in item and "mode=0700" in item for item in command if item.startswith("/outputs:")))
-        self.assertTrue(any(item.startswith("/tmp:rw,noexec,nosuid,nodev,size=") and "uid=10001" in item for item in command if item.startswith("/tmp:")))
+        self.assertTrue(any(item.startswith("/tmp:rw,noexec,nosuid,nodev,size=") and "uid=10001" in item and "mode=0700" in item for item in command if item.startswith("/tmp:")))
 
     def test_model_mount_is_read_only_and_command_has_no_shell(self):
         command = build_docker_command(self.config())
