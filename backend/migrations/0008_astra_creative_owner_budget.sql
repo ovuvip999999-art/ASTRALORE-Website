@@ -97,41 +97,8 @@ $$;
 revoke all on function public.astra_reserve_creative_usage(uuid, text) from public, anon;
 grant execute on function public.astra_reserve_creative_usage(uuid, text) to authenticated;
 
-create or replace function public.astra_release_creative_usage(
-  p_user_id uuid,
-  p_kind text
-)
-returns void
-language plpgsql
-security definer
-set search_path = public
-as $$
-declare
-  v_cost numeric(10,6);
-  v_today date := (now() at time zone 'utc')::date;
-begin
-  if auth.uid() is null or auth.uid() <> p_user_id then
-    raise exception 'Not authorized';
-  end if;
-
-  if p_kind = 'image' then
-    v_cost := 0.002;
-  elsif p_kind = 'video' then
-    v_cost := 0.25;
-  else
-    raise exception 'Unsupported creative kind';
-  end if;
-
-  update public.astra_creative_usage
-    set images_generated = case when p_kind = 'image'
-          then greatest(0, images_generated - 1) else images_generated end,
-        videos_generated = case when p_kind = 'video'
-          then greatest(0, videos_generated - 1) else videos_generated end,
-        estimated_spend_usd = greatest(0::numeric, estimated_spend_usd - v_cost),
-        updated_at = now()
-    where user_id = p_user_id and usage_date = v_today;
-end;
-$$;
-
-revoke all on function public.astra_release_creative_usage(uuid, text) from public, anon;
-grant execute on function public.astra_release_creative_usage(uuid, text) to authenticated;
+-- Refund RPCs are deliberately not exposed to browser JWTs. Failed model calls keep
+-- their reservation for the UTC day; this is conservative but prevents users from
+-- repeatedly calling a public refund RPC to bypass daily limits.
+revoke all on function public.astra_release_image_generation(uuid) from authenticated;
+revoke all on function public.astra_release_video_generation(uuid) from authenticated;
