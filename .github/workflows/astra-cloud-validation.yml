@@ -33,6 +33,8 @@ jobs:
           node-version: 22
       - name: Check Worker module syntax
         run: node --input-type=module --check < backend/worker.js
+      - name: Check creative provider module syntax
+        run: node --input-type=module --check < backend/creative-providers.js
       - name: Check browser JavaScript syntax
         run: |
           node --check astra-page.js
