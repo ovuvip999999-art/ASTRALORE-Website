@@ -328,8 +328,11 @@ begin
     end if;
   end if;
 
-  if v_storage_path <> v_job.user_id::text || '/' || p_job_id::text || '/'
-       || lower(p_output_asset->>'asset_id') || '.' || v_expected_ext then
+  if v_storage_path is null
+     or v_storage_path <> (
+       v_job.user_id::text || '/' || p_job_id::text || '/'
+       || lower(p_output_asset->>'asset_id') || '.' || v_expected_ext
+     ) then
     raise exception 'Output asset storage path is not owner/job scoped' using errcode = '22023';
   end if;
 
