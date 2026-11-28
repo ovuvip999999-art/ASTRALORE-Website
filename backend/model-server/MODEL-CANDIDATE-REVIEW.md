@@ -25,13 +25,16 @@ Decision: **keep as the first image evaluation candidate, pending adult license 
 
 ### Wan AI — Wan2.1 T2V 1.3B
 
-- Model ID: `Wan-AI/Wan2.1-T2V-1.3B`
+- Model ID: `Wan-AI/Wan2.1-T2V-1.3B-Diffusers`
 - Task: text-to-video, 480p baseline.
 - License: Apache 2.0 according to the official model card and repository. Preserve required notices and review the complete license and model-specific terms before redistribution.
-- Hardware note: the official model card reports 8.19 GB VRAM and approximately four minutes to generate a five-second 480p video on an RTX 4090 without quantization/optimizations. This is upstream-reported, not an ASTRA benchmark or a guarantee on other GPUs.
+- Hardware note: the original Wan2.1 model card reports 8.19 GB VRAM and approximately four minutes for a five-second 480p video on an RTX 4090 without quantization/optimizations. The current Diffusers Wan guide separately reports about 13 GB VRAM for its T2V example. Use at least the Diffusers figure as a planning reference, then measure the exact local configuration; neither figure is an ASTRA benchmark or a guarantee on other GPUs.
+- Initial Diffusers baseline: 832×480, 81 frames at 16 fps (about 5.06 seconds), with 480p flow shift. The official Diffusers example uses WanPipeline, a float32 VAE, bfloat16 pipeline weights, and CPU offload.
 - Quality note: the official repository says the 1.3B checkpoint is primarily suitable for 480p; 720p results are less stable because of limited training at that resolution. This is a text-to-video checkpoint; do not treat it as a proven image-to-video solution.
 - Primary sources:
-  - Model card: https://huggingface.co/Wan-AI/Wan2.1-T2V-1.3B
+  - Diffusers-format model card: https://huggingface.co/Wan-AI/Wan2.1-T2V-1.3B-Diffusers
+  - Original model card and upstream 8.19 GB / RTX 4090 claim: https://huggingface.co/Wan-AI/Wan2.1-T2V-1.3B
+  - Official Diffusers pipeline and 13 GB VRAM note: https://huggingface.co/docs/diffusers/en/api/pipelines/wan
   - Official repository and license: https://github.com/Wan-Video/Wan2.1
 
 Decision: **keep as the first video evaluation candidate for 480p text-to-video**, pending exact revision pinning, dependency/security review, and measured hardware limits.
