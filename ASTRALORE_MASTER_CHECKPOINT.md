@@ -340,3 +340,33 @@ After the executor is verified, continue with host capability/preflight, model-l
 - PR CI run `46150085499` passed both jobs on `81cd8ee3de1995727c19491b465d9702306b671e`: 219 tests passed, one expected opt-in host-test skip.
 - Worker bootstrap now fails closed if Docker is unavailable, the exact digest-pinned runtime image is absent, the selected NVIDIA device is unavailable, or free VRAM is below the registered model's manifest requirement.
 - No actual GPU host preflight has been executed. CI uses mocks. No model weights, accepted licenses, moderation provider, deployment, production flags or database migrations have been added or enabled.
+
+
+## 18. HTTPS moderation transport and environment-driven worker process — 2026-11-28
+
+### Commits
+- `9ed53f6a952e7108f3e63aebd5bfd9be668b55ee`: added `moderation_http.py`, an HTTPS-only authenticated transport adapter for prompt and generated-media moderation. It uses fixed routes, no redirects, TLS verification, bounded request/response sizes, and a strict decision schema. Generated-media payloads are capped at 64 MiB.
+- `152d6ee2a5b30cd776264ae95c6c5487672ad2b0`: tests prompt/output requests, integrity metadata, invalid config, transport failure and fail-closed SafetyGate behavior.
+- `012a09f50136359e62d95f47c981d7b271c2e853`: added moderation and worker process modules/tests to CI compile coverage.
+- `38de95046aa8b17569e2f418f14c9dc14c9da08e`: documented the worker environment and external moderation service contract.
+- `b7f9117cd667de4e4d07c30c41983c3125c26659`: added authenticated `GET /health/ready` validation; the moderation service must report prompt, image and video capabilities.
+- `b115ed6f7430d513ebdce54ce0ef236889195d8d`: tests for moderation readiness and required modality coverage.
+- `9a1e29e1c23aefbb997992b24661fc3a359a4695`: completed the existing `worker_process.py` as an environment-driven process entrypoint; validates all required settings, reads a bounded non-symlink manifest, constructs private API/storage clients and Docker sandbox, checks moderation readiness, then delegates to the fail-closed worker bootstrap. Added graceful SIGTERM/SIGINT shutdown and bounded polling/backoff.
+- `655e98bd9d0568dcfd71182b7bce18d9ce4bc176`: tests manifest safety, incomplete configuration and verifies moderation readiness is checked before worker construction.
+- `2f4e69a537820c54e1bd318a122a90f1ef2944f9`: documents the mandatory moderation readiness endpoint and the worker launch command.
+- Current PR head: `2f4e69a537820c54e1bd318a122a90f1ef2944f9`. PR #20 remains OPEN, DRAFT, NOT MERGED, base `feature/astra-cloud-memory`.
+
+### Verification
+- CI run `46151487107` completed successfully on the current head `2f4e69a537820c54e1bd318a122a90f1ef2944f9`: syntax and model-server jobs passed; 230 tests passed with one expected skip for the opt-in real Docker/GPU host test.
+- The suite covers the new moderation readiness contract and environment-driven worker bootstrap with mocks. It does not prove a real moderation classifier is provisioned, reachable, or accurate.
+- The HTTPS adapter is transport only, **not a moderation model**. An administrator-operated compatible service is still required. Generated media above 64 MiB is not supported by this transport adapter and fails closed; a reviewed streaming integration is needed for larger video.
+- `python worker_process.py` is now a real process entrypoint in code, but has not been run on a provisioned host because no approved service credentials, GPU host, runtime image or model artifacts are available.
+- No model weights were downloaded; no license terms accepted; no GPU compute provisioned; no migrations applied; no API generation flags enabled; no production deployment performed.
+
+### Next engineering work
+1. Add an independently reviewable moderation-service implementation or select and validate an approved existing service. Do not treat a fake or the HTTPS transport adapter as moderation.
+2. Build and verify the dedicated GPU runtime image on a controlled host using a verified immutable base digest; verify actual pinned PyTorch/Diffusers/Wan imports and codecs.
+3. Run the opt-in real Docker/GPU host probe; test cancellation, timeout, container cleanup and output transfer on a real Docker daemon.
+4. Validate model artifact layout, checksums and the exact SD3.5/Wan adapter compatibility with actual local weights only after appropriate adult account-owner license review.
+5. Run a controlled image smoke test, then a short-video smoke test and the existing blinded quality benchmark.
+6. Only after those gates pass should API routes, queue admission and deployment be considered. Keep PR #20 unmerged and production unchanged until explicit approval.
