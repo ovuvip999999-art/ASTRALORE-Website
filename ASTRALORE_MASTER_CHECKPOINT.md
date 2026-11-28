@@ -493,7 +493,7 @@ After the executor is verified, continue with host capability/preflight, model-l
 - Updated README to explain the reduced symlink/path-swap race exposure.
 
 ### Verification state
-- Code and tests committed to `feature/astra-creative-skills`; CI for this hardening is pending. Do not report these new changes as passed until the matching workflow completes.
+- CI run `46155495457` completed successfully on this hardening checkpoint: both `syntax` and `model-server` jobs passed; 245 Python tests passed with one expected opt-in Docker/GPU host integration test skipped. The new symlinked-parent regression test passed.
 - This is startup-time artifact verification hardening. It does not replace read-only model mounts, administrator-controlled model directories, or host isolation.
 
 ### Remaining external gates unchanged
