@@ -96,8 +96,8 @@ class DockerSandboxExecutor:
             raise SandboxExecutionError("SANDBOX_OUTPUT_INVALID")
         return root
 
-    def _read_bounded_result(self, process: Any) -> str:
-        """Drain stdout concurrently, retaining at most a tiny JSON result."""
+    def _start_result_reader(self, process: Any):
+        """Start draining stdout before stdin is written to prevent pipe deadlocks."""
         stream = getattr(process, "stdout", None)
         if stream is None:
             raise SandboxExecutionError("SANDBOX_PROTOCOL_INVALID")
@@ -118,6 +118,9 @@ class DockerSandboxExecutor:
 
         reader = threading.Thread(target=drain, name="astra-sandbox-result", daemon=True)
         reader.start()
+        return reader, state
+
+    def _finish_result_reader(self, reader: threading.Thread, state: dict[str, Any]) -> str:
         reader.join(timeout=self.cleanup_timeout)
         if reader.is_alive() or state["overflow"] or state["failed"]:
             raise SandboxExecutionError("SANDBOX_PROTOCOL_INVALID")
@@ -206,6 +209,7 @@ class DockerSandboxExecutor:
                 shell=False,
                 start_new_session=(os.name != "nt"),
             )
+            result_reader, result_state = self._start_result_reader(process)
             try:
                 process.stdin.write(encoded)
                 process.stdin.close()
@@ -222,7 +226,7 @@ class DockerSandboxExecutor:
 
             if process.returncode != 0:
                 raise SandboxExecutionError("SANDBOX_EXIT_FAILED", retryable=True)
-            reported_filename = self._read_bounded_result(process)
+            reported_filename = self._finish_result_reader(result_reader, result_state)
             output_path = self._collect_outputs(name, output_root)
             if output_path.name != reported_filename:
                 raise SandboxExecutionError("SANDBOX_PROTOCOL_INVALID")
