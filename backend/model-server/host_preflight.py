@@ -1,7 +1,8 @@
 """Read-only preflight for an explicitly digest-pinned ASTRA GPU runtime host.
 
-This checks Docker daemon/image availability and NVIDIA device memory. It does
-not start a container, download model weights, or enable generation.
+Checks Docker daemon/image availability, NVIDIA device memory, and an actual
+CUDA allocation/matmul inside the selected digest-pinned runtime container.
+It does not mount models, download weights, or enable generation.
 """
 from __future__ import annotations
 
@@ -11,6 +12,19 @@ import subprocess
 from typing import Any, Callable
 
 from sandbox_policy import SandboxConfig, validate_config
+
+CUDA_PROBE = (
+    "import torch; "
+    "assert torch.version.cuda and torch.version.cuda.startswith('12.4'); "
+    "assert torch.cuda.is_available(); "
+    "assert torch.cuda.device_count() == 1; "
+    "p=torch.cuda.get_device_properties(0); "
+    "assert p.total_memory >= REQUIRED_VRAM_BYTES; "
+    "x=torch.ones((16,16),device='cuda'); "
+    "y=x@x; torch.cuda.synchronize(); "
+    "assert y[0,0].item() == 16.0; "
+    "print('ASTRA_CUDA_GPU_OK')"
+)
 
 
 class HostPreflightError(RuntimeError):
@@ -98,6 +112,23 @@ def run_host_preflight(
     if total_mb < required_vram_mb or free_mb < required_vram_mb:
         raise HostPreflightError("GPU_VRAM_INSUFFICIENT")
 
+    probe = CUDA_PROBE.replace(
+        "REQUIRED_VRAM_BYTES", str(required_vram_mb * 1024 * 1024)
+    )
+    probe_output = _run(
+        [
+            config.docker_executable, "run", "--rm",
+            "--network", "none", "--read-only",
+            "--tmpfs", "/tmp:rw,noexec,nosuid,nodev,size=67108864",
+            "--gpus", f"device={config.gpu_device}",
+            "--entrypoint", "python", config.image, "-c", probe,
+        ],
+        docker_runner,
+        timeout=120,
+    )
+    if "ASTRA_CUDA_GPU_OK" not in probe_output:
+        raise HostPreflightError("CUDA_CONTAINER_PROBE_FAILED")
+
     return {
         "docker_server_version": docker_version,
         "runtime_image_digest": config.image,
@@ -105,11 +136,12 @@ def run_host_preflight(
         "gpu_total_vram_mb": total_mb,
         "gpu_free_vram_mb": free_mb,
         "required_vram_mb": required_vram_mb,
+        "cuda_container_probe": "passed",
     }
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Read-only ASTRA Docker/GPU host preflight.")
+    parser = argparse.ArgumentParser(description="Read-only ASTRA Docker/CUDA GPU host preflight.")
     parser.add_argument("--image", required=True, help="Immutable image@sha256 digest reference.")
     parser.add_argument("--model-root", required=True, help="Existing administrator-controlled model directory.")
     parser.add_argument("--gpu-device", required=True, help="Explicit numeric NVIDIA GPU index.")
