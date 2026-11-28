@@ -42,25 +42,25 @@ test("creative endpoints enforce owner, free, premium, and rolling 24-hour plans
   const plansMigration = await read("./migrations/0009_astra_free_and_premium_plans.sql");
   const config = await read("./wrangler.toml");
 
-  assert.match(worker, /env\\.ASTRA_CREATIVE_ENABLED !== "true"/);
-  assert.match(worker, /env\\.ASTRA_VIDEO_ENABLED !== "true"/);
-  assert.match(worker, /reserveCreativeUsage\\(env, authorization, authenticatedUser\\.id, "image"\\)/);
-  assert.match(worker, /reserveCreativeUsage\\(env, authorization, authenticatedUser\\.id, "video"\\)/);
-  assert.match(worker, /authenticatedUser\\.id === env\\.ASTRA_CREATIVE_OWNER_USER_ID\\.trim\\(\\)/);
-  assert.match(worker, /quota = \\{ allowed: true, remaining: -1, unlimited: true \\}/);
-  assert.doesNotMatch(worker, /authenticatedUser\\.id !== env\\.ASTRA_CREATIVE_OWNER_USER_ID/);
+  assert.match(worker, /env\.ASTRA_CREATIVE_ENABLED !== "true"/);
+  assert.match(worker, /env\.ASTRA_VIDEO_ENABLED !== "true"/);
+  assert.match(worker, /reserveCreativeUsage\(env, authorization, authenticatedUser\.id, "image"\)/);
+  assert.match(worker, /reserveCreativeUsage\(env, authorization, authenticatedUser\.id, "video"\)/);
+  assert.match(worker, /authenticatedUser\.id === env\.ASTRA_CREATIVE_OWNER_USER_ID\.trim\(\)/);
+  assert.match(worker, /quota = \{ allowed: true, remaining: -1, unlimited: true \}/);
+  assert.doesNotMatch(worker, /authenticatedUser\.id !== env\.ASTRA_CREATIVE_OWNER_USER_ID/);
 
-  assert.match(initialMigration, /auth\\.uid\\(\\) is null or auth\\.uid\\(\\) <> p_user_id/i);
+  assert.match(initialMigration, /auth\.uid\(\) is null or auth\.uid\(\) <> p_user_id/i);
   assert.match(ownerBudgetMigration, /estimated_spend_usd/);
-  assert.match(plansMigration, /create table if not exists public\\.astra_user_plans/i);
-  assert.match(plansMigration, /plan in \\('free', 'premium'\\)/i);
-  assert.match(plansMigration, /generated_at > now\\(\\) - interval '24 hours'/i);
+  assert.match(plansMigration, /create table if not exists public\.astra_user_plans/i);
+  assert.match(plansMigration, /plan in \('free', 'premium'\)/i);
+  assert.match(plansMigration, /generated_at > now\(\) - interval '24 hours'/i);
   assert.match(plansMigration, /v_limit integer := 10/);
   assert.match(plansMigration, /v_is_premium/);
   assert.match(plansMigration, /return query select true, null::integer, null::numeric, true/i);
   assert.match(plansMigration, /pg_advisory_xact_lock/);
-  assert.match(plansMigration, /revoke all on function public\\.astra_release_image_generation\\(uuid\\) from public, anon, authenticated/i);
-  assert.match(plansMigration, /revoke all on function public\\.astra_release_video_generation\\(uuid\\) from public, anon, authenticated/i);
+  assert.match(plansMigration, /revoke all on function public\.astra_release_image_generation\(uuid\) from public, anon, authenticated/i);
+  assert.match(plansMigration, /revoke all on function public\.astra_release_video_generation\(uuid\) from public, anon, authenticated/i);
   assert.match(config, /ASTRA_CREATIVE_ENABLED = "false"/);
   assert.match(config, /ASTRA_VIDEO_ENABLED = "false"/);
 });
