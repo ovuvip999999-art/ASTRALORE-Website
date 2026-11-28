@@ -294,3 +294,10 @@ The upstream Diffusers Wan guide reports about 13 GB VRAM for its T2V example; u
 `sandbox_policy.py` builds a Docker invocation for a future model worker. It requires an administrator-pinned image digest and explicit GPU device, mounts verified model files read-only, disables networking, makes the container root filesystem read-only, drops Linux capabilities, uses a non-root UID, enables no-new-privileges, and applies Docker memory/swap, CPU, PID, shared-memory and bounded tmpfs output limits. The tmpfs output volume is capped at 512 MiB and writable only by the runtime UID.
 
 `build_execution_plan` also exposes a wall-clock deadline for the parent supervisor to enforce. **This is a policy/command-builder foundation only:** it does not launch Docker, enforce the parent timeout, isolate the existing in-process worker, or prove that a deployment host is hardened. It is not wired into `GenerationWorker`; the current worker runner still invokes its injected adapter in-process. Do not enable a worker or generation until a separate supervised container executor is integrated and tested on the target Linux/GPU host.
+
+## Worker process loop
+
+- `worker_process.py` wraps an already bootstrapped `GenerationWorker` in a graceful polling loop.
+- Empty queues use a bounded idle wait; private API transport failures use capped exponential backoff; a supplied stop event allows clean shutdown.
+- Unexpected programming/runtime errors are not silently swallowed and can be handled by the process supervisor.
+- The loop does not create a worker, configure secrets, or deploy anything. It can only be used after `worker_bootstrap.py` has verified local models and a reviewed moderation provider.
