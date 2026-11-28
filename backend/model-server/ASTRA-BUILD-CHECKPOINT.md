@@ -111,7 +111,7 @@ When resuming, fetch PR #20 and this checkpoint first, inspect the latest CI sta
 - CI runs #565 (`46137927013`) and #566 (`46137935611`) passed both `syntax` and `model-server` jobs on the Windows test-runner checkpoint head `f77eb3b71d5619ab4c52943862704280d6d2be28`.
 - The PowerShell runner itself is documented but has not yet been executed on the user's Windows machine.
 
-## Current latest verified code head
+## Previous checkpoint head (verify current branch head on resume)
 
 - Branch head recorded after the Windows test runner and handover updates: `19156beac903f78c1dae45bb7c948ea91e5dc7a8`.
 - PR #20 remains open/draft/unmerged. Confirm the current head on GitHub before resuming.
