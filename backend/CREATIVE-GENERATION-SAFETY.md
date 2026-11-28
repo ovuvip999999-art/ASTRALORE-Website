@@ -1,44 +1,30 @@
 # ASTRA Creative Generation Plans & Safety
 
-Creative generation remains disabled by default. These plan rules are enforced by the authenticated Worker and Supabase database, not by browser-only UI controls.
+## Zero-cost launch status
 
-## Plans
+**Image and video generation are paused in code.** The Worker rejects every creative-generation request before reaching either model. The Image Studio and Video Studio buttons are disabled in the interface.
 
-- **Owner:** unlimited image generation at no per-generation charge to the owner. Owner identity is matched against the private Worker secret `ASTRA_CREATIVE_OWNER_USER_ID`. Owner videos use the standard 10-per-rolling-24-hour allowance.
-- **Free users:** 10 images and 10 videos in any rolling 24-hour window. Users pay nothing per generated image or video through ASTRA; the Cloudflare account owner still bears provider usage costs.
-- **Premium users:** unlimited images. Premium videos remain limited to 10 in a rolling 24-hour window.
+This is intentional: Cloudflare's free daily Workers AI allowance is shared across ASTRA's other AI traffic too. The Worker cannot currently read and reserve the account's remaining provider Neurons with a reliable hard guarantee. A per-user image quota or an estimated per-image cost is not sufficient to guarantee zero charges. The current video provider is paid per generated second.
 
-A generation is reserved before calling the model. If a model request fails, the reservation remains for 24 hours to prevent retries from bypassing the limit. The rolling window means an individual generation slot becomes available 24 hours after that reservation, rather than resetting at midnight.
+## Current safeguards
 
-## Required setup
+- `ASTRA_CREATIVE_ENABLED` and `ASTRA_VIDEO_ENABLED` remain `false` in the checked-in Wrangler configuration.
+- A code-level fail-closed guard rejects all creative actions even if either feature flag is accidentally changed.
+- The owner unlimited-image bypass and premium unlimited-image entitlement are unreachable while this guard is active.
+- No video model request can be made through the Worker.
+- Do not apply migrations `0008_astra_creative_owner_budget.sql` or `0009_astra_free_and_premium_plans.sql`; they belong to the earlier paid/quota design and are not part of the zero-cost launch.
+- Existing Skills, chat, document features, and their current configuration are unchanged.
 
-1. Apply migrations `0006_astra_user_skills.sql`, `0007_astra_image_generation_quota.sql`, `0008_astra_creative_owner_budget.sql`, then `0009_astra_free_and_premium_plans.sql` in Supabase SQL Editor. Migration 0009 replaces the interim 0008 reservation function.
-2. Set `ASTRA_CREATIVE_OWNER_USER_ID` as a Cloudflare Worker secret for the preview Worker using the owner's Supabase Auth UUID. Never commit it or place it in frontend code.
-3. Premium membership is stored in `public.astra_user_plans`. It is read-only to browser users; the account administrator assigns/removes Premium using the Supabase SQL Editor. Example assignment:
+## What must be built before re-enabling images
 
-   ```sql
-   insert into public.astra_user_plans (user_id, plan)
-   values ('CUSTOMER_SUPABASE_AUTH_UUID', 'premium')
-   on conflict (user_id) do update
-   set plan = 'premium', updated_at = now();
-   ```
+1. A shared, server-enforced daily budget that accounts for all Workers AI usage, not just image requests.
+2. A reliable way to know the account's actual remaining free Neurons and enforce a conservative reserve.
+3. A fail-closed response when usage data is missing, stale, or the allowance is exhausted.
+4. Tests proving parallel requests cannot exceed the shared budget.
+5. Confirmation that the Cloudflare account remains on a plan where exceeding the daily free allowance does not create paid usage.
 
-   To return a user to Free:
+A per-user limit such as 10 images/day is not a provider spending cap. Premium and owner unlimited generation must remain disabled until operating costs are covered by verified revenue and the account owner explicitly approves paid usage.
 
-   ```sql
-   update public.astra_user_plans
-   set plan = 'free', updated_at = now()
-   where user_id = 'CUSTOMER_SUPABASE_AUTH_UUID';
-   ```
+## Deployment status
 
-4. Keep `ASTRA_CREATIVE_ENABLED` and `ASTRA_VIDEO_ENABLED` set to `false` until the Cloudflare account owner has reviewed current model prices, account billing controls, and explicitly approved preview testing.
-
-## Cost and abuse safeguards
-
-- Free image allowance: 10 per rolling 24 hours; estimated model cost is reserved at US$0.002 per image.
-- Premium/owner image generation is unlimited by application quota. It is **not free to operate**: the Cloudflare account owner pays provider usage costs.
-- Video allowance: 10 per rolling 24 hours; the existing 5-second 480p model request is estimated at US$0.25 each.
-- Premium payments, subscription checkout, automatic renewal, and payment webhooks are not implemented in this change. Premium entitlement is manually administered until a payment provider is integrated.
-- These estimates are not a provider-side spending cap or invoice guarantee. Unlimited generation can create substantial usage charges. Review provider billing controls before enabling it.
-
-The code changes do not enable billing, change Cloudflare account settings, apply database migrations, or deploy themselves. Keep production untouched.
+These are repository changes only. They do not apply Supabase migrations, change Cloudflare billing, deploy a Worker or Pages site, or enable paid generation. Keep PR #20 open, draft, and unmerged; keep production untouched.
