@@ -349,6 +349,15 @@ export default {
     if (!authenticatedUser) {
       return json({ error: "Your session is invalid or expired. Please sign in again." }, 401, origin);
     }
+    // Fail closed: the current provider allowance cannot be measured or reserved
+    // safely across all ASTRA AI traffic. Never call a paid creative model until
+    // a verified shared free-budget enforcement mechanism is implemented.
+    if (creativeAction) {
+      return json({
+        error: "ASTRA image and video generation are temporarily paused while we implement a verifiable no-cost usage limit. No creative model request was sent."
+      }, 503, origin);
+    }
+
     if (creativeAction && (
       typeof env.ASTRA_CREATIVE_OWNER_USER_ID !== "string" ||
       !env.ASTRA_CREATIVE_OWNER_USER_ID.trim()
