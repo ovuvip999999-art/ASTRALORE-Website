@@ -26,7 +26,7 @@ class RuntimeManifestTests(unittest.TestCase):
                     "sha256": "0" * 64,
                     "size_bytes": 4,
                 }],
-                "max_vram_mb": 12000,
+                "min_vram_mb": 12000,
                 "max_width": 1024,
                 "max_height": 1024,
                 "max_pixels": 1048576,
@@ -98,7 +98,7 @@ class RuntimeManifestTests(unittest.TestCase):
 
     def test_manifest_rejects_boolean_integer_fields(self):
         payload = self.make_manifest()
-        payload["models"][0]["max_vram_mb"] = True
+        payload["models"][0]["min_vram_mb"] = True
         with self.assertRaises(RuntimeManifestError):
             load_manifest_json(json.dumps(payload))
 
