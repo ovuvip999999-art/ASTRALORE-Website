@@ -63,6 +63,8 @@ def validate_output_asset(asset: Any, modality: str) -> dict[str, Any]:
             raise JobStateError(f"{field} must be a positive integer")
     if asset["size_bytes"] > 512 * 1024 * 1024:
         raise JobStateError("output asset exceeds the 512 MiB safety ceiling")
+    if asset["width"] > 16384 or asset["height"] > 16384 or asset["width"] * asset["height"] > 100_000_000:
+        raise JobStateError("output dimensions exceed the 16K / 100-megapixel safety ceiling")
     if modality == "video":
         duration = asset.get("duration_ms")
         if isinstance(duration, bool) or not isinstance(duration, int) or not 1 <= duration <= 120_000:
