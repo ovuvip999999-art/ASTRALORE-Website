@@ -447,3 +447,5 @@ Exit code 0 means every inspected model is structurally valid and explicitly mar
 ## Internal and public job origins
 
 The queue API supports two server-routed origins: legacy `/v1/jobs` is internal-only, while `/v1/public/jobs` stamps a public origin. The caller cannot set this field in the JSON body. Status, cancellation and signed-asset retrieval use matching `/v1/internal/jobs/{id}` or `/v1/public/jobs/{id}` paths and verify the persisted origin after owner-scoped lookup. Migration `0012_astra_job_access_modes.sql` must be reviewed and applied manually before using these routes with a database. It is not applied by CI or deployment automation. The public Cloudflare Worker bridge is not yet switched to the public route, and public generation remains disabled.
+
+The origin-specific feature gates are independent: set `ASTRA_INTERNAL_QUEUE_API_ENABLED=true` only for approved internal operation, and `ASTRA_PUBLIC_QUEUE_API_ENABLED=true` only when public mode is approved. Both also require the global `ASTRA_QUEUE_API_ENABLED=true`. All flags default off; the Cloudflare queue proxy independently requires the public flag and routes only to public endpoints.
