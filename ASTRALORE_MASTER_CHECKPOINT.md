@@ -441,3 +441,24 @@ After the executor is verified, continue with host capability/preflight, model-l
 - After local image build/import smoke test, an authorized owner must publish the image to a selected registry and record its resulting digest; then perform GPU host preflight and the opt-in Docker lifecycle probe.
 - Real moderation classifier, owner-reviewed model license/artifact manifest, actual model weights, first image inference, and first video inference remain outstanding.
 - Do not enable generation, apply migrations, publish/deploy, or merge PR #20 without explicit owner approval.
+
+
+## 22. In-container CUDA execution preflight — 2026-11-28
+
+### Implementation
+- Extended `host_preflight.py` beyond host-level `nvidia-smi` visibility. After confirming the Docker daemon, exact local image digest, selected host GPU and total/free VRAM, preflight now runs a short-lived container from that exact digest with only the selected GPU exposed.
+- The probe uses `--network none`, a read-only root filesystem and a bounded temporary filesystem. It mounts no model directory and loads no model weights.
+- Inside the container it checks the pinned CUDA runtime version, verifies CUDA is available and exactly one selected GPU is visible, checks device memory against the declared threshold, allocates CUDA tensors, performs a matrix multiplication, synchronizes the device, and requires the exact `ASTRA_CUDA_GPU_OK` marker.
+- Container startup, CUDA initialization, kernel execution, or marker failures are surfaced as the sanitized `CUDA_CONTAINER_PROBE_FAILED` status. The container is automatically removed.
+- Expanded `test_host_preflight.py` with command-shape/success assertions and negative tests for missing success marker and container execution failure.
+- Updated the model-server README to distinguish this CUDA execution smoke test from actual model inference and from a production security certification.
+
+### Verification state
+- Changes are committed to `feature/astra-creative-skills`; latest commit from this implementation sequence is expected to be CI-validated before any pass is claimed.
+- Tests use mocked Docker/NVIDIA command runners in hosted CI. They verify command construction and fail-closed behavior, not an actual GPU device.
+- The real CUDA container probe still requires an authorized Linux host with Docker, NVIDIA Container Toolkit, and the final digest-pinned ASTRA runtime image.
+
+### Remaining gates unchanged
+- No actual CUDA host has been exercised in this session.
+- No model weights downloaded or licensed, no real moderation classifier provisioned, no image/video inference run.
+- Generation remains disabled; no paid compute or external registry push; no migrations, deployment, or PR merge.
