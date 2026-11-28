@@ -233,3 +233,11 @@ Do not accept gated model licenses, download weights, or enable inference until 
 
 - Every runtime manifest entry must also include a license identifier and `license_reviewed_by_owner` boolean. The code-owned adapter registry skips any model whose owner-review attestation is not explicitly true.
 - This is a project configuration gate, not legal advice or automatic license acceptance. For gated agreements, an adult account owner must read the current full terms and decide whether to accept them. ASTRA never automates license acceptance.
+
+## Fail-closed moderation gate
+
+- `safety_gate.py` defines an injected moderation-provider contract for both the user prompt and generated media output.
+- Only an explicit high-confidence `allow` decision with a benign/none category proceeds. Block, review, malformed decisions, low confidence, invalid input, or provider outages fail closed.
+- The worker runner refuses to claim any job unless both an exact-revision generation adapter and a moderation gate are supplied.
+- Prompt moderation occurs before model inference; output moderation occurs after byte/container validation and before private upload.
+- No moderation model/provider is installed yet. This is an interface and enforcement gate, not evidence that ASTRA currently has effective moderation coverage. A vetted provider, adversarial testing, and human escalation policy are required before enabling generation.
