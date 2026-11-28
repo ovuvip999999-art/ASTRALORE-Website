@@ -535,3 +535,18 @@ After the executor is verified, continue with host capability/preflight, model-l
 - The initial run exposed one test-fixture issue: the fixture serialized verifier-enriched top-level model fields into the strict public manifest. The test now serializes only the exact manifest schema fields, including the exact `path`, `sha256`, and `size_bytes` file records.
 - Python model-server suite: 251 tests passed; one expected opt-in GPU test skipped. The model-readiness checksum/structure test passed.
 - This verifies synthetic fixtures only. No real model packages, weights, GPU inference, moderation classifier, deployment, or public generation were provisioned.
+
+
+## 27. Internal/public generation job access-mode foundation — 2026-11-28
+
+### Implemented on PR #20
+- Added unapplied migration `0012_astra_job_access_modes.sql`: existing rows default to `internal`; new rows carry a constrained `request_origin` of `internal` or `public`.
+- Added a service-role-only `astra_enqueue_generation_job_v2` RPC. It requires an explicit origin, includes origin in idempotency matching, enforces a separate per-user active-job cap (2 internal, 1 public), and retains the global 100-job ceiling.
+- Updated the queue-store adapter to call the v2 RPC with an explicit origin. The API's legacy `/v1/jobs` route remains internal; the new `/v1/public/jobs` route sets public origin from the server route, never from request JSON. Matching origin-specific status/cancel/asset URL routes are available under `/v1/public/jobs/{job_id}`; legacy routes remain internal.
+- User status and asset lookups now retrieve the persisted origin and reject cross-mode access as not found. Cancellation first checks the same owner-visible origin before invoking the existing owner-scoped cancellation RPC.
+- Added API, queue-store, migration-contract, and PostgreSQL integration coverage for origin stamping, origin mismatch, and the separate public active-job cap.
+
+### Safety and verification limits
+- Migration 0012 is a repository artifact only; it has NOT been applied to Supabase. No secrets, routes in the public Cloudflare Worker, feature flags, deployment, or generation settings were changed.
+- The existing worker can continue claiming both origins through the shared queue. Worker-side prioritization/fairness and a distinct internal service identity remain follow-up work; this milestone does not claim complete end-to-end isolation from a compromised shared credential.
+- CI must pass against the new migration and route changes before this milestone is considered verified.
