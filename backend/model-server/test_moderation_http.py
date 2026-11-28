@@ -49,6 +49,30 @@ class ModerationHTTPTests(unittest.TestCase):
         )
         return provider, opener
 
+    def test_readiness_requires_prompt_image_and_video_capabilities(self):
+        ready = FakeResponse(json.dumps({
+            "status": "ready",
+            "model_version": "moderation-v1",
+            "capabilities": ["prompt", "image", "video"],
+        }).encode())
+        provider, opener = self.provider(ready)
+        result = provider.check_ready()
+        request, timeout = opener.requests[0]
+        self.assertEqual(result, {"status": "ready", "model_version": "moderation-v1"})
+        self.assertEqual(request.full_url, "https://moderation.example/health/ready")
+        self.assertEqual(request.get_method(), "GET")
+        self.assertEqual(request.get_header("Authorization"), "Bearer " + TOKEN)
+
+    def test_readiness_rejects_missing_video_moderation(self):
+        response = FakeResponse(json.dumps({
+            "status": "ready",
+            "model_version": "moderation-v1",
+            "capabilities": ["prompt", "image"],
+        }).encode())
+        provider, _ = self.provider(response)
+        with self.assertRaises(ModerationTransportError):
+            provider.check_ready()
+
     def test_prompt_is_sent_to_fixed_route_with_bearer_auth(self):
         provider, opener = self.provider()
         result = provider.moderate_prompt("A mountain landscape", "image")
