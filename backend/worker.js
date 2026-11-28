@@ -1,6 +1,7 @@
 import { buildDocumentChunks } from "./document-utils.js";
 import { createDocumentStore } from "./document-store.js";
 import { createCreativeProviderRegistry } from "./creative-providers.js";
+import { forwardQueueAction } from "./queue-proxy.mjs";
 
 const ALLOWED_ORIGINS = new Set([
   "https://86d63a08.astralore-aeb.pages.dev",
@@ -273,6 +274,7 @@ export default {
     const documentAction = body.documentAction && typeof body.documentAction === "object" ? body.documentAction : null;
     const documentToSave = documentAction?.operation === "save" ? documentAction.document : null;
     const creativeAction = body.creativeAction && typeof body.creativeAction === "object" ? body.creativeAction : null;
+    const queueAction = body.queueAction && typeof body.queueAction === "object" ? body.queueAction : null;
     const conversationId = typeof body.conversationId === "string" ? body.conversationId : "";
     const validConversationId = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(conversationId);
     const validDocumentTypes = new Set([
@@ -334,7 +336,10 @@ export default {
       if (body.costAcknowledged !== true) return json({ error: "Confirm AI usage before generation." }, 400, origin);
       if (image || document || documentAction || message) return json({ error: "Send creative generation as a separate request." }, 400, origin);
     }
-    if (!message && !image && !document && !documentAction && !creativeAction) return json({ error: "Enter a message or attach a file." }, 400, origin);
+    if (queueAction && (message || image || document || documentAction || creativeAction)) {
+      return json({ error: "Send a queue operation as a separate request." }, 400, origin);
+    }
+    if (!message && !image && !document && !documentAction && !creativeAction && !queueAction) return json({ error: "Enter a message or attach a file." }, 400, origin);
 
     let authenticatedUser = null;
     let archiveRows = [];
@@ -357,6 +362,11 @@ export default {
       return json({
         error: "ASTRA image and video generation are temporarily paused while we implement a verifiable no-cost usage limit. No creative model request was sent."
       }, 503, origin);
+    }
+
+    if (queueAction) {
+      const result = await forwardQueueAction(queueAction, { env, authorization });
+      return json(result.body, result.status, origin);
     }
 
     if (creativeAction && (
