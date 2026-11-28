@@ -567,3 +567,5 @@ After the executor is verified, continue with host capability/preflight, model-l
 - Worker API now authenticates two distinct server-side worker credentials and derives `internal` or `public` from the matching secret. The claim body does not accept an origin field.
 - Queue-store claim calls now require an explicit origin; a new SQL migration will replace the all-origin claim RPC with a strict origin-filtered RPC. Separate worker deployments must receive separate worker tokens; this repository does not provision or set secrets.
 - Verification is pending CI and PostgreSQL integration. Production credentials and migrations remain untouched.
+
+- Origin-isolated worker claim hardening is implemented in migration `0013_astra_origin_scoped_worker_claims.sql`: the previous all-origin claim RPC is removed, and the replacement requires a valid origin and filters the locked claim selection by persisted `request_origin`. The worker API derives origin from two distinct server-side tokens; the claim request itself cannot select an origin.
