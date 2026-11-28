@@ -93,7 +93,8 @@ class WorkerEndToEndTests(unittest.TestCase):
         self.store = FakeQueueStore()
         self.env = patch.dict(os.environ, {
             "ASTRA_WORKER_API_ENABLED": "true",
-            "ASTRA_WORKER_TOKEN": WORKER_TOKEN,
+            "ASTRA_INTERNAL_WORKER_TOKEN": WORKER_TOKEN,
+            "ASTRA_PUBLIC_WORKER_TOKEN": "separate-public-e2e-worker-token-value-123456",
         }, clear=True)
         self.env.start()
         self.addCleanup(self.env.stop)
