@@ -15,7 +15,7 @@ from typing import Any
 from runtime_manifest import load_manifest_json, verify_model_artifacts
 from runtime_registry import build_adapter_registry
 from sd35_adapter import make_sd35_factory
-from wan21_adapter import make_wan21_factory
+from wan21_adapter import make_wan_factory
 
 MAX_REQUEST_BYTES = 1_000_000
 MODEL_ROOT = Path("/models")
