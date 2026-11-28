@@ -82,3 +82,5 @@ When resuming, fetch PR #20 and this checkpoint first, inspect the latest CI sta
 - Output metadata validation includes MIME allowlists, UUID asset IDs, SHA-256, positive dimensions/size, a 512 MiB ceiling, and bounded video duration.
 - Added unit tests and CI coverage.
 - This is not a persistent queue or worker. Durable production execution still needs transactional job storage, atomic claims, worker leases, retries, cancellation signaling, ownership checks, and concurrency/resource limits.
+
+- CI run #518 (`46137466996`) passed both `syntax` and `model-server` jobs on commit `81f6923592ff033d90f3fc03e03950265c582ca7`; the job lifecycle tests passed.
