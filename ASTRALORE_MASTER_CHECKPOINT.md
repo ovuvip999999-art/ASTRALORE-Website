@@ -499,3 +499,18 @@ After the executor is verified, continue with host capability/preflight, model-l
 ### Remaining external gates unchanged
 - No actual GPU runtime host, model weights, accepted/reviewed model license, moderation classifier, image inference, or video inference is available in this session.
 - Generation remains disabled; no paid compute, registry push, migrations, deployment, or merge.
+
+
+## 25. Offline model package readiness validator — 2026-11-28
+
+### Implementation
+- Added `model_readiness.py`, a no-download, no-model-import structural checker for the pinned SD3.5 Medium and Wan2.1 T2V 1.3B adapter profiles.
+- It first validates the runtime manifest and SHA-256 artifacts using the descriptor-based verifier, then checks the expected Diffusers pipeline class, component directories, required JSON configs, tokenizer metadata, and core safetensors files.
+- The report distinguishes structural validity from owner license review and inference eligibility. It always reports `inference_performed=false`; this tool does not load PyTorch/Diffusers, execute model code, download weights, or claim successful inference.
+- Added five tests covering both model layouts, missing components, wrong pipeline metadata, checksum verification, and the license-review gate.
+- Updated the model-server README and CI compile/test list.
+
+### Verification and limits
+- The new validator uses tiny synthetic fixtures. It has not inspected real SD3.5 or Wan weights, and its structural profiles must be checked against the exact immutable model revisions chosen by the owner before production staging.
+- A structurally valid report is not a substitute for actual model loading, CUDA inference, quality benchmarking, moderation, or deployment readiness.
+- Generation remains disabled. No model downloads, GPU hosting, registry push, paid service, migration, deployment, or PR merge occurred.
