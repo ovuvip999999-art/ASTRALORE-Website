@@ -280,3 +280,10 @@ The model server independently rechecks readiness before accepting `POST /v1/job
 - Added a code-owned factory for the verified runtime registry and mocked tests. No model weights or GPU runtime were downloaded/installed and no actual video inference was run.
 
 The upstream Diffusers Wan guide reports about 13 GB VRAM for its T2V example; use a host-specific measured `min_vram_mb` rather than assuming that figure guarantees a working deployment. The original model card's 8.19 GB claim is for its upstream setup, not ASTRA's Diffusers pipeline.
+
+## Worker bootstrap composition root
+
+- `worker_bootstrap.py` composes the verified model manifest, code-owned adapter factories, moderation provider, private worker API client, and private asset store into a `GenerationWorker`.
+- Startup fails before any queue claim if the moderation provider, queue client, asset store, owner-reviewed model, verified artifacts, or trusted adapter factory is missing.
+- The bootstrap accepts factories and providers as code dependencies; it does not dynamically import modules named by a manifest or environment variable.
+- Tests use temporary files and fake adapters/providers. This does not start a daemon or deploy a worker process.
