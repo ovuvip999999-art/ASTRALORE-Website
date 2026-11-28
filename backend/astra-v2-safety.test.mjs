@@ -74,7 +74,7 @@ test("creative prompts are validated and failed model calls keep their reservati
   assert.match(worker, /generate-video/);
   assert.match(worker, /ASTRA video generation failed/);
   assert.match(worker, /ASTRA image generation failed/);
-  assert.match(html, /I understand image generation uses Cloudflare AI usage/i);
-  assert.ok(html.includes("I understand this video request may create a US$0.25 AI charge"));
+  assert.match(html, /Image generation is free for me/i);
+  assert.ok(html.includes("Video generation is free for me"));
   assert.match(studio, /prompt/i);
 });
