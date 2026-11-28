@@ -110,7 +110,9 @@ class GenerationWorker:
                     lease_token=lease_token,
                     lease_seconds=self.lease_seconds,
                 )
-            except WorkerClientError:
+            except Exception:
+                # Any heartbeat failure makes lease ownership uncertain. Stop
+                # inference rather than risk uploading under an expired lease.
                 lease_lost_event.set()
                 cancel_event.set()
                 return
