@@ -35,5 +35,3 @@ create policy "ASTRA generated assets remain server private"
   using (bucket_id <> 'astra-generated-private')
   with check (bucket_id <> 'astra-generated-private');
 
-comment on table storage.buckets is
-  'Supabase Storage buckets; astra-generated-private is server-only and must remain non-public.';
