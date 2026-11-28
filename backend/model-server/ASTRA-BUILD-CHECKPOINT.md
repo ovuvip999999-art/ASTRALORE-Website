@@ -146,3 +146,9 @@ When resuming, fetch PR #20 and this checkpoint first, inspect the latest CI sta
 - CI run #650 passed both `syntax` and `model-server`; the model-server suite ran 88 tests successfully against the ephemeral PostgreSQL 16 service.
 - The migration was executed only in the disposable CI database. Supabase production/preview was not touched.
 - PR #20 remains open/draft/unmerged. Migration 0010 remains unapplied. Queue API remains disabled by default.
+
+## CI follow-up after checkpoint documentation update
+
+- Latest branch head tested: `2a68f36f5223d888341adf77a6325c75a7216f3b`.
+- CI run #653 passed both `syntax` and `model-server` jobs, including the PostgreSQL 16 migration/integration suite and all 88 Python tests.
+- PR #20 remains open/draft/unmerged; production and PR #19 remain untouched.
