@@ -99,9 +99,9 @@ def route_model(
     validated = validate_catalog(catalog)
     if not isinstance(model_id, str) or not MODEL_ID_PATTERN.fullmatch(model_id):
         raise ModelRegistryError("an explicit valid model_id is required")
-    if modality not in VALID_MODALITIES:
+    if not isinstance(modality, str) or modality not in VALID_MODALITIES:
         raise ModelRegistryError("modality must be image or video")
-    if aspect_ratio not in VALID_RATIOS:
+    if not isinstance(aspect_ratio, str) or aspect_ratio not in VALID_RATIOS:
         raise ModelRegistryError("aspect_ratio is unsupported")
     width = _positive_int(width, "width", model_id)
     height = _positive_int(height, "height", model_id)
