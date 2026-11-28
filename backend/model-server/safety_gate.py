@@ -32,8 +32,8 @@ class SafetyGateError(RuntimeError):
 
 class SafetyGate:
     def __init__(self, provider: ModerationProvider, *, minimum_confidence: float = 0.90):
-        if provider is None:
-            raise ValueError("A reviewed moderation provider is required.")
+        if provider is None or not callable(getattr(provider, "moderate_prompt", None)) or not callable(getattr(provider, "moderate_output", None)):
+            raise ValueError("A reviewed moderation provider with prompt and output methods is required.")
         if (
             isinstance(minimum_confidence, bool)
             or not isinstance(minimum_confidence, (int, float))
