@@ -290,7 +290,9 @@ begin
      or v_size is null or v_size not between 1 and 536870912
      or v_width is null or v_width not between 1 and 16384
      or v_height is null or v_height not between 1 and 16384
-     or (p_output_asset->>'asset_id') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}     or v_width::bigint * v_height::bigint > 100000000 then
+     or (p_output_asset->>'asset_id') !~* '^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$'
+     or (p_output_asset->>'sha256') !~* '^[0-9a-f]{64}$'
+     or v_width::bigint * v_height::bigint > 100000000 then
     raise exception 'Output asset metadata exceeds safety bounds' using errcode = '22023';
   end if;
 
