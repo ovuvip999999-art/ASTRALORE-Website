@@ -10,6 +10,7 @@ class QueueMigrationContractTests(unittest.TestCase):
     def setUpClass(cls):
         cls.sql = MIGRATION.read_text(encoding="utf-8").lower()
         cls.storage_sql = (MIGRATION.parent / "0011_astra_private_generated_assets.sql").read_text(encoding="utf-8").lower()
+        cls.access_sql = (MIGRATION.parent / "0012_astra_job_access_modes.sql").read_text(encoding="utf-8").lower()
 
     def test_private_table_has_owner_scoped_rls(self):
         self.assertIn("alter table public.astra_generation_jobs enable row level security", self.sql)
@@ -54,6 +55,16 @@ class QueueMigrationContractTests(unittest.TestCase):
         self.assertIn("'storage_path'", self.sql)
         self.assertIn("v_job.user_id::text", self.sql)
         self.assertIn("p_job_id::text", self.sql)
+
+    def test_job_access_modes_are_explicit_and_server_only(self):
+        self.assertIn("add column if not exists request_origin", self.access_sql)
+        self.assertIn("request_origin in ('internal', 'public')", self.access_sql)
+        self.assertIn("astra_enqueue_generation_job_v2", self.access_sql)
+        self.assertIn("p_request_origin text", self.access_sql)
+        self.assertIn("v_job.request_origin <> p_request_origin", self.access_sql)
+        self.assertIn("p_request_origin = 'public' then 1 else 2", self.access_sql)
+        self.assertIn("from public, anon, authenticated", self.access_sql)
+        self.assertIn("to service_role", self.access_sql)
 
     def test_generated_asset_bucket_is_private_and_user_policies_are_restricted(self):
         self.assertIn("'astra-generated-private'", self.storage_sql)
