@@ -20,7 +20,7 @@ function isAllowedOrigin(origin) {
     const parsed = new URL(origin);
     return parsed.protocol === "https:" &&
       parsed.origin === origin &&
-      /^[a-f0-9]{8}\\.astralore-aeb\\.pages\\.dev$/i.test(parsed.hostname);
+      /^[a-f0-9]{8}\.astralore-aeb\.pages\.dev$/i.test(parsed.hostname);
   } catch {
     return false;
   }
