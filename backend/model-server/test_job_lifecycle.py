@@ -75,6 +75,12 @@ class JobLifecycleTests(unittest.TestCase):
         with self.assertRaises(JobStateError):
             transition_job(running, "succeeded", updated_at=T2, output_asset=image_asset())
 
+    def test_output_dimensions_are_bounded(self):
+        with self.assertRaises(JobStateError):
+            validate_output_asset({**image_asset(), "width": 20000}, "image")
+        with self.assertRaises(JobStateError):
+            validate_output_asset({**image_asset(), "width": 12000, "height": 12000}, "image")
+
     def test_video_requires_bounded_duration(self):
         video = {
             "asset_id": ASSET, "sha256": "b" * 64, "mime_type": "video/mp4",
