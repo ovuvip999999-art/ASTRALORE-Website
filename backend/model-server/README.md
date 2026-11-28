@@ -230,3 +230,6 @@ Do not accept gated model licenses, download weights, or enable inference until 
 - `runtime_registry.py` binds verified manifest entries only to code-owned runtime factories. The manifest can name an allowlisted runtime label, but cannot import a module or select an arbitrary Python entry point.
 - If no trusted factory is installed for a runtime, that model is omitted from the adapter registry; the worker therefore cannot claim jobs for it.
 - Factory output must expose `generate` and report the exact model ID/revision from the verified manifest.
+
+- Every runtime manifest entry must also include a license identifier and `license_reviewed_by_owner` boolean. The code-owned adapter registry skips any model whose owner-review attestation is not explicitly true.
+- This is a project configuration gate, not legal advice or automatic license acceptance. For gated agreements, an adult account owner must read the current full terms and decide whether to accept them. ASTRA never automates license acceptance.
