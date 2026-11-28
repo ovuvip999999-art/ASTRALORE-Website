@@ -75,6 +75,7 @@ def load_manifest_json(raw: str) -> list[dict[str, Any]]:
     required = {
         "model_id", "revision", "modality", "files", "max_vram_mb",
         "max_width", "max_height", "max_pixels", "runtime", "allow_remote_code",
+        "license_id", "license_reviewed_by_owner",
     }
     file_keys = {"path", "sha256", "size_bytes"}
     seen: set[tuple[str, str]] = set()
@@ -102,6 +103,10 @@ def load_manifest_json(raw: str) -> list[dict[str, Any]]:
             raise RuntimeManifestError("Wan video runtime can only serve video models.")
         if item["allow_remote_code"] is not False:
             raise RuntimeManifestError("Remote model code execution is forbidden.")
+        if not isinstance(item["license_id"], str) or not 1 <= len(item["license_id"].strip()) <= 128:
+            raise RuntimeManifestError("A model license identifier is required.")
+        if type(item["license_reviewed_by_owner"]) is not bool:
+            raise RuntimeManifestError("Owner license review status must be a boolean.")
         files = item["files"]
         if not isinstance(files, list) or not 1 <= len(files) <= MAX_FILES_PER_MODEL:
             raise RuntimeManifestError("Each model must declare a bounded non-empty file list.")
@@ -141,6 +146,8 @@ def load_manifest_json(raw: str) -> list[dict[str, Any]]:
             "max_pixels": max_pixels,
             "runtime": item["runtime"],
             "allow_remote_code": False,
+            "license_id": item["license_id"].strip(),
+            "license_reviewed_by_owner": item["license_reviewed_by_owner"],
         })
     return normalized
 
