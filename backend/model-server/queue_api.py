@@ -66,6 +66,9 @@ def _authenticated_store(
     access_token = _user_access_token(authorization)
     try:
         store = create_store()
+    except QueueStoreError:
+        raise HTTPException(status_code=503, detail="ASTRA queue storage is not configured.") from None
+    try:
         user_id = store.verify_user_access_token(access_token)
     except QueueStoreError:
         raise HTTPException(status_code=401, detail="The ASTRA user session could not be verified.") from None
