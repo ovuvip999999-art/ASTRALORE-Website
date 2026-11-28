@@ -306,6 +306,7 @@ class QueueApiTests(unittest.TestCase):
         self.assertNotIn("credential", response.text)
 
     def test_cancel_uses_verified_user_access_token(self):
+        self.store.lookup = {"id": JOB_ID, "status": "queued", "request_origin": "internal"}
         response = self.client.post("/v1/jobs/" + JOB_ID + "/cancel", headers=self.headers())
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json()["status"], "cancelled")
