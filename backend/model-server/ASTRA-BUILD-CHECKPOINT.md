@@ -399,3 +399,13 @@ When resuming, fetch PR #20 and this checkpoint first, inspect the latest CI sta
 - After correcting the tmpfs assertion syntax, CI run `46143252288` passed both `syntax` and `model-server` jobs on head `ca44042e8f17dca222fd8368a234a5a9364c0afd`.
 - The model-server suite ran 193 tests successfully; all 8 sandbox policy tests passed, alongside the PostgreSQL 16 integration suite.
 - The subsequent checkpoint-only documentation commit may trigger another CI run; the code under test is the same.
+
+## Verified CI — worker bootstrap and process loop
+
+- CI run #1014 passed both `syntax` and `model-server` jobs on head `ca44042e8f17dca222fd8368a234a5a9364c0afd`.
+- Node suite: 35 passed, 0 failed.
+- Python suite: 193 tests passed, including PostgreSQL 16 integration, mocked SD3.5/Wan adapters, end-to-end mocked worker pipeline, worker bootstrap and graceful polling loop.
+- The sandbox policy test syntax issue was corrected and the full suite now compiles and passes.
+- These are unit/integration tests with mocked model/GPU components; no real model weights, CUDA inference, moderation provider, or deployed worker are active.
+- PR #20 remains open/draft/unmerged. No deployment, production change, billing change, or Supabase migration application.
+
