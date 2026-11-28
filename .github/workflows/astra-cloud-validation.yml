@@ -67,6 +67,6 @@ jobs:
       - name: Install model server API dependencies
         run: pip install -r requirements-dev.txt
       - name: Compile model server
-        run: python -m py_compile app.py test_app.py test_http_api.py creative_brief.py test_creative_brief.py model_registry.py test_model_registry.py job_lifecycle.py test_job_lifecycle.py quality_eval.py test_quality_eval.py
+        run: python -m py_compile app.py test_app.py test_http_api.py creative_brief.py test_creative_brief.py model_registry.py test_model_registry.py job_lifecycle.py test_job_lifecycle.py queue_store.py test_queue_store.py quality_eval.py test_quality_eval.py
       - name: Test authentication and model readiness
         run: python -m unittest -v
