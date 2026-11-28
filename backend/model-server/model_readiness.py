@@ -1,7 +1,7 @@
 """Offline structural readiness checks for staged ASTRA model packages.
 
-This module reads local JSON metadata only. It never imports model libraries,
-executes model code, downloads weights, or claims that inference will succeed.
+Reads local metadata only; never imports model libraries, executes model code,
+downloads weights, or claims that inference will succeed.
 """
 from __future__ import annotations
 
@@ -24,15 +24,16 @@ PROFILES = {
         "pipeline_class": "StableDiffusion3Pipeline",
         "components": {
             "scheduler": ("scheduler_config.json",),
-            "text_encoder": ("config.json", "model.safetensors"),
-            "text_encoder_2": ("config.json", "model.safetensors"),
-            "text_encoder_3": ("config.json", "model.safetensors"),
+            "text_encoder": ("config.json",),
+            "text_encoder_2": ("config.json",),
+            "text_encoder_3": ("config.json",),
             "tokenizer": ("tokenizer_config.json",),
             "tokenizer_2": ("tokenizer_config.json",),
             "tokenizer_3": ("tokenizer_config.json",),
-            "transformer": ("config.json", "diffusion_pytorch_model.safetensors"),
-            "vae": ("config.json", "diffusion_pytorch_model.safetensors"),
+            "transformer": ("config.json",),
+            "vae": ("config.json",),
         },
+        "weight_components": ("text_encoder", "text_encoder_2", "text_encoder_3", "transformer", "vae"),
     },
     WAN_ID: {
         "runtime": "wan-video",
@@ -40,11 +41,12 @@ PROFILES = {
         "pipeline_class": "WanPipeline",
         "components": {
             "scheduler": ("scheduler_config.json",),
-            "text_encoder": ("config.json", "model.safetensors"),
+            "text_encoder": ("config.json",),
             "tokenizer": ("tokenizer_config.json",),
-            "transformer": ("config.json", "diffusion_pytorch_model.safetensors"),
-            "vae": ("config.json", "diffusion_pytorch_model.safetensors"),
+            "transformer": ("config.json",),
+            "vae": ("config.json",),
         },
+        "weight_components": ("text_encoder", "transformer", "vae"),
     },
 }
 
@@ -71,17 +73,32 @@ def _read_json_object(path: Path) -> dict[str, Any]:
     return value
 
 
-def _require_component_file(component_dir: Path, filename: str) -> Path:
-    path = component_dir / filename
+def _require_regular_file(path: Path, *, min_bytes: int = 1) -> None:
     try:
         info = path.lstat()
     except OSError:
         raise ModelReadinessError("MODEL_COMPONENT_FILE_MISSING") from None
     if stat.S_ISLNK(info.st_mode) or not stat.S_ISREG(info.st_mode):
         raise ModelReadinessError("MODEL_COMPONENT_FILE_UNSAFE")
-    if filename.endswith(".safetensors") and info.st_size < 16:
-        raise ModelReadinessError("MODEL_WEIGHT_FILE_TOO_SMALL")
-    return path
+    if info.st_size < min_bytes:
+        raise ModelReadinessError("MODEL_COMPONENT_FILE_TOO_SMALL")
+
+
+def _safetensors_files(component_dir: Path) -> list[Path]:
+    found = []
+    try:
+        for path in component_dir.rglob("*.safetensors"):
+            info = path.lstat()
+            if stat.S_ISLNK(info.st_mode) or not stat.S_ISREG(info.st_mode):
+                raise ModelReadinessError("MODEL_WEIGHT_FILE_UNSAFE")
+            if info.st_size < 16:
+                raise ModelReadinessError("MODEL_WEIGHT_FILE_TOO_SMALL")
+            found.append(path)
+    except ModelReadinessError:
+        raise
+    except OSError:
+        raise ModelReadinessError("MODEL_WEIGHT_DIRECTORY_UNREADABLE") from None
+    return found
 
 
 def inspect_model_package(model: dict[str, Any], *, model_root: str | Path) -> dict[str, Any]:
@@ -102,11 +119,25 @@ def inspect_model_package(model: dict[str, Any], *, model_root: str | Path) -> d
     if not root.is_dir():
         raise ModelReadinessError("MODEL_ROOT_NOT_DIRECTORY")
 
-    model_index = _read_json_object(root / "model_index.json")
+    model_index_path = root / "model_index.json"
+    model_index = _read_json_object(model_index_path)
     if model_index.get("_class_name") != profile["pipeline_class"]:
         raise ModelReadinessError("MODEL_PIPELINE_CLASS_MISMATCH")
 
     checked_components = []
+    required_metadata = {"model_index.json"}
+    declared = set()
+    for item in model["files"]:
+        try:
+            resolved = Path(item["resolved_path"]).resolve(strict=True)
+            relative = resolved.relative_to(root).as_posix()
+        except (OSError, KeyError, TypeError, ValueError, RuntimeError):
+            raise ModelReadinessError("MODEL_MANIFEST_PATH_INVALID") from None
+        declared.add(relative)
+
+    if "model_index.json" not in declared:
+        raise ModelReadinessError("MODEL_MANIFEST_OMITS_REQUIRED_METADATA")
+
     for component, required_files in profile["components"].items():
         component_dir = root / component
         try:
@@ -117,20 +148,21 @@ def inspect_model_package(model: dict[str, Any], *, model_root: str | Path) -> d
             raise ModelReadinessError("MODEL_COMPONENT_DIRECTORY_UNSAFE")
 
         for filename in required_files:
-            path = _require_component_file(component_dir, filename)
-            if filename.endswith(".json"):
-                _read_json_object(path)
+            path = component_dir / filename
+            _require_regular_file(path)
+            _read_json_object(path)
+            required_metadata.add(f"{component}/{filename}")
+
+        if component in profile["weight_components"]:
+            weights = _safetensors_files(component_dir)
+            if not weights:
+                raise ModelReadinessError("MODEL_COMPONENT_WEIGHTS_MISSING")
+            for path in weights:
+                relative = path.relative_to(root).as_posix()
+                if relative not in declared:
+                    raise ModelReadinessError("MODEL_WEIGHT_FILE_NOT_IN_MANIFEST")
         checked_components.append(component)
 
-    declared = {
-        str(Path(item["resolved_path"]).resolve(strict=True).relative_to(root)).replace(os.sep, "/")
-        for item in model["files"]
-    }
-    required_metadata = {"model_index.json"}
-    for component, filenames in profile["components"].items():
-        required_metadata.update(
-            f"{component}/{name}" for name in filenames if name.endswith(".json")
-        )
     if not required_metadata.issubset(declared):
         raise ModelReadinessError("MODEL_MANIFEST_OMITS_REQUIRED_METADATA")
 
