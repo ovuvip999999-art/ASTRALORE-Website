@@ -9,7 +9,8 @@ from threading import Event
 from PIL import Image
 
 from runtime_manifest import load_manifest_json, verify_model_artifacts
-from sd35_adapter import MODEL_ID, SD35AdapterError, SD35MediumAdapter
+from sd35_adapter import MODEL_ID, SD35AdapterError, SD35MediumAdapter, make_sd35_factory
+from runtime_registry import build_adapter_registry
 from worker_runner import GenerationError
 
 REVISION = "a" * 40
@@ -165,6 +166,18 @@ class SD35AdapterTests(unittest.TestCase):
             (Path(root) / "unlisted.bin").write_bytes(b"extra")
             with self.assertRaises(SD35AdapterError):
                 SD35MediumAdapter.load(model, model_dir=root, pipeline_class=FakePipelineClass, torch_module=FakeTorch)
+
+    def test_sd35_factory_registers_only_through_verified_runtime_registry(self):
+        with tempfile.TemporaryDirectory() as root:
+            model = self.build_model(root)
+            factory = make_sd35_factory(
+                model_dir=root,
+                pipeline_class=FakePipelineClass,
+                torch_module=FakeTorch,
+            )
+            registry = build_adapter_registry([model], factories={"diffusers": factory})
+        adapter = registry[(MODEL_ID, REVISION)]
+        self.assertIsInstance(adapter, SD35MediumAdapter)
 
     def test_generate_uses_bounded_deterministic_settings_and_saves_png(self):
         with tempfile.TemporaryDirectory() as model_root, tempfile.TemporaryDirectory() as output_root:
