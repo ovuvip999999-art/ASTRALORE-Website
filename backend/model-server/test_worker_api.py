@@ -53,7 +53,8 @@ class WorkerApiTests(unittest.TestCase):
         self.store = FakeWorkerStore()
         self.env = patch.dict(os.environ, {
             "ASTRA_WORKER_API_ENABLED": "true",
-            "ASTRA_WORKER_TOKEN": WORKER_TOKEN,
+            "ASTRA_INTERNAL_WORKER_TOKEN": WORKER_TOKEN,
+            "ASTRA_PUBLIC_WORKER_TOKEN": "separate-public-worker-token-value-32chars-minimum",
         }, clear=True)
         self.env.start()
         self.addCleanup(self.env.stop)
@@ -78,7 +79,7 @@ class WorkerApiTests(unittest.TestCase):
         self.assertIsNone(self.store.claim_args)
 
     def test_worker_token_must_be_strong_and_match(self):
-        with patch.dict(os.environ, {"ASTRA_WORKER_TOKEN": "weak"}):
+        with patch.dict(os.environ, {"ASTRA_INTERNAL_WORKER_TOKEN": "weak"}):
             response = self.client.post(
                 "/internal/v1/worker/claim",
                 json={"worker_id": "worker-test"},
@@ -100,12 +101,30 @@ class WorkerApiTests(unittest.TestCase):
         )
         self.assertEqual(response.status_code, 200)
         self.assertEqual(self.store.claim_args, {
-            "worker_id": "worker-test", "batch_size": 2, "lease_seconds": 90,
+            "worker_id": "worker-test", "request_origin": "internal", "batch_size": 2, "lease_seconds": 90,
         })
         job = response.json()["jobs"][0]
         self.assertEqual(job["id"], JOB_ID)
         self.assertEqual(job["lease_token"], LEASE_ID)
         self.assertNotIn("storage_path", job)
+
+    def test_public_worker_identity_can_claim_only_public_origin(self):
+        public_token = "separate-public-worker-token-value-32chars-minimum"
+        response = self.client.post(
+            "/internal/v1/worker/claim",
+            json={"worker_id": "public-worker"},
+            headers=self.headers(public_token),
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(self.store.claim_args["request_origin"], "public")
+
+    def test_equal_worker_tokens_fail_closed(self):
+        with patch.dict(os.environ, {"ASTRA_PUBLIC_WORKER_TOKEN": WORKER_TOKEN}):
+            response = self.client.post(
+                "/internal/v1/worker/claim", json={"worker_id": "worker-test"}, headers=self.headers()
+            )
+        self.assertEqual(response.status_code, 503)
+        self.assertIsNone(self.store.claim_args)
 
     def test_claim_rejects_unbounded_or_extra_fields(self):
         response = self.client.post(
