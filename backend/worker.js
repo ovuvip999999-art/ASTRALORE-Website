@@ -150,8 +150,10 @@ async function searchPriorMessages(env, authorization, userId, query) {
 
 
 async function loadEnabledSkills(env, authorization, userId) {
-  const baseUrl = String(env.SUPABASE_URL || "").replace(/\/+$/, "");
-  if (!baseUrl || !env.SUPABASE_ANON_KEY) return [];
+  const baseUrl = String(env.SUPABASE_URL || "").replace(/\\/+$/, "");
+  if (!baseUrl || !env.SUPABASE_ANON_KEY) {
+    return { skills: [], status: "missing_config", httpStatus: null };
+  }
   const query = new URLSearchParams({
     select: "name,content",
     user_id: "eq." + userId,
@@ -169,10 +171,13 @@ async function loadEnabledSkills(env, authorization, userId) {
     });
     if (!response.ok) {
       console.log("ASTRA skill retrieval unavailable", response.status);
-      return [];
+      return { skills: [], status: "http_error", httpStatus: response.status };
     }
     const rows = await response.json();
-    if (!Array.isArray(rows)) return [];
+    if (!Array.isArray(rows)) {
+      console.log("ASTRA skill retrieval returned a non-array response");
+      return { skills: [], status: "invalid_response", httpStatus: response.status };
+    }
     const skills = [];
     let total = 0;
     for (const row of rows) {
@@ -182,10 +187,14 @@ async function loadEnabledSkills(env, authorization, userId) {
       skills.push({ name: row.name.slice(0, 120), content });
       total += content.length;
     }
-    return skills;
+    return {
+      skills,
+      status: skills.length ? "loaded" : "none_enabled",
+      httpStatus: response.status
+    };
   } catch (error) {
     console.log("ASTRA skill retrieval failed", String(error?.message || error).slice(0, 140));
-    return [];
+    return { skills: [], status: "request_error", httpStatus: null };
   }
 }
 
@@ -553,7 +562,8 @@ export default {
       }
     }
     archiveRows = await searchPriorMessages(env, authorization, authenticatedUser.id, message);
-    const activeSkills = await loadEnabledSkills(env, authorization, authenticatedUser.id);
+    const skillLoad = await loadEnabledSkills(env, authorization, authenticatedUser.id);
+    const activeSkills = skillLoad.skills;
 
     const history = Array.isArray(body.history) ? body.history.slice(-8) : [];
     const savedMemories = Array.isArray(body.memory)
@@ -663,7 +673,13 @@ export default {
         cloudMemoryUsed: archiveRows.length > 0,
         documentContextAvailable: Boolean(document),
         documentName: document?.name || null,
-        documentPersistenceStatus
+        documentPersistenceStatus,
+        skillDiagnostics: {
+          status: skillLoad.status,
+          enabledSkillCount: activeSkills.length,
+          skillNames: activeSkills.map(skill => skill.name),
+          httpStatus: skillLoad.httpStatus
+        }
       }, 200, origin);
     } catch (error) {
       console.error("ASTRA Workers AI request failed", {
