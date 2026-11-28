@@ -5,7 +5,7 @@ from unittest.mock import Mock
 from runtime_image_build import RuntimeBuildError, build_runtime_image
 
 
-BASE = "pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime@sha256:" + "a" * 64
+BASE = "pytorch/pytorch@sha256:" + "a" * 64
 
 
 class RuntimeImageBuildTests(unittest.TestCase):
