@@ -5,7 +5,7 @@ import hashlib
 from pathlib import Path
 from typing import Any
 
-from worker_runner import GenerationError
+from runtime_errors import GenerationError
 
 MODEL_ID = "Wan-AI/Wan2.1-T2V-1.3B-Diffusers"
 WIDTH = 832
