@@ -41,6 +41,7 @@ def _verified_model_directory(model: dict[str, Any], model_dir: str | Path) -> P
         or model.get("modality") != "image"
         or model.get("runtime") != "diffusers"
         or model.get("license_reviewed_by_owner") is not True
+        or model.get("license_id") != "stabilityai-community-license"
         or model.get("allow_remote_code") is not False
     ):
         raise SD35AdapterError("SD3.5 model identity, license review, or runtime policy is not approved.")
