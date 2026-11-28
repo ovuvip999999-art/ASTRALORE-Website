@@ -1,21 +1,14 @@
 import hmac
 import os
-import re
 from typing import Literal
-from urllib.parse import urlparse
 
 from fastapi import FastAPI, Header, HTTPException
-from fastapi.responses import JSONResponse
 from pydantic import BaseModel, ConfigDict, Field, StrictInt, StrictStr
 
 from creative_brief import BriefValidationError, compile_brief
 from model_registry import ModelRegistryError, load_catalog_json, route_model
 
 app = FastAPI(title="ASTRA Private Model Server", version="0.1.0")
-
-IMAGE_RATIOS = {"1:1", "9:16", "16:9"}
-VIDEO_RATIOS = {"1:1", "9:16", "16:9"}
-IMAGE_MIME_TYPES = {"image/png", "image/jpeg", "image/webp"}
 
 
 class BriefCompileRequest(BaseModel):
@@ -98,8 +91,8 @@ def health():
     return {
         "service": "astra-private-model-server",
         "status": "ok",
-        "imageModelReady": model_is_configured("image"),
-        "videoModelReady": model_is_configured("video"),
+        "imageModelConfigured": model_is_configured("image"),
+        "videoModelConfigured": model_is_configured("video"),
     }
 
 
