@@ -115,7 +115,7 @@ test("create forwards only normalized fields and keeps both credentials server-s
   });
   assert.equal(result.status, 202);
   assert.equal(result.body.job_id, JOB_ID);
-  assert.equal(captured.url, "https://private-model.example/v1/jobs");
+  assert.equal(captured.url, "https://private-model.example/v1/public/jobs");
   assert.equal(captured.options.method, "POST");
   assert.equal(captured.options.headers["X-ASTRA-Server-Token"], SERVER_TOKEN);
   assert.equal(captured.options.headers.Authorization, AUTH);
@@ -150,9 +150,9 @@ test("video creation forwards the bounded five-second duration", async () => {
 
 test("status, cancel, and signed asset retrieval use fixed server routes", async () => {
   const expected = [
-    ["status", "GET", "/v1/jobs/" + JOB_ID],
-    ["cancel", "POST", "/v1/jobs/" + JOB_ID + "/cancel"],
-    ["asset-url", "GET", "/v1/jobs/" + JOB_ID + "/asset-url"]
+    ["status", "GET", "/v1/public/jobs/" + JOB_ID],
+    ["cancel", "POST", "/v1/public/jobs/" + JOB_ID + "/cancel"],
+    ["asset-url", "GET", "/v1/public/jobs/" + JOB_ID + "/asset-url"]
   ];
   for (const [operation, method, suffix] of expected) {
     let captured;
