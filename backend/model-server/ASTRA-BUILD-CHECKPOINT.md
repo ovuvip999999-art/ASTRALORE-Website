@@ -84,3 +84,10 @@ When resuming, fetch PR #20 and this checkpoint first, inspect the latest CI sta
 - This is not a persistent queue or worker. Durable production execution still needs transactional job storage, atomic claims, worker leases, retries, cancellation signaling, ownership checks, and concurrency/resource limits.
 
 - CI run #518 (`46137466996`) passed both `syntax` and `model-server` jobs on commit `81f6923592ff033d90f3fc03e03950265c582ca7`; the job lifecycle tests passed.
+
+## Additional completed milestone — real HTTP integration tests
+
+- Added `requirements-dev.txt` with the HTTP test client, keeping test-only dependencies separate from the runtime requirements.
+- Added FastAPI TestClient coverage for health output, bearer authentication, brief compilation, invalid schema rejection, explicit model routing, missing catalog behavior, and the deliberately fail-closed image/video generation endpoints.
+- CI run #530 (`46137570671`) passed both `syntax` and `model-server` jobs on commit `069356fa025f0ddffdcc80b286ba9c5e1ad42cbb`.
+- These tests exercise HTTP routing in CI, but no live GPU inference or deployed Worker-to-model-server end-to-end test has occurred.
