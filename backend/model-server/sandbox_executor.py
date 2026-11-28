@@ -21,6 +21,7 @@ from sandbox_policy import SandboxConfig, build_docker_command, validate_config
 
 CONTAINER_NAME_RE = re.compile(r"^astra-[a-f0-9]{32}$")
 MAX_OUTPUT_FILES = 16
+MAX_RESULT_BYTES = 4096
 ALLOWED_OUTPUT_SUFFIXES = {".png", ".jpg", ".jpeg", ".webp", ".mp4", ".webm"}
 
 
@@ -95,6 +96,48 @@ class DockerSandboxExecutor:
             raise SandboxExecutionError("SANDBOX_OUTPUT_INVALID")
         return root
 
+    def _read_bounded_result(self, process: Any) -> str:
+        """Drain stdout concurrently, retaining at most a tiny JSON result."""
+        stream = getattr(process, "stdout", None)
+        if stream is None:
+            raise SandboxExecutionError("SANDBOX_PROTOCOL_INVALID")
+        state: dict[str, Any] = {"data": bytearray(), "overflow": False, "failed": False}
+
+        def drain() -> None:
+            try:
+                while True:
+                    chunk = stream.read(1024)
+                    if not chunk:
+                        return
+                    if len(state["data"]) + len(chunk) > MAX_RESULT_BYTES:
+                        state["overflow"] = True
+                    elif not state["overflow"]:
+                        state["data"].extend(chunk)
+            except Exception:
+                state["failed"] = True
+
+        reader = threading.Thread(target=drain, name="astra-sandbox-result", daemon=True)
+        reader.start()
+        reader.join(timeout=self.cleanup_timeout)
+        if reader.is_alive() or state["overflow"] or state["failed"]:
+            raise SandboxExecutionError("SANDBOX_PROTOCOL_INVALID")
+        try:
+            result = json.loads(bytes(state["data"]).decode("utf-8"))
+        except (UnicodeDecodeError, ValueError):
+            raise SandboxExecutionError("SANDBOX_PROTOCOL_INVALID") from None
+        if (
+            not isinstance(result, dict)
+            or set(result) != {"ok", "filename"}
+            or result.get("ok") is not True
+            or not isinstance(result.get("filename"), str)
+            or not result["filename"]
+            or Path(result["filename"]).name != result["filename"]
+            or "/" in result["filename"]
+            or "\\" in result["filename"]
+        ):
+            raise SandboxExecutionError("SANDBOX_PROTOCOL_INVALID")
+        return result["filename"]
+
     def _collect_outputs(self, name: str, output_root: Path) -> Path:
         # docker cp can fail while leaving a partial destination. Never infer
         # success merely because a file happens to exist in the output folder.
@@ -158,7 +201,7 @@ class DockerSandboxExecutor:
             process = self.popen_factory(
                 command,
                 stdin=subprocess.PIPE,
-                stdout=subprocess.DEVNULL,
+                stdout=subprocess.PIPE,
                 stderr=subprocess.DEVNULL,
                 shell=False,
                 start_new_session=(os.name != "nt"),
@@ -179,7 +222,10 @@ class DockerSandboxExecutor:
 
             if process.returncode != 0:
                 raise SandboxExecutionError("SANDBOX_EXIT_FAILED", retryable=True)
+            reported_filename = self._read_bounded_result(process)
             output_path = self._collect_outputs(name, output_root)
+            if output_path.name != reported_filename:
+                raise SandboxExecutionError("SANDBOX_PROTOCOL_INVALID")
             # A successful generation is not reported until Docker confirms
             # that the stopped container can be removed.
             if not self._docker("rm", "-f", name):
