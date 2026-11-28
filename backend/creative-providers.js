@@ -71,9 +71,109 @@ function createCloudflareWorkersAiAdapter(env) {
   };
 }
 
+
+function configuredHttpsUrl(value, label) {
+  if (typeof value !== "string" || !value.trim()) {
+    throw new Error(label + " is not configured.");
+  }
+  let url;
+  try {
+    url = new URL(value.trim());
+  } catch {
+    throw new Error(label + " must be a valid HTTPS URL.");
+  }
+  if (url.protocol !== "https:" || url.username || url.password) {
+    throw new Error(label + " must be an HTTPS URL without embedded credentials.");
+  }
+  return url;
+}
+
+function createAstraSelfHostedAdapter(env) {
+  async function postJson(endpoint, payload) {
+    const token = typeof env.ASTRA_MODEL_SERVER_TOKEN === "string"
+      ? env.ASTRA_MODEL_SERVER_TOKEN.trim()
+      : "";
+    if (!token) throw new Error("ASTRA's private model server is not configured.");
+    const response = await fetch(endpoint, {
+      method: "POST",
+      headers: {
+        "Authorization": "Bearer " + token,
+        "Content-Type": "application/json",
+        "Accept": "application/json"
+      },
+      body: JSON.stringify(payload)
+    });
+    if (!response.ok) {
+      throw new Error("ASTRA's private model server returned HTTP " + response.status + ".");
+    }
+    const result = await response.json();
+    if (!result || typeof result !== "object" || Array.isArray(result)) {
+      throw new Error("ASTRA's private model server returned an invalid response.");
+    }
+    return result;
+  }
+
+  return {
+    id: "astra-self-hosted",
+    async generateImage({ prompt, aspectRatio }) {
+      const endpoint = configuredHttpsUrl(env.ASTRA_IMAGE_MODEL_URL, "ASTRA_IMAGE_MODEL_URL");
+      const result = await postJson(endpoint, {
+        task: "image",
+        prompt,
+        aspectRatio,
+        output: "base64"
+      });
+      const image = typeof result.imageBase64 === "string" ? result.imageBase64 : "";
+      const mimeType = typeof result.mimeType === "string" ? result.mimeType : "image/png";
+      if (!image || image.length > 18000000 ||
+          !["image/png", "image/jpeg", "image/webp"].includes(mimeType) ||
+          !/^[A-Za-z0-9+/]+={0,2}$/.test(image)) {
+        throw new Error("ASTRA's private image model returned invalid image data.");
+      }
+      return {
+        image,
+        mimeType,
+        provider: this.id,
+        model: typeof result.model === "string" ? result.model.slice(0, 120) : "ASTRA self-hosted image model",
+        costBasis: "self-hosted-infrastructure"
+      };
+    },
+    async generateVideo({ prompt, aspectRatio }) {
+      const endpoint = configuredHttpsUrl(env.ASTRA_VIDEO_MODEL_URL, "ASTRA_VIDEO_MODEL_URL");
+      const result = await postJson(endpoint, {
+        task: "video",
+        prompt,
+        aspectRatio,
+        durationSeconds: 5,
+        resolution: "480p",
+        output: "https-url"
+      });
+      const videoUrl = typeof result.videoUrl === "string" ? result.videoUrl : "";
+      let parsedUrl;
+      try {
+        parsedUrl = new URL(videoUrl);
+      } catch {
+        throw new Error("ASTRA's private video model returned an invalid video URL.");
+      }
+      if (parsedUrl.protocol !== "https:" || parsedUrl.username || parsedUrl.password) {
+        throw new Error("ASTRA's private video model must return a credential-free HTTPS video URL.");
+      }
+      return {
+        videoUrl: parsedUrl.toString(),
+        durationSeconds: 5,
+        resolution: "480p",
+        provider: this.id,
+        model: typeof result.model === "string" ? result.model.slice(0, 120) : "ASTRA self-hosted video model",
+        costBasis: "self-hosted-infrastructure"
+      };
+    }
+  };
+}
+
 export function createCreativeProviderRegistry(env) {
   const adapters = {
-    "cloudflare-workers-ai": createCloudflareWorkersAiAdapter(env)
+    "cloudflare-workers-ai": createCloudflareWorkersAiAdapter(env),
+    "astra-self-hosted": createAstraSelfHostedAdapter(env)
   };
 
   return {
