@@ -17,6 +17,7 @@ function createAction(overrides = {}) {
     height: 512,
     brief: { prompt: "A calm blue planet", modality: "image", aspect_ratio: "1:1" },
     idempotencyKey: "request-00000001",
+    costAcknowledged: true,
     ...overrides
   };
 }
@@ -27,6 +28,8 @@ function enabledEnv(overrides = {}) {
     ASTRA_MODEL_RUNTIME_READY: "true",
     ASTRA_MODERATION_READY: "true",
     ASTRA_WORKER_PROCESS_READY: "true",
+    ASTRA_CREATIVE_GENERATION_APPROVED: "true",
+    ASTRA_ZERO_COST_APPROVED: "true",
     ASTRA_MODEL_SERVER_URL: "https://private-model.example",
     ASTRA_MODEL_SERVER_TOKEN: SERVER_TOKEN,
     ...overrides
@@ -45,6 +48,7 @@ test("rejects invalid dimensions, aspect ratio, modality, and idempotency key", 
   assert.throws(() => normalizeQueueAction(createAction({ aspectRatio: "4:3" })), TypeError);
   assert.throws(() => normalizeQueueAction(createAction({ modality: "audio" })), TypeError);
   assert.throws(() => normalizeQueueAction(createAction({ idempotencyKey: "short" })), TypeError);
+  assert.throws(() => normalizeQueueAction(createAction({ costAcknowledged: false })), TypeError);
 });
 
 test("normalizes status, cancel, and asset URL actions with UUIDs", () => {
@@ -66,7 +70,7 @@ test("queue proxy remains disabled by default and never contacts model server", 
 });
 
 test("create waits for model, moderation, and worker readiness flags", async () => {
-  for (const key of ["ASTRA_MODEL_RUNTIME_READY", "ASTRA_MODERATION_READY", "ASTRA_WORKER_PROCESS_READY"]) {
+  for (const key of ["ASTRA_MODEL_RUNTIME_READY", "ASTRA_MODERATION_READY", "ASTRA_WORKER_PROCESS_READY", "ASTRA_CREATIVE_GENERATION_APPROVED", "ASTRA_ZERO_COST_APPROVED"]) {
     let calls = 0;
     const env = enabledEnv({ [key]: "false" });
     const result = await forwardQueueAction(createAction(), {
