@@ -59,3 +59,13 @@ Self-hosting removes a third-party inference API dependency; it does not remove 
 ## Handover instruction
 
 When resuming, fetch PR #20 and this checkpoint first, inspect the latest CI status and current branch head, then continue from the first unfinished item above. Do not assume this document's listed head is still current; verify GitHub before editing.
+
+## Additional completed milestone — explicit model registry
+
+- Added `model_registry.py` with strict catalog validation and deterministic capability checks.
+- Added authenticated `POST /v1/models/route`; caller must name an exact catalog model.
+- Enforces modality, aspect ratio, dimensions, pixel ceiling, enabled state, and explicit model ID.
+- Unknown/disabled/incompatible models fail closed. No silent fallback exists.
+- Catalog is server-configured via `ASTRA_MODEL_CATALOG_JSON`; no model entries are enabled or weights installed by default.
+- Runtime VRAM still must be measured by the eventual inference worker immediately before execution; catalog metadata alone is not a GPU availability check.
+- Added unit tests for catalog validation, malformed types, dimensions, modality, ratio, disabled models, and API behavior.
