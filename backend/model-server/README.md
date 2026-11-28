@@ -383,3 +383,12 @@ Optional resource settings are `ASTRA_SANDBOX_MEMORY_BYTES`, `ASTRA_SANDBOX_CPU_
 Both routes must return exactly `{"action":"allow|review|block","category":"none|benign|...","confidence":0.0}`. ASTRA accepts only a high-confidence allow decision in the benign/none categories; all transport, response, size, timeout, review, and block cases fail closed. Requests use bearer authentication, fixed route paths, no redirects, TLS certificate verification, and bounded response sizes. Output bytes are capped at 64 MiB for this transport adapter; larger generated videos are rejected until a separately reviewed streaming moderation integration is implemented.
 
 No compatible moderation service is currently provisioned or configured. A test fake is not a production moderation provider. The worker therefore remains blocked until the service is supplied and independently reviewed. Do not point this setting at an arbitrary public endpoint or place its bearer token in client-side code.
+
+
+Run the worker only on the authorized GPU host after the external moderation service and private worker API are available:
+
+```bash
+python worker_process.py
+```
+
+The process exits with `ASTRA_WORKER_STARTUP_BLOCKED` if any required setting, model artifact, image digest, Docker daemon, GPU, VRAM or moderation configuration fails validation. It emits only fixed operational status strings; detailed credentials and raw exception text are never printed. This command has not been run against a provisioned production environment.
