@@ -45,8 +45,6 @@ test("creative endpoints fail closed and enforce per-account quotas", async () =
   assert.match(worker, /env\.ASTRA_VIDEO_ENABLED !== "true"/);
   assert.match(worker, /reserveCreativeUsage\(env, authorization, authenticatedUser\.id, "image"\)/);
   assert.match(worker, /reserveCreativeUsage\(env, authorization, authenticatedUser\.id, "video"\)/);
-  assert.match(worker, /releaseCreativeUsage\(env, authorization, authenticatedUser\.id, "image"\)/);
-  assert.match(worker, /releaseCreativeUsage\(env, authorization, authenticatedUser\.id, "video"\)/);
   assert.match(worker, /env\.ASTRA_CREATIVE_OWNER_USER_ID/);
   assert.match(worker, /authenticatedUser\.id !== env\.ASTRA_CREATIVE_OWNER_USER_ID\.trim\(\)/);
 
@@ -58,6 +56,9 @@ test("creative endpoints fail closed and enforce per-account quotas", async () =
   assert.match(budgetMigration, /v_cost := 0\.002/);
   assert.match(budgetMigration, /v_cost := 0\.25/);
   assert.match(budgetMigration, /auth\.uid\(\) is null or auth\.uid\(\) <> p_user_id/i);
+  assert.match(budgetMigration, /revoke all on function public\.astra_release_image_generation\(uuid\) from authenticated/i);
+  assert.match(budgetMigration, /revoke all on function public\.astra_release_video_generation\(uuid\) from authenticated/i);
+  assert.doesNotMatch(worker, /astra_release_(?:image|video)_generation/);
   assert.match(config, /ASTRA_CREATIVE_ENABLED = "false"/);
   assert.match(config, /ASTRA_VIDEO_ENABLED = "false"/);
 });
