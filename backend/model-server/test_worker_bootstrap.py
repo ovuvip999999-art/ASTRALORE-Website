@@ -2,6 +2,7 @@ import hashlib
 import json
 import tempfile
 import unittest
+from unittest.mock import patch
 from pathlib import Path
 
 from safety_gate import SafetyDecision
@@ -69,16 +70,19 @@ class WorkerBootstrapTests(unittest.TestCase):
                 gpu_device="0",
             )
         )
-        worker = build_generation_worker(
-            manifest_json=self.build_manifest(root, owner_reviewed=owner_reviewed),
-            model_root=root,
-            sandbox_executor=sandbox,
-            moderation_provider=moderation,
-            client=client,
-            asset_store=FakeAssetStore(),
-            worker_id="bootstrap-test-worker",
-            output_root=Path(root) / "worker-output",
-        )
+        with patch("worker_bootstrap.run_host_preflight", return_value={
+            "gpu_free_vram_mb": 16000,
+        }):
+            worker = build_generation_worker(
+                manifest_json=self.build_manifest(root, owner_reviewed=owner_reviewed),
+                model_root=root,
+                sandbox_executor=sandbox,
+                moderation_provider=moderation,
+                client=client,
+                asset_store=FakeAssetStore(),
+                worker_id="bootstrap-test-worker",
+                output_root=Path(root) / "worker-output",
+            )
         return worker, client
 
     def test_builds_worker_with_supervised_sandbox_adapter(self):
@@ -115,6 +119,27 @@ class WorkerBootstrapTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as root:
             with self.assertRaises(WorkerStartupError):
                 self.build(root, owner_reviewed=True, executor=object())
+
+    def test_startup_refuses_host_preflight_failure(self):
+        with tempfile.TemporaryDirectory() as root:
+            manifest = self.build_manifest(root)
+            executor = DockerSandboxExecutor(config=SandboxConfig(
+                image="registry.example/astra/runtime@sha256:" + "b" * 64,
+                model_directory=root,
+                gpu_device="0",
+            ))
+            with patch("worker_bootstrap.run_host_preflight", side_effect=RuntimeError("untrusted details")):
+                with self.assertRaises(WorkerStartupError):
+                    build_generation_worker(
+                        manifest_json=manifest,
+                        model_root=root,
+                        sandbox_executor=executor,
+                        moderation_provider=FakeModerationProvider(),
+                        client=FakeClient(),
+                        asset_store=FakeAssetStore(),
+                        worker_id="test",
+                        output_root=Path(root) / "output",
+                    )
 
     def test_startup_refuses_sandbox_mount_mismatch(self):
         with tempfile.TemporaryDirectory() as root, tempfile.TemporaryDirectory() as other:
