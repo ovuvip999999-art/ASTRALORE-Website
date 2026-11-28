@@ -67,7 +67,8 @@ def _collect_files(root: Path) -> list[dict[str, Any]]:
     def visit(directory: Path) -> None:
         nonlocal total_bytes
         try:
-            entries = sorted(os.scandir(directory), key=lambda item: item.name)
+            with os.scandir(directory) as iterator:
+                entries = sorted(iterator, key=lambda item: item.name)
         except OSError:
             raise InventoryError("MODEL_DIRECTORY_READ_FAILED") from None
         for entry in entries:
@@ -127,9 +128,9 @@ def build_inventory_manifest(
         raise InventoryError("MODEL_ID_INVALID")
     if not isinstance(revision, str) or not REVISION_RE.fullmatch(revision):
         raise InventoryError("MODEL_REVISION_MUST_BE_IMMUTABLE")
-    if modality not in {"image", "video"}:
+    if not isinstance(modality, str) or modality not in {"image", "video"}:
         raise InventoryError("MODEL_MODALITY_INVALID")
-    if runtime not in RUNTIMES or (runtime == "wan-video" and modality != "video"):
+    if not isinstance(runtime, str) or runtime not in RUNTIMES or (runtime == "wan-video" and modality != "video"):
         raise InventoryError("MODEL_RUNTIME_INVALID")
     if not isinstance(license_id, str) or not 1 <= len(license_id.strip()) <= 128:
         raise InventoryError("MODEL_LICENSE_ID_REQUIRED")
