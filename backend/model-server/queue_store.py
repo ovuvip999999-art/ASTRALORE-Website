@@ -35,7 +35,7 @@ class SupabaseQueueConfig:
         service = source.get("SUPABASE_SERVICE_ROLE_KEY", "").strip()
         parsed = urlparse(url)
         local_http = parsed.scheme == "http" and parsed.hostname in {"127.0.0.1", "localhost"}
-        if (parsed.scheme != "https" and not local_http) or not parsed.hostname or parsed.username or parsed.password:
+        if (parsed.scheme != "https" and not local_http) or not parsed.hostname or parsed.username or parsed.password or parsed.path not in {"", "/"} or parsed.query or parsed.fragment:
             raise QueueStoreError("SUPABASE_URL must be an HTTPS URL (loopback HTTP is allowed for local tests).")
         if not anon or not service:
             raise QueueStoreError("Supabase anon and service-role keys must be configured server-side.")
@@ -132,7 +132,14 @@ class SupabaseQueueStore:
             raise QueueStoreError("modality must be image or video.")
         if not isinstance(model_id, str) or not 1 <= len(model_id.strip()) <= 128:
             raise QueueStoreError("model_id must contain 1–128 characters.")
-        if not isinstance(request, dict) or len(str(request).encode("utf-8")) > 32768:
+        if not isinstance(request, dict):
+            raise QueueStoreError("request must be a JSON object.")
+        import json
+        try:
+            request_size = len(json.dumps(request, ensure_ascii=False, separators=(",", ":")).encode("utf-8"))
+        except (TypeError, ValueError):
+            raise QueueStoreError("request must contain only JSON-compatible values.") from None
+        if request_size > 32768:
             raise QueueStoreError("request must be an object no larger than 32 KiB.")
         if not isinstance(idempotency_key, str) or not 8 <= len(idempotency_key) <= 128:
             raise QueueStoreError("idempotency_key must contain 8–128 characters.")
@@ -211,7 +218,7 @@ class SupabaseQueueStore:
             "p_error_code": error_code,
             "p_retryable": retryable,
         })
-        if result not in {"queued", "failed", "cancelled", "lease_lost"}:
+        if not isinstance(result, str) or result not in {"queued", "failed", "cancelled", "lease_lost"}:
             raise QueueStoreError("Supabase returned an invalid failure transition.")
         return result
 
@@ -239,6 +246,6 @@ class SupabaseQueueStore:
             body={"p_job_id": job_id},
             user_access_token=access_token,
         )
-        if result not in {"cancelled", "cancellation_requested", "queued", "running", "succeeded", "failed"}:
+        if not isinstance(result, str) or result not in {"cancelled", "cancellation_requested", "queued", "running", "succeeded", "failed"}:
             raise QueueStoreError("Supabase returned an invalid cancellation response.")
         return result
