@@ -241,3 +241,13 @@ Do not accept gated model licenses, download weights, or enable inference until 
 - The worker runner refuses to claim any job unless both an exact-revision generation adapter and a moderation gate are supplied.
 - Prompt moderation occurs before model inference; output moderation occurs after byte/container validation and before private upload.
 - No moderation model/provider is installed yet. This is an interface and enforcement gate, not evidence that ASTRA currently has effective moderation coverage. A vetted provider, adversarial testing, and human escalation policy are required before enabling generation.
+
+## Cloudflare Worker queue bridge (disabled by default)
+
+- `backend/queue-proxy.mjs` validates a strict `queueAction` contract and forwards create/status/cancel/asset-url requests to fixed model-server routes. It never accepts a caller-supplied URL or owner UUID.
+- `backend/worker.js` first verifies the caller's Supabase session, then forwards that same user access token with the server-only `ASTRA_MODEL_SERVER_TOKEN`. The server token is never returned to the browser.
+- Queue creation additionally requires explicit `costAcknowledged: true` and all Worker readiness/approval flags: `ASTRA_QUEUE_API_ENABLED`, `ASTRA_MODEL_RUNTIME_READY`, `ASTRA_MODERATION_READY`, `ASTRA_WORKER_PROCESS_READY`, `ASTRA_CREATIVE_GENERATION_APPROVED`, and `ASTRA_ZERO_COST_APPROVED` must be set to `true`.
+- The model server has its own independent `ASTRA_QUEUE_API_ENABLED` flag, also false/unset by default.
+- These flags are deployment approvals, not automatic proof of host health. They must not be enabled until actual model, moderation and worker readiness have been verified.
+- The existing direct `creativeAction` generation path still returns the fail-closed pause response before any provider call. This bridge only submits durable jobs; it does not generate media.
+- No queue flags, URLs, secrets or readiness approvals have been configured, and no Worker has been deployed with this bridge. The frontend does not yet submit `queueAction` requests.
