@@ -8,6 +8,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+from host_preflight import HostPreflightError, run_host_preflight
 from runtime_manifest import RuntimeManifestError, load_manifest_json, verify_model_artifacts
 from sandbox_adapter import build_sandbox_adapter_registry
 from sandbox_executor import DockerSandboxExecutor
@@ -47,13 +48,18 @@ def build_generation_worker(
         if configured_root != supplied_root:
             raise ValueError("Sandbox model mount must match the verified model root.")
         adapters = build_sandbox_adapter_registry(verified, executor=sandbox_executor)
-    except (RuntimeManifestError, OSError, ValueError):
+        if not adapters:
+            raise ValueError("No owner-reviewed sandbox model runtime is registered.")
+        required_vram_mb = max(
+            model["min_vram_mb"]
+            for model in verified
+            if model.get("license_reviewed_by_owner") is True
+        )
+        run_host_preflight(sandbox_executor.config, required_vram_mb=required_vram_mb)
+    except (RuntimeManifestError, HostPreflightError, OSError, ValueError):
         raise WorkerStartupError("ASTRA model manifest or trusted runtime registry failed verification.") from None
     except Exception:
         raise WorkerStartupError("ASTRA model runtime initialization failed.") from None
-
-    if not adapters:
-        raise WorkerStartupError("No owner-reviewed model with a supported supervised sandbox runtime is available.")
 
     try:
         gate = SafetyGate(moderation_provider)
