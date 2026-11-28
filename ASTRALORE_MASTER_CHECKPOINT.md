@@ -475,7 +475,7 @@ After the executor is verified, continue with host capability/preflight, model-l
 
 ### Verification state
 - The new inventory implementation and tests are committed on `feature/astra-creative-skills`.
-- CI for the latest inventory changes is pending at checkpoint creation; do not report the new tests as passed until the matching workflow completes.
+- CI run `46154608607` completed successfully on the checkpoint commit containing the inventory implementation: both `syntax` and `model-server` jobs passed; 244 Python tests passed with one expected opt-in Docker/GPU host test skipped. The six new inventory tests passed.
 - Tests use small local fixture files; they do not inspect real SD3.5/Wan weights or perform inference.
 
 ### Remaining external gates
