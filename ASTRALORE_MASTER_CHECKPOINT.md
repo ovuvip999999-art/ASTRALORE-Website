@@ -507,7 +507,9 @@ After the executor is verified, continue with host capability/preflight, model-l
 - Added `model_readiness.py`, a no-download, no-model-import structural checker for the pinned SD3.5 Medium and Wan2.1 T2V 1.3B adapter profiles.
 - It first validates the runtime manifest and SHA-256 artifacts using the descriptor-based verifier, then checks the expected Diffusers pipeline class, component directories, required JSON configs, tokenizer metadata, and core safetensors files.
 - The report distinguishes structural validity from owner license review and inference eligibility. It always reports `inference_performed=false`; this tool does not load PyTorch/Diffusers, execute model code, download weights, or claim successful inference.
-- Added five tests covering both model layouts, missing components, wrong pipeline metadata, checksum verification, and the license-review gate.
+- Added six tests covering both model layouts, missing components, wrong pipeline metadata, checksum verification, sharded weights, exact manifest coverage, and the license-review gate.
+- Checked the official Hugging Face model cards/repository listings: Wan's Diffusers transformer can use two safetensors shards plus an index, so the validator now detects safetensors by component rather than requiring one fixed shard filename. SD3.5's official model card documents the Diffusers component layout and gated access. The validator remains structural and does not fetch gated files.
+- The first CI attempt exposed a fixture issue: direct unit tests passed unverified manifest entries to a function that expects verifier-enriched entries. Updated fixtures to call the checksum verifier first; the corrected current head still needs a fresh CI result.
 - Updated the model-server README and CI compile/test list.
 
 ### Verification and limits
