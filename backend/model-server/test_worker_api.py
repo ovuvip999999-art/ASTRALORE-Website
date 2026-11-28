@@ -148,7 +148,8 @@ class WorkerApiTests(unittest.TestCase):
 
     def test_completion_requires_current_lease(self):
         body = {
-            **self.lease_body(),
+            "job_id": JOB_ID,
+            "lease_token": LEASE_ID,
             "output_asset": {
                 "asset_id": "44444444-4444-4444-8444-444444444444",
                 "sha256": "a" * 64,
@@ -171,7 +172,7 @@ class WorkerApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 409)
 
     def test_failure_accepts_only_safe_error_codes(self):
-        body = {**self.lease_body(), "error_code": "MODEL_TIMEOUT", "retryable": True}
+        body = {"job_id": JOB_ID, "lease_token": LEASE_ID, "error_code": "MODEL_TIMEOUT", "retryable": True}
         response = self.client.post(
             "/internal/v1/worker/fail", json=body, headers=self.headers()
         )
