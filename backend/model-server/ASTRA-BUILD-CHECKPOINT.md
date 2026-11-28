@@ -113,5 +113,5 @@ When resuming, fetch PR #20 and this checkpoint first, inspect the latest CI sta
 
 ## Current latest verified code head
 
-- Branch head recorded after the Windows test runner and handover updates: `96876f02c7f5a8a6a1490e9700d366cde70e3968`.
+- Branch head recorded after the Windows test runner and handover updates: `19156beac903f78c1dae45bb7c948ea91e5dc7a8`.
 - PR #20 remains open/draft/unmerged. Confirm the current head on GitHub before resuming.
