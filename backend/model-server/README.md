@@ -133,3 +133,18 @@ Set-ExecutionPolicy -Scope Process Bypass
 ```
 
 The script creates a local `.venv`, installs only the API/test dependencies, compiles the modules, and runs the complete unit/HTTP suite. It does not download model weights, use a GPU, call a paid API, or enable generation.
+
+## Durable generation queue foundation (migration 0010)
+
+The next queue milestone is scaffolded but **not yet active**:
+
+- `backend/migrations/0010_astra_generation_jobs.sql` defines a private, owner-scoped job table and atomic Postgres RPCs.
+- Admission is bounded to at most 2 active jobs per user and 100 active jobs globally; idempotency keys prevent duplicate submissions.
+- Workers claim with `FOR UPDATE SKIP LOCKED`, short leases, unique lease tokens, heartbeats, bounded retries, and lease-expiry recovery.
+- Users can read only their own job rows through RLS and request cancellation; running jobs receive a cooperative cancellation flag.
+- Worker-only RPCs are granted to `service_role`; user cancellation checks `auth.uid()`.
+- Output metadata has MIME, digest, dimensions, byte-size, and video-duration checks. The database cannot inspect the actual media bytes; the future worker must validate bytes/container before calling completion.
+- `queue_store.py` is a server-side Supabase REST adapter. It keeps the service-role key server-only, verifies user access tokens through Supabase Auth, and uses the user's token for RLS-protected reads/cancellation.
+- Unit tests use mocked HTTP; migration contract tests check the security and queue invariants.
+
+**Important:** migration 0010 is a new SQL file only. It has NOT been applied to Supabase. Do not apply migrations 0008 or 0009. The queue adapter is not wired to public API endpoints, there is no worker process, and generation remains blocked. No database, Worker, or production deployment has been performed.
