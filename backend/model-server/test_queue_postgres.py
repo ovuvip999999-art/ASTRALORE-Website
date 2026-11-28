@@ -14,7 +14,10 @@ DSN = os.environ.get("ASTRA_TEST_DATABASE_URL")
 USER_A = "11111111-1111-4111-8111-111111111111"
 USER_B = "22222222-2222-4222-8222-222222222222"
 ASSET_ID = "33333333-3333-4333-8333-333333333333"
-MIGRATION = Path(__file__).resolve().parents[1] / "migrations" / "0010_astra_generation_jobs.sql"
+MIGRATIONS = [
+    Path(__file__).resolve().parents[1] / "migrations" / "0010_astra_generation_jobs.sql",
+    Path(__file__).resolve().parents[1] / "migrations" / "0011_astra_private_generated_assets.sql",
+]"
 
 
 @unittest.skipUnless(DSN, "ASTRA_TEST_DATABASE_URL is not configured; PostgreSQL integration tests run in CI.")
@@ -29,6 +32,20 @@ class QueuePostgresIntegrationTests(unittest.TestCase):
                   if not exists (select 1 from pg_roles where rolname = 'service_role') then create role service_role nologin bypassrls; end if;
                 end $$;
                 create schema if not exists auth;
+                create schema if not exists storage;
+                create table if not exists storage.buckets (
+                  id text primary key,
+                  name text not null,
+                  public boolean not null default false,
+                  file_size_limit bigint,
+                  allowed_mime_types text[]
+                );
+                create table if not exists storage.objects (
+                  id uuid primary key default gen_random_uuid(),
+                  bucket_id text not null,
+                  name text not null
+                );
+                alter table storage.objects enable row level security;
                 create table if not exists auth.users (
                   id uuid primary key,
                   email text unique
@@ -40,8 +57,11 @@ class QueuePostgresIntegrationTests(unittest.TestCase):
                 grant execute on function auth.uid() to authenticated, service_role;
                 grant usage on schema public to anon, authenticated, service_role;
                 drop table if exists public.astra_generation_jobs cascade;
+                drop policy if exists "ASTRA generated assets remain server private" on storage.objects;
+                delete from storage.buckets where id = 'astra-generated-private';
             """)
-            conn.execute(MIGRATION.read_text(encoding="utf-8"))
+            for migration in MIGRATIONS:
+                conn.execute(migration.read_text(encoding="utf-8"))
             conn.execute(
                 "insert into auth.users (id, email) values (%s, %s), (%s, %s) on conflict (id) do nothing",
                 (USER_A, "queue-a@example.invalid", USER_B, "queue-b@example.invalid"),
@@ -128,6 +148,7 @@ class QueuePostgresIntegrationTests(unittest.TestCase):
             asset = {
                 "asset_id": ASSET_ID, "sha256": "a" * 64, "mime_type": "image/png",
                 "size_bytes": 2048, "width": 512, "height": 512,
+                "storage_path": f"{USER_A}/{claimed['id']}/{ASSET_ID}.png",
             }
             result = conn.execute(
                 "select public.astra_complete_generation_job(%s, %s, %s) as completed",
@@ -136,6 +157,7 @@ class QueuePostgresIntegrationTests(unittest.TestCase):
             self.assertTrue(result["completed"])
             job = conn.execute("select * from public.astra_generation_jobs where id = %s", (claimed["id"],)).fetchone()
             self.assertEqual(job["status"], "succeeded")
+            self.assertEqual(job["output_asset"]["storage_path"], f"{USER_A}/{claimed['id']}/{ASSET_ID}.png")
             self.assertIsNotNone(job["completed_at"])
             self.assertFalse(conn.execute(
                 "select public.astra_complete_generation_job(%s, %s, %s) as completed",
@@ -149,6 +171,22 @@ class QueuePostgresIntegrationTests(unittest.TestCase):
             asset = {
                 "asset_id": ASSET_ID, "sha256": "b" * 64, "mime_type": "video/mp4",
                 "size_bytes": 2048, "width": 640, "height": 360, "duration_ms": 120001,
+                "storage_path": f"{USER_A}/{claimed['id']}/{ASSET_ID}.mp4",
+            }
+            with self.assertRaises(psycopg.Error):
+                conn.execute(
+                    "select public.astra_complete_generation_job(%s, %s, %s)",
+                    (claimed["id"], claimed["lease_token"], Jsonb(asset)),
+                )
+
+    def test_completion_rejects_storage_path_for_another_owner_or_job(self):
+        with self.connect("service_role") as conn:
+            self.enqueue(conn)
+            claimed = self.claim(conn)
+            asset = {
+                "asset_id": ASSET_ID, "sha256": "a" * 64, "mime_type": "image/png",
+                "size_bytes": 2048, "width": 512, "height": 512,
+                "storage_path": f"{USER_B}/{claimed['id']}/{ASSET_ID}.png",
             }
             with self.assertRaises(psycopg.Error):
                 conn.execute(
