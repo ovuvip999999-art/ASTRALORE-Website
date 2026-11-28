@@ -45,8 +45,8 @@ class VideoRequest(BaseModel):
 
 def verify_token(authorization: str | None) -> None:
     expected = os.environ.get("ASTRA_MODEL_SERVER_TOKEN", "")
-    if not expected:
-        raise HTTPException(status_code=503, detail="Model server authentication is not configured.")
+    if len(expected) < 32:
+        raise HTTPException(status_code=503, detail="Model server authentication requires a secret of at least 32 characters.")
     supplied = authorization or ""
     if not supplied.startswith("Bearer ") or not hmac.compare_digest(supplied[7:], expected):
         raise HTTPException(status_code=401, detail="Unauthorized.")
