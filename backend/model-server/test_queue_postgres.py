@@ -105,6 +105,13 @@ class QueuePostgresIntegrationTests(unittest.TestCase):
                 "update public.astra_generation_jobs set lease_expires_at = now() - interval '1 second' where id = %s",
                 (claimed["id"],),
             )
+            self.assertIsNone(self.claim(conn))
+            recovered = conn.execute(
+                "select status, attempts from public.astra_generation_jobs where id = %s",
+                (claimed["id"],),
+            ).fetchone()
+            self.assertEqual(recovered["status"], "queued")
+            self.assertEqual(recovered["attempts"], 1)
             conn.execute(
                 "update public.astra_generation_jobs set available_at = now() where id = %s",
                 (claimed["id"],),
