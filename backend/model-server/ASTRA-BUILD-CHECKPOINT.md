@@ -324,3 +324,11 @@ When resuming, fetch PR #20 and this checkpoint first, inspect the latest CI sta
 - No gated license accepted, no weights downloaded, no PyTorch/Diffusers GPU runtime installed. Adult account-owner review required before accepting gated terms.
 - CI verification pending.
 
+
+## Independent server-side generation readiness gate
+
+- `POST /v1/jobs` now independently requires the server's queue API flag plus model runtime, moderation, worker API, worker process, generation approval, and cost-policy approval flags.
+- Added tests confirming each missing/false flag blocks job creation before enqueue.
+- This is a second gate behind the Cloudflare Worker proxy; flags are configuration assertions, not automatic health checks. All remain unset/false in deployment.
+- The SD3.5 adapter and checksum recheck tests are included in the current CI run.
+
