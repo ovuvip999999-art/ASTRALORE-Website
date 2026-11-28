@@ -269,3 +269,14 @@ The current Diffusers documentation describes three SD3 text encoders and notes 
 No SD3.5 license has been accepted, no weights have been downloaded, and no PyTorch/Diffusers GPU environment is installed. A gated license must be reviewed by an adult account owner before acceptance.
 
 The model server independently rechecks readiness before accepting `POST /v1/jobs`. In addition to its own `ASTRA_QUEUE_API_ENABLED=true`, it requires `ASTRA_MODEL_RUNTIME_READY`, `ASTRA_MODERATION_READY`, `ASTRA_WORKER_API_ENABLED`, `ASTRA_WORKER_PROCESS_READY`, `ASTRA_CREATIVE_GENERATION_APPROVED`, and `ASTRA_COST_POLICY_APPROVED` all to be true. This server-side gate is separate from the Cloudflare Worker proxy gate. These are explicit approvals/configuration assertions, not a substitute for measured health checks; keep them false until all actual components are deployed and verified.
+
+## First model-specific local video adapter: Wan2.1 T2V 1.3B
+
+- Added `wan21_adapter.py` for the Diffusers-format `Wan-AI/Wan2.1-T2V-1.3B-Diffusers` candidate.
+- Requires the exact model ID, video modality, `wan-video` runtime, Apache-2.0 license identifier plus owner review attestation, CUDA with bfloat16 support, manifest-declared free VRAM, and a fully enumerated local model directory whose file hashes are rechecked before load.
+- Loads the VAE in float32 and pipeline in bfloat16, local-files-only and safetensors-only; configures the 480p scheduler flow shift and requires CPU offload.
+- Initial output is fixed at 832×480, 81 frames at 16 fps (about 5.06 seconds), one MP4. The worker checks actual probed duration against the requested duration within 250 ms before upload.
+- Generation is bounded to 20–50 inference steps, one output, bounded guidance and deterministic seed; denoising callbacks observe cancellation.
+- Added a code-owned factory for the verified runtime registry and mocked tests. No model weights or GPU runtime were downloaded/installed and no actual video inference was run.
+
+The upstream Diffusers Wan guide reports about 13 GB VRAM for its T2V example; use a host-specific measured `min_vram_mb` rather than assuming that figure guarantees a working deployment. The original model card's 8.19 GB claim is for its upstream setup, not ASTRA's Diffusers pipeline.
