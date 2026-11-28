@@ -91,3 +91,10 @@ When resuming, fetch PR #20 and this checkpoint first, inspect the latest CI sta
 - Added FastAPI TestClient coverage for health output, bearer authentication, brief compilation, invalid schema rejection, explicit model routing, missing catalog behavior, and the deliberately fail-closed image/video generation endpoints.
 - CI run #530 (`46137570671`) passed both `syntax` and `model-server` jobs on commit `069356fa025f0ddffdcc80b286ba9c5e1ad42cbb`.
 - These tests exercise HTTP routing in CI, but no live GPU inference or deployed Worker-to-model-server end-to-end test has occurred.
+
+## Security and health-reporting hardening
+
+- Health now reports `imageModelConfigured` / `videoModelConfigured`, not "ready"; a configured model ID is not evidence of a working runtime.
+- Private model-server bearer secrets shorter than 32 characters fail closed.
+- Added tests for weak-secret rejection and updated all test credentials to meet the minimum.
+- CI run #545 (`46137702289`) passed both jobs on commit `740a2e5a129c86c8eb6c65e394eb7f63fb14f7d7`.
