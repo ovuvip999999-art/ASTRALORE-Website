@@ -10,6 +10,7 @@ on:
     paths:
       - "backend/model-server/**"
       - "backend/worker.js"
+      - "backend/queue-proxy.mjs"
       - "backend/creative-providers.js"
       - "backend/CREATIVE-GENERATION-SAFETY.md"
       - "backend/*.test.mjs"
@@ -38,6 +39,8 @@ jobs:
         run: node --input-type=module --check < backend/worker.js
       - name: Check creative provider module syntax
         run: node --input-type=module --check < backend/creative-providers.js
+      - name: Check private queue proxy syntax
+        run: node --check backend/queue-proxy.mjs
       - name: Check browser JavaScript syntax
         run: |
           node --check astra-page.js
