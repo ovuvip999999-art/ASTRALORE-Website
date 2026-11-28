@@ -16,15 +16,21 @@ class AuthTests(unittest.TestCase):
                 verify_token("Bearer anything")
         self.assertEqual(raised.exception.status_code, 503)
 
+    def test_short_server_secret_fails_closed(self):
+        with patch.dict(os.environ, {"ASTRA_MODEL_SERVER_TOKEN": "too-short"}):
+            with self.assertRaises(HTTPException) as raised:
+                verify_token("Bearer too-short")
+        self.assertEqual(raised.exception.status_code, 503)
+
     def test_invalid_token_is_rejected(self):
-        with patch.dict(os.environ, {"ASTRA_MODEL_SERVER_TOKEN": "correct-secret"}):
+        with patch.dict(os.environ, {"ASTRA_MODEL_SERVER_TOKEN": "correct-secret-value-with-at-least-32-characters"}):
             with self.assertRaises(HTTPException) as raised:
                 verify_token("Bearer wrong-secret")
         self.assertEqual(raised.exception.status_code, 401)
 
     def test_valid_token_is_accepted(self):
-        with patch.dict(os.environ, {"ASTRA_MODEL_SERVER_TOKEN": "correct-secret"}):
-            verify_token("Bearer correct-secret")
+        with patch.dict(os.environ, {"ASTRA_MODEL_SERVER_TOKEN": "correct-secret-value-with-at-least-32-characters"}):
+            verify_token("Bearer correct-secret-value-with-at-least-32-characters")
 
     def test_model_is_not_ready_without_model_id(self):
         with patch.dict(os.environ, {}, clear=True):
@@ -33,16 +39,16 @@ class AuthTests(unittest.TestCase):
 
     def test_brief_compile_endpoint_requires_auth_and_returns_compiled_brief(self):
         body = BriefCompileRequest(brief={"prompt": "A glass observatory", "lighting": "soft dawn"})
-        with patch.dict(os.environ, {"ASTRA_MODEL_SERVER_TOKEN": "correct-secret"}):
-            result = compile_creative_brief(body, "Bearer correct-secret")
+        with patch.dict(os.environ, {"ASTRA_MODEL_SERVER_TOKEN": "correct-secret-value-with-at-least-32-characters"}):
+            result = compile_creative_brief(body, "Bearer correct-secret-value-with-at-least-32-characters")
         self.assertIn("A glass observatory", result["compiled_prompt"])
         self.assertIn("Lighting: soft dawn", result["compiled_prompt"])
 
     def test_brief_compile_endpoint_rejects_invalid_brief(self):
         body = BriefCompileRequest(brief={"prompt": "A glass observatory", "unknown": "ignored?"})
-        with patch.dict(os.environ, {"ASTRA_MODEL_SERVER_TOKEN": "correct-secret"}):
+        with patch.dict(os.environ, {"ASTRA_MODEL_SERVER_TOKEN": "correct-secret-value-with-at-least-32-characters"}):
             with self.assertRaises(HTTPException) as raised:
-                compile_creative_brief(body, "Bearer correct-secret")
+                compile_creative_brief(body, "Bearer correct-secret-value-with-at-least-32-characters")
         self.assertEqual(raised.exception.status_code, 422)
 
     def test_model_route_endpoint_uses_explicit_catalog_model(self):
@@ -61,19 +67,19 @@ class AuthTests(unittest.TestCase):
         body = ModelRouteRequest(model_id="astra-image-test-v1", modality="image",
                                  aspect_ratio="1:1", width=512, height=512)
         with patch.dict(os.environ, {
-            "ASTRA_MODEL_SERVER_TOKEN": "correct-secret",
+            "ASTRA_MODEL_SERVER_TOKEN": "correct-secret-value-with-at-least-32-characters",
             "ASTRA_MODEL_CATALOG_JSON": json.dumps(catalog),
         }):
-            result = route_creative_model(body, "Bearer correct-secret")
+            result = route_creative_model(body, "Bearer correct-secret-value-with-at-least-32-characters")
         self.assertEqual(result["model_id"], "astra-image-test-v1")
         self.assertEqual(result["routing_policy"], "explicit-model-no-fallback")
 
     def test_model_route_endpoint_fails_closed_without_catalog(self):
         body = ModelRouteRequest(model_id="astra-image-test-v1", modality="image",
                                  aspect_ratio="1:1", width=512, height=512)
-        with patch.dict(os.environ, {"ASTRA_MODEL_SERVER_TOKEN": "correct-secret"}, clear=True):
+        with patch.dict(os.environ, {"ASTRA_MODEL_SERVER_TOKEN": "correct-secret-value-with-at-least-32-characters"}, clear=True):
             with self.assertRaises(HTTPException) as raised:
-                route_creative_model(body, "Bearer correct-secret")
+                route_creative_model(body, "Bearer correct-secret-value-with-at-least-32-characters")
         self.assertEqual(raised.exception.status_code, 422)
 
     def test_image_and_video_readiness_are_independent(self):
