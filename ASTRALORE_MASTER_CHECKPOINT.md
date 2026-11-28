@@ -150,3 +150,36 @@ After the executor is verified, continue with host capability/preflight, model-l
 6. Add opt-in Docker host integration tests; they must not run on ordinary CI unless a dedicated runner is configured.
 7. Update this file with exact CI run IDs, final test counts and commit SHA after each batch.
 
+## 11. Trusted runtime entrypoint — first implementation (2026-11-28)
+
+### Commits
+- `df92cacd8db7c1a105e630a30a3b2e723d04b1f1`: added `backend/model-server/astra_sandbox_entrypoint.py`.
+- `bd1e45145c19be7256b2e16f86088171d8eaa4c8`: corrected Wan adapter factory name to the actual code-owned `make_wan_factory`.
+- `7031f38be0f6f243f3331062c2c7c283c2693efc`: added `test_astra_sandbox_entrypoint.py`.
+- `c1c7c954630ac7b323127db5db8a2a09df503a56`: added entrypoint and tests to model-server CI compile list.
+- Latest branch head at checkpoint: `c1c7c954630ac7b323127db5db8a2a09df503a56`.
+
+### Implemented
+- One-job stdin JSON protocol with exact top-level field allowlist and 1 MB input bound.
+- Selects exactly one model by model ID and immutable revision.
+- Parses the strict model manifest and re-verifies selected model artifacts inside the container under `/models`.
+- Requires owner-reviewed license attestation and uses only code-owned SD3.5 / Wan adapter factories.
+- Ensures output directory begins empty and output file resolves inside `/outputs`.
+- Emits only a small success filename record; errors are sanitized.
+- Added protocol shape, unknown-field and model-root containment tests.
+- CI run IDs for the entrypoint commits: `46147802086`, `46147815534`, `46147832270`, `46147841426`. These were queued/in-progress at checkpoint update; inspect final conclusions before claiming green.
+
+### Important limitations
+- Entrypoint is not yet connected to `DockerSandboxExecutor` payload contract. The executor currently accepts arbitrary payload dicts and does not itself ensure the required `model_id`, `model_revision`, `job`, and `manifest` fields are provided.
+- The executor currently discards container stdout, so the entrypoint's structured success record is not yet consumed. Parent must capture a strictly bounded stdout protocol (or use a dedicated result file) without unbounded buffering.
+- `GenerationWorker` still invokes adapters in-process. No sandbox-backed adapter is registered in `worker_bootstrap.py`.
+- Runtime image build definition, pinned runtime dependencies, manifest-to-container request construction, lease-loss container cancellation, host integration tests and GPU execution are still outstanding.
+- Do not deploy or enable inference. This is an entrypoint scaffold, not an operational generation runtime.
+
+### Next actions
+1. Check CI run `46147841426` and duplicates for syntax/model-server success; fix test failures.
+2. Implement a sandbox adapter conforming to `GenerationAdapter` that passes only the exact job/model/revision and owner-reviewed manifest into the container.
+3. Update supervisor to capture bounded stdout protocol, verify returned filename exactly matches the one output copied, and reliably kill/remove container on cancellation, timeout and lease loss.
+4. Add a separate GPU runtime Dockerfile and pinned requirements; keep API Dockerfile separate. Do not include/download model weights in the image.
+5. Wire sandbox adapters into `worker_bootstrap.py` as the only production path; in-process adapters must remain test-only.
+6. Add tests for protocol mismatch, stdout overflow, timeouts, cancellation, lease loss, Docker cleanup errors and worker integration.
