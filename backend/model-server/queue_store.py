@@ -126,10 +126,13 @@ class SupabaseQueueStore:
         model_id: str,
         request: dict[str, Any],
         idempotency_key: str,
+        request_origin: str = "internal",
     ) -> dict[str, Any]:
         self._uuid(user_id, "user_id")
         if modality not in {"image", "video"}:
             raise QueueStoreError("modality must be image or video.")
+        if request_origin not in {"internal", "public"}:
+            raise QueueStoreError("request_origin must be internal or public.")
         if not isinstance(model_id, str) or not 1 <= len(model_id.strip()) <= 128:
             raise QueueStoreError("model_id must contain 1–128 characters.")
         if not isinstance(request, dict):
@@ -143,12 +146,13 @@ class SupabaseQueueStore:
             raise QueueStoreError("request must be an object no larger than 32 KiB.")
         if not isinstance(idempotency_key, str) or not re.fullmatch(r"[A-Za-z0-9._:-]{8,128}", idempotency_key):
             raise QueueStoreError("idempotency_key must contain 8–128 safe characters.")
-        result = self._call("POST", "/rest/v1/rpc/astra_enqueue_generation_job", body={
+        result = self._call("POST", "/rest/v1/rpc/astra_enqueue_generation_job_v2", body={
             "p_user_id": user_id,
             "p_modality": modality,
             "p_model_id": model_id.strip(),
             "p_request": request,
             "p_idempotency_key": idempotency_key,
+            "p_request_origin": request_origin,
         })
         if not isinstance(result, dict) or not result.get("id"):
             raise QueueStoreError("Supabase returned an invalid generation job record.")
@@ -229,7 +233,7 @@ class SupabaseQueueStore:
         result = self._call(
             "GET",
             "/rest/v1/astra_generation_jobs",
-            params={"id": "eq." + job_id, "select": "id,modality,model_id,status,output_asset,error_code,created_at,updated_at,completed_at"},
+            params={"id": "eq." + job_id, "select": "id,modality,model_id,status,request_origin,output_asset,error_code,created_at,updated_at,completed_at"},
             user_access_token=access_token,
         )
         if not isinstance(result, list) or len(result) > 1:
