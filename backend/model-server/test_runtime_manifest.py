@@ -75,6 +75,15 @@ class RuntimeManifestTests(unittest.TestCase):
         with self.assertRaises(RuntimeManifestError):
             load_manifest_json(json.dumps(payload))
 
+    def test_manifest_caps_total_model_artifact_bytes(self):
+        payload = self.make_manifest()
+        payload["models"][0]["files"] = [
+            {"path": f"part-{index}.bin", "sha256": "0" * 64, "size_bytes": 50 * 1024 * 1024 * 1024}
+            for index in range(3)
+        ]
+        with self.assertRaises(RuntimeManifestError):
+            load_manifest_json(json.dumps(payload))
+
     def test_manifest_rejects_boolean_integer_fields(self):
         payload = self.make_manifest()
         payload["models"][0]["max_vram_mb"] = True
