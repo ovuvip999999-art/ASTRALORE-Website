@@ -170,9 +170,10 @@ class SupabasePrivateAssetStore:
         expected_prefix = f"/object/sign/{BUCKET}/{canonical_path}?"
         if not isinstance(signed_path, str) or not signed_path.startswith(expected_prefix):
             raise AssetStoreError("Private asset signing service returned an invalid URL.")
-        from urllib.parse import urlsplit
+        from urllib.parse import parse_qs, urlsplit
         parsed = urlsplit(signed_path)
-        if parsed.scheme or parsed.netloc or parsed.fragment or not parsed.query:
+        query = parse_qs(parsed.query)
+        if parsed.scheme or parsed.netloc or parsed.fragment or not query.get("token") or not query["token"][0]:
             raise AssetStoreError("Private asset signing service returned an invalid URL.")
         return self.config.supabase_url + "/storage/v1" + signed_path
 
@@ -258,8 +259,12 @@ class SupabasePrivateAssetStore:
             if response.status_code < 200 or response.status_code >= 300:
                 raise AssetStoreError(f"Private media storage rejected the upload (HTTP {response.status_code}).")
 
-            after = os.fstat(handle.fileno())
-            path_after = resolved.stat()
+            try:
+                after = os.fstat(handle.fileno())
+                path_after = resolved.stat()
+            except OSError:
+                self._delete_object(object_path)
+                raise AssetStoreError("Media output changed during private upload.") from None
             signature_before = (before.st_dev, before.st_ino, before.st_size, before.st_mtime_ns)
             signature_after = (after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns)
             path_signature = (path_after.st_dev, path_after.st_ino, path_after.st_size, path_after.st_mtime_ns)
