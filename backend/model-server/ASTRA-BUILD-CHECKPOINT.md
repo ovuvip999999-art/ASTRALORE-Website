@@ -375,3 +375,12 @@ When resuming, fetch PR #20 and this checkpoint first, inspect the latest CI sta
 - **Not yet integrated:** this is a command/policy builder, not a launched container or hard runtime sandbox. The current worker runner still invokes adapters in-process. A supervised Docker executor must enforce the wall-clock deadline and stream bounded I/O before any worker can be considered isolated.
 - No Docker command was run, no image was pulled, no model weights downloaded, no GPU or paid host used, and no deployment or migration applied. Generation remains blocked.
 - CI verification for the current head is pending.
+
+## Graceful worker process loop
+
+- Added `worker_process.py` with bounded idle polling, capped exponential backoff for private API transport failures, and stop-event shutdown.
+- Unexpected programming/runtime errors are allowed to reach the supervisor rather than being silently swallowed.
+- Added tests for idle polling, network backoff, already-stopped behavior, invalid worker results, and configuration bounds.
+- Added tests to CI and the Windows runner. Verification pending.
+- The loop only accepts an already bootstrapped worker; no daemon has been started or deployed.
+
