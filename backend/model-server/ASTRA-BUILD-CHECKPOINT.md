@@ -332,3 +332,14 @@ When resuming, fetch PR #20 and this checkpoint first, inspect the latest CI sta
 - This is a second gate behind the Cloudflare Worker proxy; flags are configuration assertions, not automatic health checks. All remain unset/false in deployment.
 - The SD3.5 adapter and checksum recheck tests are included in the current CI run.
 
+
+## First model-specific video adapter foundation — Wan2.1 T2V 1.3B
+
+- Added `wan21_adapter.py` for the Diffusers-format model `Wan-AI/Wan2.1-T2V-1.3B-Diffusers`.
+- Requires exact model ID, video modality, `wan-video` runtime, Apache-2.0 license ID plus owner review, verified local files/checksums, CUDA bfloat16 support, and manifest-declared free VRAM.
+- Loads the VAE in float32 and pipeline in bfloat16, local-files-only/safetensors-only, uses CPU offload and 480p flow shift.
+- Fixed baseline: 832×480, 81 frames at 16 fps (~5.06 seconds), one MP4. Worker validates probed dimensions and duration within 250 ms of the queued duration before private upload.
+- Added bounded steps/guidance/seed, cancellation callback, code-owned factory, and mocked runtime tests. No weights or actual inference.
+- Queue API now supports optional video duration (default 5 seconds for video, forbidden for images; 1–120 second generic bound). Wan adapter currently supports only its five-second baseline.
+- CI verification pending.
+
