@@ -1,3 +1,4 @@
+import json
 import tempfile
 import threading
 import unittest
@@ -36,6 +37,9 @@ class SandboxGenerationAdapterTests(unittest.TestCase):
     def job(self):
         return {
             "id": "job-1",
+            "user_id": "owner-secret",
+            "lease_token": "lease-secret",
+            "storage_path": "private/internal/path",
             "model_id": self.model["model_id"],
             "modality": "image",
             "request": {
@@ -43,6 +47,7 @@ class SandboxGenerationAdapterTests(unittest.TestCase):
                 "compiled_prompt": "A test image",
                 "width": 512,
                 "height": 512,
+                "internal_control": "must-not-cross-boundary",
             },
         }
 
@@ -65,6 +70,19 @@ class SandboxGenerationAdapterTests(unittest.TestCase):
             "size_bytes": 12,
         })
         self.assertNotIn("resolved_path", payload["manifest"]["models"][0]["files"][0])
+        self.assertEqual(payload["job"], {
+            "id": "job-1",
+            "model_id": self.model["model_id"],
+            "modality": "image",
+            "request": {
+                "compiled_prompt": "A test image",
+                "width": 512,
+                "height": 512,
+            },
+        })
+        self.assertNotIn("lease_token", json.dumps(payload))
+        self.assertNotIn("owner-secret", json.dumps(payload))
+        self.assertNotIn("internal_control", json.dumps(payload))
 
     def test_rejects_model_revision_mismatch_before_container_launch(self):
         job = self.job()
