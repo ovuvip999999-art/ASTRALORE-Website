@@ -63,7 +63,7 @@ def _factory(runtime: str, model: dict[str, Any]):
     if runtime == "diffusers":
         return make_sd35_factory(model_dir=model_dir)(model)
     if runtime == "wan-video":
-        return make_wan21_factory(model_dir=model_dir)(model)
+        return make_wan_factory(model_dir=model_dir)(model)
     raise EntrypointError("RUNTIME_NOT_ALLOWED")
 
 
