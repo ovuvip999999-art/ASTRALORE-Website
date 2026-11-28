@@ -118,3 +118,7 @@ This is a capability/preflight decision, not proof that a GPU is available. The 
 - Failed jobs expose only a safe machine-readable error code, not raw exception text or filesystem paths.
 
 This is a pure contract and validator, not a durable queue or API endpoint. Production requires a transactional database/queue, ownership checks, atomic claims, worker leases, retry policy, cancellation signaling, and concurrency/resource limits. An in-memory queue must not be used as a production substitute.
+
+## HTTP integration tests
+
+Install test dependencies with `pip install -r requirements-dev.txt`. The CI suite uses FastAPI's TestClient to exercise actual HTTP routing, bearer authentication, brief compilation, model-catalog routing, schema rejection, health output, and the intentionally disabled image/video inference endpoints. The generation endpoints are expected to return HTTP 503 until reviewed runtimes are installed.
