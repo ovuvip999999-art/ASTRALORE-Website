@@ -23,7 +23,7 @@ class ModelServerHttpTests(unittest.TestCase):
         self.assertEqual(response.status_code, 200)
         body = response.json()
         self.assertEqual(body["status"], "ok")
-        self.assertFalse(body["imageModelReady"])
+        self.assertFalse(body["imageModelConfigured"])
         self.assertNotIn("ASTRA_MODEL_SERVER_TOKEN", json.dumps(body))
 
     def test_brief_endpoint_requires_authentication(self):
