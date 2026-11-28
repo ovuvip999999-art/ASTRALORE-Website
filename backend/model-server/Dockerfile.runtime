@@ -1,5 +1,5 @@
 # Official PyTorch 2.5.1 CUDA 12.4 runtime, linux/amd64 manifest digest:
-# pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime@sha256:c8268a92a69bd500f8be0e665b2630ee006dadaf7bfbc24249141b15ff622755
+# pytorch/pytorch@sha256:c8268a92a69bd500f8be0e665b2630ee006dadaf7bfbc24249141b15ff622755
 ARG PYTORCH_BASE_IMAGE
 FROM ${PYTORCH_BASE_IMAGE}
 
