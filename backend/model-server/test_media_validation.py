@@ -54,7 +54,9 @@ class MediaValidationTests(unittest.TestCase):
             inspect_media_file(gif, work_dir=self.root, modality="image")
 
     def test_output_must_be_inside_worker_directory_and_not_a_symlink(self):
-        outside = self.root.parent / "outside.png"
+        outside_dir = tempfile.TemporaryDirectory()
+        self.addCleanup(outside_dir.cleanup)
+        outside = Path(outside_dir.name) / "outside.png"
         Image.new("RGB", (8, 8)).save(outside, format="PNG")
         with self.assertRaises(MediaValidationError):
             inspect_media_file(outside, work_dir=self.root, modality="image")
@@ -62,11 +64,9 @@ class MediaValidationTests(unittest.TestCase):
         try:
             link.symlink_to(outside)
         except (OSError, NotImplementedError):
-            outside.unlink(missing_ok=True)
             self.skipTest("Symlink creation is unavailable on this platform.")
         with self.assertRaises(MediaValidationError):
             inspect_media_file(link, work_dir=self.root, modality="image")
-        outside.unlink(missing_ok=True)
 
     def test_empty_file_and_invalid_modality_are_rejected(self):
         empty = self.root / "empty.bin"
