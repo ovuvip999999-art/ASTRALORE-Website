@@ -48,6 +48,7 @@ class QueuePostgresIntegrationTests(unittest.TestCase):
                 alter table storage.objects enable row level security;
                 grant usage on schema storage to anon, authenticated, service_role;
                 grant select, insert, update, delete on storage.objects to anon, authenticated, service_role;
+                grant select, insert, update, delete on storage.buckets to service_role;
                 drop policy if exists "test broad permissive storage policy" on storage.objects;
                 create policy "test broad permissive storage policy"
                   on storage.objects for all to authenticated
