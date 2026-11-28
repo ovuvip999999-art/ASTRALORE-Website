@@ -125,7 +125,7 @@ When resuming, fetch PR #20 and this checkpoint first, inspect the latest CI sta
 - Completion validates MIME type, asset UUID, SHA-256, dimensions, byte-size and video duration metadata. This does not inspect actual media bytes; future workers must validate actual files/containers before completion.
 - Added `queue_store.py`, a server-side Supabase REST adapter. It verifies user access tokens through Supabase Auth, uses the service-role key only for private worker operations, and uses the user's own access token for RLS-protected reads and cancellation.
 - Added mocked HTTP tests, SQL contract tests, and a PostgreSQL 16 integration suite that executes the migration and exercises idempotency, admission limits, leases, retries, completion, RLS, cancellation, and concurrent claims.
-- Added PostgreSQL 16 as an ephemeral CI service. No production database was touched. The integration suite is pending its first CI run.
+- Added PostgreSQL 16 as an ephemeral CI service. CI run #650 passed both jobs and all 88 Python tests, including actual execution of migration 0010 against the ephemeral database. No production database was touched.
 - Added `psycopg[binary]` as a development/test dependency only.
 - Queue API routes are not yet wired; there is no worker process, model runtime, or media storage. The Worker generation fail-closed guard remains unchanged.
 - Migration 0010 has not been applied. Do not apply migrations 0008 or 0009. No deployment, secrets, billing, GPU host, or model weights were configured.
@@ -138,4 +138,11 @@ When resuming, fetch PR #20 and this checkpoint first, inspect the latest CI sta
 - Queue API is explicitly disabled unless `ASTRA_QUEUE_API_ENABLED=true`; no browser or Worker integration is active.
 - Added API tests for default-off behavior, private-secret enforcement, user session verification, derived owner identity, model/brief validation, status visibility, and cancellation.
 - There are no worker claim/completion HTTP routes and no inference worker. The service-role queue operations remain in the private storage adapter only.
-- CI run #621 failed because a stale duplicate SQL fragment remained after an earlier edit. The fragment has since been removed; run #624 is the latest PostgreSQL migration verification attempt and must be checked before calling migration 0010 green.
+- Early PostgreSQL CI runs exposed and helped fix a malformed/duplicated SQL fragment and a lease-recovery test timing assumption. The migration was restored and corrected; CI run #650 is the passing verification checkpoint.
+
+## Latest verified queue checkpoint
+
+- Code head tested by CI run #650: `41522f38c57265afdceff769c22474d9b7b8fff1`.
+- CI run #650 passed both `syntax` and `model-server`; the model-server suite ran 88 tests successfully against the ephemeral PostgreSQL 16 service.
+- The migration was executed only in the disposable CI database. Supabase production/preview was not touched.
+- PR #20 remains open/draft/unmerged. Migration 0010 remains unapplied. Queue API remains disabled by default.
