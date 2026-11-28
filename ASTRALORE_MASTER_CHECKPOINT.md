@@ -391,3 +391,33 @@ After the executor is verified, continue with host capability/preflight, model-l
 
 ### Current gate
 - The worker process and fail-closed safety plumbing are now connected in code, but ASTRA is not yet ready to generate media. A compatible real moderation service, digest-verified GPU runtime image, authorized GPU host, model artifacts, and owner-reviewed model licenses are still missing.
+
+
+## 20. Sandbox adapter integration confirmed and latest PR verification — 2026-11-28
+
+### Integration status confirmed from current branch
+- Re-inspected `sandbox_adapter.py`, `worker_bootstrap.py`, `worker_runner.py`, `sandbox_executor.py`, `astra_sandbox_entrypoint.py`, and `sandbox_policy.py` at PR head `b1c41232bfe8a78d6cee7919e46fa17da7593e78`.
+- The worker is no longer using an in-process model adapter: `worker_bootstrap.py` builds the `SandboxGenerationAdapter` registry, which invokes the supervised `DockerSandboxExecutor`.
+- The executor drains stdout concurrently with a 4 KiB cap, parses the exact success JSON contract, copies exactly one allowed output, and requires its filename to match the runtime-reported filename.
+- The trusted container entrypoint verifies the selected model/revision and artifact manifest, invokes only code-owned SD3.5/Wan factories, and emits the bounded result protocol.
+- The Docker command enforces no network, read-only root, non-root UID, dropped capabilities, no-new-privileges, resource bounds, read-only model mount, selected GPU and bounded output tmpfs.
+- Lease-loss cancellation reaches the sandbox executor; regression tests verify container termination and no stale-lease upload/completion.
+- This closes the earlier checkpoint's stated gap that the worker invoked adapters in-process. Earlier sections are historical; this section records the corrected current state.
+
+### Latest CI
+- PR workflow run `46151845899` completed successfully on current PR head `b1c41232bfe8a78d6cee7919e46fa17da7593e78`; both `syntax` and `model-server` jobs passed.
+- The preceding code-verification run `46151755290` passed 231 Python tests with one expected skip for the opt-in real Docker/GPU host test. The later `b1c41232` commit updates checkpoint documentation only.
+- CI remains mocked/hosted test coverage. It does not build the digest-pinned CUDA runtime image, connect to a real GPU Docker host, provision a real moderation classifier, download/verify real model weights, or perform actual inference.
+
+### Remaining gates before first real media
+1. Provision/authorize a suitable GPU host and perform Docker/NVIDIA host preflight.
+2. Select and provision a real moderation classifier/service implementing the existing authenticated contract; transport-only code is not a classifier.
+3. Complete model licence review with the appropriate account owner, then install exact local SD3.5 and Wan2.1 artifacts and verify checksums/layout.
+4. Resolve the immutable PyTorch CUDA base-image digest, build the runtime image, and validate pinned imports/codecs on the actual host.
+5. Run and inspect the first SD3.5 image; fix any runtime, VRAM, codec or output issues.
+6. Run and inspect the first Wan2.1 five-second 832x480 video; current moderation transport has a 64 MiB output payload cap, so larger clips fail closed until a streaming moderation path is available.
+7. Only after both smoke tests pass, run the blinded quality benchmark and consider UI/queue activation. Keep generation flags off, migrations unapplied, PR #20 unmerged, and production untouched until explicit owner approval.
+
+### Current status
+- Software orchestration and sandbox protocol are integrated and CI-verified.
+- Real-host/runtime/model/moderation/inference validation is still outstanding. Do not claim ASTRA has generated an AI image or video until real media files have been produced and inspected.
