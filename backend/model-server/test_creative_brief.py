@@ -52,6 +52,12 @@ class CreativeBriefTests(unittest.TestCase):
         with self.assertRaises(BriefValidationError):
             normalize_brief({"prompt": "A city", "subjects": ["x"] * 9})
 
+    def test_non_string_modality_and_ratio_rejected_cleanly(self):
+        with self.assertRaises(BriefValidationError):
+            normalize_brief({"prompt": "A city", "modality": ["image"]})
+        with self.assertRaises(BriefValidationError):
+            normalize_brief({"prompt": "A city", "aspect_ratio": {"wide": True}})
+
     def test_invalid_modality_and_ratio_rejected(self):
         with self.assertRaises(BriefValidationError):
             normalize_brief({"prompt": "A city", "modality": "audio"})
