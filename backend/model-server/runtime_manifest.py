@@ -178,7 +178,16 @@ def verify_model_artifacts(
                 raise RuntimeManifestError("A model artifact is missing or outside the model root.") from None
             if not resolved.is_file() or stat.st_size != file_item["size_bytes"]:
                 raise RuntimeManifestError("A model artifact size does not match the manifest.")
-            if _sha256(resolved) != file_item["sha256"]:
+            digest = _sha256(resolved)
+            try:
+                after = resolved.stat()
+            except OSError:
+                raise RuntimeManifestError("A model artifact changed during verification.") from None
+            before_signature = (stat.st_dev, stat.st_ino, stat.st_size, stat.st_mtime_ns)
+            after_signature = (after.st_dev, after.st_ino, after.st_size, after.st_mtime_ns)
+            if before_signature != after_signature:
+                raise RuntimeManifestError("A model artifact changed during verification.")
+            if digest != file_item["sha256"]:
                 raise RuntimeManifestError("A model artifact checksum does not match the manifest.")
             verified_files.append({**file_item, "resolved_path": str(resolved)})
         verified.append({**model, "files": verified_files})
