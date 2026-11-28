@@ -392,3 +392,10 @@ When resuming, fetch PR #20 and this checkpoint first, inspect the latest CI sta
 - The model-server suite ran 193 tests successfully, including 8 new sandbox policy tests and the PostgreSQL 16 queue/private-storage integration tests.
 - This verifies the policy command builder and its validation tests only. It does not run Docker, enforce a real process timeout, or isolate `GenerationWorker`; the current worker still invokes its adapter in-process.
 - PR #20 remains open/draft/unmerged. No migrations 0010/0011 applied, no Docker image pulled, no model weights, no GPU host, no secrets, no paid service, and no deployment.
+
+
+## Verified CI — sandbox policy test correction
+
+- After correcting the tmpfs assertion syntax, CI run `46143252288` passed both `syntax` and `model-server` jobs on head `ca44042e8f17dca222fd8368a234a5a9364c0afd`.
+- The model-server suite ran 193 tests successfully; all 8 sandbox policy tests passed, alongside the PostgreSQL 16 integration suite.
+- The subsequent checkpoint-only documentation commit may trigger another CI run; the code under test is the same.
