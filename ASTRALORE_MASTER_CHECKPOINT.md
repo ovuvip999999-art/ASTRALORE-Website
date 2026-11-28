@@ -561,3 +561,9 @@ After the executor is verified, continue with host capability/preflight, model-l
 - Python model-server suite: 259 tests passed; one expected opt-in real Docker/GPU test skipped. PostgreSQL 16 integration executed migration 0012 and passed the new separate-origin quota/idempotency test.
 - Worker proxy syntax and Node tests passed, including the public-route forwarding and public kill-switch checks.
 - These are code/ephemeral-PostgreSQL tests only. Migration 0012 remains unapplied to Supabase; public/internal API flags remain unset in production; no generation, deployment, or merge occurred.
+
+
+## Origin-isolated worker identity and queue claims — implementation in progress
+- Worker API now authenticates two distinct server-side worker credentials and derives `internal` or `public` from the matching secret. The claim body does not accept an origin field.
+- Queue-store claim calls now require an explicit origin; a new SQL migration will replace the all-origin claim RPC with a strict origin-filtered RPC. Separate worker deployments must receive separate worker tokens; this repository does not provision or set secrets.
+- Verification is pending CI and PostgreSQL integration. Production credentials and migrations remain untouched.
