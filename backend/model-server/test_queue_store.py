@@ -82,7 +82,7 @@ class QueueStoreTests(unittest.TestCase):
             self.assertEqual(body["p_batch_size"], 2)
             self.assertEqual(body["p_lease_seconds"], 90)
             return httpx.Response(200, json=[{"id": JOB_ID, "status": "running"}])
-        self.assertEqual(len(self.store(handler).claim_jobs(worker_id="test-worker", batch_size=2, lease_seconds=90)), 1)
+        self.assertEqual(len(self.store(handler).claim_jobs(worker_id="test-worker", request_origin="public", batch_size=2, lease_seconds=90)), 1)
 
     def test_heartbeat_returns_cancellation_state(self):
         def handler(request):
