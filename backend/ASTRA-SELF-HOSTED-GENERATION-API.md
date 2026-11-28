@@ -105,7 +105,8 @@ The adapter accepts only HTTPS output URLs without embedded credentials. The med
 ## Current status
 
 - Provider adapter and mocked contract tests are in the repository.
-- No ASTRA model server or GPU host has been deployed.
+- Added a FastAPI model-server scaffold under `backend/model-server/` with authenticated image/video routes, a health endpoint, Dockerfile, and fail-closed 503 responses until real model runtimes are installed. This scaffold is not deployed.
+- No GPU host has been deployed.
 - No image/video model weights have been selected, downloaded, trained, or fine-tuned.
 - No provider variables or secrets have been configured.
 - Image and video generation remain paused.
