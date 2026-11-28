@@ -392,3 +392,19 @@ python worker_process.py
 ```
 
 The process exits with `ASTRA_WORKER_STARTUP_BLOCKED` if any required setting, model artifact, image digest, Docker daemon, GPU, VRAM or moderation configuration fails validation. It emits only fixed operational status strings; detailed credentials and raw exception text are never printed. This command has not been run against a provisioned production environment.
+
+
+## Digest-pinned CUDA runtime image build
+
+The runtime image can be built and import-smoke-tested on an authorized Linux/AMD64 Docker host without downloading model weights or publishing an image:
+
+```bash
+cd backend/model-server
+python runtime_image_build.py \
+  --base-image 'pytorch/pytorch:2.5.1-cuda12.4-cudnn9-runtime@sha256:REPLACE_WITH_VERIFIED_DIGEST' \
+  --tag astra-model-runtime:validation
+```
+
+The base-image argument must be replaced with the real 64-character SHA-256 digest verified from the upstream registry; placeholders and mutable tags are rejected. The script builds without cache, disables network access for its container import smoke test, verifies the pinned PyTorch/CUDA versions and imports the trusted runtime modules, and never pushes to a registry.
+
+A successful local build is not yet a deployable worker image: after an owner-authorized registry push, record the registry-returned immutable image digest and configure the worker with that exact digest. Then run `host_preflight.py` and the opt-in Docker/GPU integration test on the target GPU host. No digest, registry, GPU host, credentials, or paid service is assumed or invented here.
