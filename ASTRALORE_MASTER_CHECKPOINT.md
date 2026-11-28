@@ -421,3 +421,23 @@ After the executor is verified, continue with host capability/preflight, model-l
 ### Current status
 - Software orchestration and sandbox protocol are integrated and CI-verified.
 - Real-host/runtime/model/moderation/inference validation is still outstanding. Do not claim ASTRA has generated an AI image or video until real media files have been produced and inspected.
+
+
+## 21. Runtime image build automation and base-image pin — 2026-11-28
+
+### New implementation
+- Added `runtime_image_build.py`: validates a strict immutable `repository@sha256:<64 hex>` base reference and safe local tag; builds the CUDA runtime for linux/amd64 with Docker, no cache, and the selected pinned base; then runs a network-disabled, read-only import smoke test for PyTorch, Diffusers, Transformers and the trusted ASTRA entrypoint.
+- The script never downloads model weights, pushes an image, provisions services, or runs generation. It returns `registry_digest: not_published` explicitly; a local build is not treated as a deployable immutable registry image.
+- Added five unit tests for build command shape, immutable digest enforcement, invalid tags, smoke-test output validation, and sanitized Docker failures.
+- Added the script to CI compile checks and documented the local build workflow in `backend/model-server/README.md`.
+- Pinned the documented PyTorch base to the official PyTorch Docker Hub linux/amd64 manifest digest `sha256:c8268a92a69bd500f8be0e665b2630ee006dadaf7bfbc24249141b15ff622755` (repository-only digest reference, as required by ASTRA's image reference validator).
+
+### CI debugging
+- The first CI run exposed that the test fixture used a tagged image reference, while ASTRA's immutable-image validator intentionally accepts repository@digest without a tag. Corrected the fixture and documented reference to digest-only form.
+- CI on the latest branch head must be checked before reporting the new tests as passing; prior failed run is a diagnosed test-fixture mismatch, not concealed.
+
+### Remaining real-host gates
+- No Docker runtime image has yet been built in this environment. This repository tool session does not expose a GPU host or Docker daemon for a real build.
+- After local image build/import smoke test, an authorized owner must publish the image to a selected registry and record its resulting digest; then perform GPU host preflight and the opt-in Docker lifecycle probe.
+- Real moderation classifier, owner-reviewed model license/artifact manifest, actual model weights, first image inference, and first video inference remain outstanding.
+- Do not enable generation, apply migrations, publish/deploy, or merge PR #20 without explicit owner approval.
