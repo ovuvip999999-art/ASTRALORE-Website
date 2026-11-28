@@ -107,6 +107,24 @@ class SandboxExecutorTests(unittest.TestCase):
             )
         self.assertEqual(caught.exception.error_code, "SANDBOX_OUTPUT_INVALID")
 
+    def test_failed_docker_copy_is_rejected_even_if_partial_file_exists(self):
+        def failed_copy(command, **kwargs):
+            self.commands.append(command)
+            if command[1] == "cp":
+                (self.output / "result.png").write_bytes(b"partial")
+                return Mock(returncode=1)
+            return Mock(returncode=0)
+
+        executor = self.executor()
+        executor.run_command = failed_copy
+        with self.assertRaises(SandboxExecutionError) as caught:
+            executor.execute(
+                {"model_id": "test-model"},
+                output_dir=self.output,
+                cancel_event=threading.Event(),
+            )
+        self.assertEqual(caught.exception.error_code, "SANDBOX_OUTPUT_INVALID")
+
     def test_unsupported_output_file_is_rejected(self):
         def bad_copy(command, **kwargs):
             self.commands.append(command)
