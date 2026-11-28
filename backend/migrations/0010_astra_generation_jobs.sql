@@ -99,7 +99,24 @@ begin
     raise exception 'Invalid generation job request' using errcode = '22023';
   end if;
 
+  -- Serialize admission globally (capacity) and per user (idempotency/quota).
+  perform pg_advisory_xact_lock(0, 10010);
   perform pg_advisory_xact_lock(hashtextextended(p_user_id::text, 0));
+
+  select * into v_job
+  from public.astra_generation_jobs
+  where user_id = p_user_id and idempotency_key = p_idempotency_key
+  for update;
+
+  if found then
+    if v_job.modality <> p_modality
+       or v_job.model_id <> trim(p_model_id)
+       or v_job.request <> p_request then
+      raise exception 'Idempotency key was already used for a different request'
+        using errcode = '22023';
+    end if;
+    return v_job;
+  end if;
 
   if (select count(*) from public.astra_generation_jobs
       where user_id = p_user_id and status in ('queued', 'running')) >= 2 then
@@ -115,22 +132,7 @@ begin
     (user_id, modality, model_id, request, idempotency_key)
   values
     (p_user_id, p_modality, trim(p_model_id), p_request, p_idempotency_key)
-  on conflict (user_id, idempotency_key) do nothing
   returning * into v_job;
-
-  if not found then
-    select * into v_job
-      from public.astra_generation_jobs
-      where user_id = p_user_id and idempotency_key = p_idempotency_key
-      for update;
-
-    if v_job.modality <> p_modality
-       or v_job.model_id <> trim(p_model_id)
-       or v_job.request <> p_request then
-      raise exception 'Idempotency key was already used for a different request'
-        using errcode = '22023';
-    end if;
-  end if;
 
   return v_job;
 end;
