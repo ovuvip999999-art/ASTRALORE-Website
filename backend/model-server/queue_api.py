@@ -11,7 +11,7 @@ import os
 from typing import Literal
 
 from fastapi import APIRouter, Header, HTTPException
-from pydantic import BaseModel, ConfigDict, Field, StrictInt, StrictStr
+from pydantic import BaseModel, ConfigDict, Field, StrictInt, StrictStr, model_validator
 
 from asset_store import AssetStoreConfig, AssetStoreError, SupabasePrivateAssetStore
 from creative_brief import BriefValidationError, compile_brief
@@ -30,6 +30,18 @@ class CreateJobRequest(BaseModel):
     height: StrictInt = Field(gt=0, le=16384)
     brief: dict
     idempotency_key: StrictStr = Field(min_length=8, max_length=128)
+    duration_seconds: StrictInt | None = None
+
+    @model_validator(mode="after")
+    def validate_duration(self):
+        if self.modality == "video":
+            if self.duration_seconds is None:
+                self.duration_seconds = 5
+            if not 1 <= self.duration_seconds <= 120:
+                raise ValueError("Video duration must be between 1 and 120 seconds.")
+        elif self.duration_seconds is not None:
+            raise ValueError("Image jobs cannot specify a video duration.")
+        return self
 
 
 def create_store() -> SupabaseQueueStore:
@@ -130,6 +142,7 @@ def create_generation_job(
         "height": body.height,
         "aspect_ratio": body.aspect_ratio,
         "model_revision": route["revision"],
+        "duration_seconds": body.duration_seconds,
     }
     try:
         job = store.enqueue_job(
