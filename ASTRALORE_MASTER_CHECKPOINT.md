@@ -305,3 +305,10 @@ After the executor is verified, continue with host capability/preflight, model-l
 - Model request payload excludes owner IDs, lease tokens, storage paths and unrecognized fields.
 - Model runtime source is separated from the API/worker dependency graph through `runtime_errors.py`; a separate digest-pinned-base Dockerfile and pinned direct dependency list exist.
 - Remaining blockers are real host/GPU integration, exact runtime dependency validation, real moderation-provider deployment, owner license/cost approval, model artifact installation and controlled inference benchmarks.
+
+
+### Latest verification — 2026-11-28
+- PR workflow run `46149619291` completed successfully on commit `f20800707f714dab72b534261e53e3f08fecc1b3`: both `syntax` and `model-server` jobs passed.
+- The model-server job compiled `runtime_errors.py` and `test_sandbox_executor_docker.py`, then ran 212 tests successfully; the opt-in Docker/GPU host test was correctly skipped because no authorized GPU host was configured (`OK (skipped=1)`).
+- This validates the Python contract/unit/integration suite and PostgreSQL 16 tests. It does not validate an actual Docker runtime host, CUDA image build, GPU inference, model quality, license acceptance, moderation provider or production deployment.
+- The workflow run for the subsequent checkpoint-only commit is not needed to establish the code/test result above; latest verified code commit remains `f20800707f714dab72b534261e53e3f08fecc1b3`.
