@@ -198,6 +198,9 @@ class SupabasePrivateAssetStore:
             except httpx.HTTPError:
                 raise AssetStoreError("Private media upload failed.") from None
 
+            if response.status_code < 200 or response.status_code >= 300:
+                raise AssetStoreError(f"Private media storage rejected the upload (HTTP {response.status_code}).")
+
             after = os.fstat(handle.fileno())
             path_after = resolved.stat()
             signature_before = (before.st_dev, before.st_ino, before.st_size, before.st_mtime_ns)
@@ -211,9 +214,6 @@ class SupabasePrivateAssetStore:
             ):
                 self._delete_object(object_path)
                 raise AssetStoreError("Media output integrity changed during private upload.")
-
-            if response.status_code < 200 or response.status_code >= 300:
-                raise AssetStoreError(f"Private media storage rejected the upload (HTTP {response.status_code}).")
 
             result = dict(validated_asset)
             result["storage_path"] = object_path
