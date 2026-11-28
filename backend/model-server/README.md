@@ -148,3 +148,13 @@ The next queue milestone is scaffolded but **not yet active**:
 - Unit tests use mocked HTTP; migration contract tests check the security and queue invariants; CI also starts an ephemeral PostgreSQL 16 service and executes the migration plus real queue/RLS/lease/concurrency integration tests.
 
 **Important:** migration 0010 is a new SQL file only. It has NOT been applied to Supabase. Do not apply migrations 0008 or 0009. The queue adapter is not wired to public API endpoints, there is no worker process, and generation remains blocked. No database, Worker, or production deployment has been performed.
+
+### Authenticated job API (disabled by default)
+
+The private FastAPI server now mounts these routes:
+
+- `POST /v1/jobs`: verifies the private Worker-to-server secret and the user's Supabase access token, derives the owner UUID from Supabase Auth (never from request JSON), compiles the structured brief, validates the exact enabled model against the server catalog, and submits an idempotent job.
+- `GET /v1/jobs/{job_id}`: returns a job only when Supabase RLS makes it visible to the caller.
+- `POST /v1/jobs/{job_id}/cancel`: calls the owner-checked cancellation RPC using the user's own access token.
+
+All three routes require `ASTRA_QUEUE_API_ENABLED=true`, a server-only `ASTRA_MODEL_SERVER_TOKEN` of at least 32 characters, and a valid user session. The queue API flag is unset/false by default. The private API is not yet wired to the Cloudflare Worker, and no queue worker is running. There are intentionally no public worker-claim or completion endpoints yet.
