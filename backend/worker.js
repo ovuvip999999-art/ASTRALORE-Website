@@ -230,7 +230,7 @@ async function reserveCreativeUsage(env, authorization, userId, kind) {
   if (!row || typeof row.allowed !== "boolean") throw new Error("Creative usage limit returned an invalid response.");
   return {
     allowed: row.allowed,
-    remaining: Number.isInteger(row.remaining) ? row.remaining : 0,
+    remaining: row.unlimited === true ? -1 : (Number.isInteger(row.remaining) ? row.remaining : 0),
     budgetRemainingUsd: Number(row.budget_remaining_usd || 0),
     unlimited: row.unlimited === true
   };
