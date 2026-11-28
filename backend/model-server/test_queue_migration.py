@@ -9,6 +9,7 @@ class QueueMigrationContractTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.sql = MIGRATION.read_text(encoding="utf-8").lower()
+        cls.storage_sql = (MIGRATION.parent / "0011_astra_private_generated_assets.sql").read_text(encoding="utf-8").lower()
 
     def test_private_table_has_owner_scoped_rls(self):
         self.assertIn("alter table public.astra_generation_jobs enable row level security", self.sql)
@@ -50,6 +51,17 @@ class QueueMigrationContractTests(unittest.TestCase):
         self.assertIn("16384", self.sql)
         self.assertIn("100000000", self.sql)
         self.assertIn("120000", self.sql)
+        self.assertIn("'storage_path'", self.sql)
+        self.assertIn("v_job.user_id::text", self.sql)
+        self.assertIn("p_job_id::text", self.sql)
+
+    def test_generated_asset_bucket_is_private_and_user_policies_are_restricted(self):
+        self.assertIn("'astra-generated-private'", self.storage_sql)
+        self.assertIn("public = false", self.storage_sql)
+        self.assertIn("536870912", self.storage_sql)
+        self.assertIn("as restrictive", self.storage_sql)
+        self.assertIn("to anon, authenticated", self.storage_sql)
+        self.assertIn("bucket_id <> 'astra-generated-private'", self.storage_sql)
 
 
 if __name__ == "__main__":
