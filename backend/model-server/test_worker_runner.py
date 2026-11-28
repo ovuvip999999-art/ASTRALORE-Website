@@ -1,4 +1,7 @@
+import io
+import json
 import tempfile
+import time
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -6,6 +9,9 @@ from threading import Event
 
 from PIL import Image
 
+from sandbox_adapter import SandboxGenerationAdapter
+from sandbox_executor import DockerSandboxExecutor
+from sandbox_policy import SandboxConfig, SandboxLimits
 from worker_client import WorkerLeaseLost
 from worker_runner import GenerationError, GenerationWorker
 
@@ -40,6 +46,7 @@ class FakeClient:
         self.failures = []
         self.completed = []
         self.heartbeat_result = {"cancel_requested": False}
+        self.heartbeat_error = None
         self.complete_error = None
 
     def claim(self, **kwargs):
@@ -47,6 +54,8 @@ class FakeClient:
         return self.jobs
 
     def heartbeat(self, **kwargs):
+        if self.heartbeat_error:
+            raise self.heartbeat_error
         return self.heartbeat_result
 
     def fail(self, **kwargs):
@@ -307,6 +316,97 @@ class WorkerRunnerTests(unittest.TestCase):
         self.assertEqual(client.failures[0]["error_code"], "MODEL_TIMEOUT")
         self.assertTrue(client.failures[0]["retryable"])
         self.assertEqual(assets.uploads, [])
+
+    def test_lost_lease_terminates_supervised_container_before_upload(self):
+        class FakeProcess:
+            def __init__(self):
+                self.stdin = unittest.mock.Mock()
+                self.stdout = io.BytesIO(json.dumps({
+                    "ok": True, "filename": "generated.png"
+                }).encode("utf-8"))
+                self.returncode = 0
+                self.pid = 12345
+                self.killed = False
+
+            def poll(self):
+                return 0 if self.killed else None
+
+            def wait(self, timeout=None):
+                self.killed = True
+                return 0
+
+            def kill(self):
+                self.killed = True
+
+        with tempfile.TemporaryDirectory() as root:
+            model_root = Path(root) / "models"
+            model_root.mkdir()
+            weight = model_root / "weights.bin"
+            weight.write_bytes(b"test-model")
+            output_root = Path(root) / "worker-output"
+            process = FakeProcess()
+            commands = []
+
+            def docker_command(command, **kwargs):
+                commands.append(command)
+                if command[1] == "kill":
+                    process.killed = True
+                return unittest.mock.Mock(returncode=0)
+
+            executor = DockerSandboxExecutor(
+                config=SandboxConfig(
+                    image="registry.example/astra/runtime@sha256:" + "b" * 64,
+                    model_directory=model_root,
+                    gpu_device="0",
+                    limits=SandboxLimits(timeout_seconds=30),
+                ),
+                popen_factory=lambda *args, **kwargs: process,
+                run_command=docker_command,
+                poll_interval=0.01,
+                cleanup_timeout=0.5,
+            )
+            model = {
+                "model_id": MODEL_ID,
+                "revision": REVISION,
+                "modality": "image",
+                "runtime": "diffusers",
+                "license_id": "test-license",
+                "license_reviewed_by_owner": True,
+                "allow_remote_code": False,
+                "min_vram_mb": 4096,
+                "max_width": 512,
+                "max_height": 512,
+                "max_pixels": 262144,
+                "files": [{
+                    "path": "weights.bin",
+                    "sha256": "a" * 64,
+                    "size_bytes": weight.stat().st_size,
+                    "resolved_path": str(weight.resolve()),
+                }],
+            }
+            adapter = SandboxGenerationAdapter(executor=executor, verified_model=model)
+            client = FakeClient()
+            client.heartbeat_error = WorkerLeaseLost("lease expired")
+            assets = FakeAssetStore()
+            worker = GenerationWorker(
+                client=client,
+                asset_store=assets,
+                adapters={(MODEL_ID, REVISION): adapter},
+                safety_gate=FakeSafetyGate(),
+                worker_id="lost-lease-sandbox-test",
+                output_root=output_root,
+                heartbeat_interval=1,
+                lease_seconds=30,
+            )
+
+            self.assertEqual(worker.run_once(), 1)
+
+            self.assertTrue(process.killed)
+            self.assertTrue(any(command[1] == "kill" for command in commands))
+            self.assertTrue(any(command[1:3] == ["rm", "-f"] for command in commands))
+            self.assertEqual(assets.uploads, [])
+            self.assertEqual(client.completed, [])
+            self.assertEqual(client.failures, [])
 
     def test_confirmed_lost_lease_after_upload_deletes_uncommitted_asset(self):
         client = FakeClient()
