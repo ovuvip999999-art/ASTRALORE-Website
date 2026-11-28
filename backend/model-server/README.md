@@ -227,6 +227,27 @@ Before any inference adapter can be registered:
 
 Do not accept gated model licenses, download weights, or enable inference until the full license and every model component have been reviewed, immutable revisions/checksums are recorded, and measured host resource limits are approved.
 
+### Local artifact checksum inventory
+
+After an account owner has independently reviewed the model's current license and weights have been placed in an administrator-controlled model directory, `model_artifact_inventory.py` can create the exact file list and SHA-256 checksums required by the runtime manifest. It does not download or execute files, and it **always writes `license_reviewed_by_owner: false`**; it cannot attest or accept a license. The manifest output must be outside the model directory and is created without overwriting an existing file.
+
+Example (replace every placeholder with reviewed, measured values):
+
+```bash
+python model_artifact_inventory.py \
+  --model-root /srv/astra/models/sd35-medium \
+  --model-id stabilityai/stable-diffusion-3.5-medium \
+  --revision <immutable-40-character-commit> \
+  --modality image \
+  --runtime diffusers \
+  --license-id <reviewed-license-identifier> \
+  --min-vram-mb <measured-minimum> \
+  --max-width 1024 --max-height 1024 --max-pixels 1000000 \
+  --output /srv/astra/manifests/sd35-medium.json
+```
+
+The inventory rejects symlinks, non-regular files, empty directories, mutable revisions, oversized files/models, and invalid runtime/capability metadata. The generated manifest must still be reviewed and the license attestation deliberately remains false until the appropriate account owner completes the review. Keep the model directory read-only after inventory; ASTRA rechecks file sizes and hashes before loading.
+
 - `runtime_registry.py` binds verified manifest entries only to code-owned runtime factories. The manifest can name an allowlisted runtime label, but cannot import a module or select an arbitrary Python entry point.
 - If no trusted factory is installed for a runtime, that model is omitted from the adapter registry; the worker therefore cannot claim jobs for it.
 - Factory output must expose `generate` and report the exact model ID/revision from the verified manifest.
