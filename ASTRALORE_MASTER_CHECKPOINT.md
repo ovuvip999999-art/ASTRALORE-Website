@@ -183,3 +183,32 @@ After the executor is verified, continue with host capability/preflight, model-l
 4. Add a separate GPU runtime Dockerfile and pinned requirements; keep API Dockerfile separate. Do not include/download model weights in the image.
 5. Wire sandbox adapters into `worker_bootstrap.py` as the only production path; in-process adapters must remain test-only.
 6. Add tests for protocol mismatch, stdout overflow, timeouts, cancellation, lease loss, Docker cleanup errors and worker integration.
+
+## 12. Sandbox adapter bridge — first implementation (2026-11-28)
+
+### Commits
+- `2ddb7176aea53ced2e04fabebc98a0d48e8bc9a3`: added `backend/model-server/sandbox_adapter.py`.
+- `ae280291b908c661a7a4d02d275f60db299118d6`: added `backend/model-server/test_sandbox_adapter.py`.
+- `d9cb8ead43a9da7791dd14e7e93709f10037528a`: included adapter and tests in CI compile/discovery.
+- Branch head at this checkpoint: `d9cb8ead43a9da7791dd14e7e93709f10037528a`.
+
+### Implemented
+- Added a `SandboxGenerationAdapter` implementing the worker's generation adapter contract.
+- Enforces exact model ID, immutable revision, and modality match before container launch.
+- Builds the entrypoint request from a verified model record and strips host-only resolved filesystem paths from the manifest payload.
+- Delegates execution to the Docker supervisor and maps cancellation, timeout and output validation failures to stable worker error codes.
+- Added tests for exact manifest payload, revision mismatch refusal and cancellation mapping.
+- CI now compiles and discovers the new adapter tests.
+
+### Limitations
+- The adapter is not yet wired into `worker_bootstrap.py`; bootstrap still uses in-process factories.
+- Docker supervisor currently discards stdout, while entrypoint emits a small status line. Output file copy is currently the effective success signal; protocol/result matching should be hardened.
+- The executor's output copy helper currently ignores Docker CLI return codes; a failed `docker cp` can be misreported later as invalid output. Fix this before host use.
+- No Docker host integration or GPU inference has been run. No model weights downloaded, no license accepted, no migrations applied and no deployment performed.
+- The model runtime Docker image is not yet built or digest-pinned in an actual registry.
+
+### Next
+1. Harden executor command result handling and stdout/result protocol, including copy errors, timeout and cleanup failures.
+2. Wire sandbox adapter as the only production bootstrap path; ensure no in-process model factories can be selected by production worker.
+3. Add GPU runtime Dockerfile and pinned dependencies, then run static image build checks only. Do not pull weights or run GPU inference.
+4. Add worker integration tests proving lease-loss/cancellation stops the sandbox process and no output is uploaded after lease loss.
