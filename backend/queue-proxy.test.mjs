@@ -18,6 +18,7 @@ function createAction(overrides = {}) {
     brief: { prompt: "A calm blue planet", modality: "image", aspect_ratio: "1:1" },
     idempotencyKey: "request-00000001",
     costAcknowledged: true,
+    durationSeconds: null,
     ...overrides
   };
 }
@@ -49,6 +50,23 @@ test("rejects invalid dimensions, aspect ratio, modality, and idempotency key", 
   assert.throws(() => normalizeQueueAction(createAction({ modality: "audio" })), TypeError);
   assert.throws(() => normalizeQueueAction(createAction({ idempotencyKey: "short" })), TypeError);
   assert.throws(() => normalizeQueueAction(createAction({ costAcknowledged: false })), TypeError);
+  assert.throws(() => normalizeQueueAction(createAction({ durationSeconds: 5 })), TypeError);
+});
+
+test("accepts only bounded video duration for video queue requests", () => {
+  const video = normalizeQueueAction(createAction({
+    modality: "video",
+    aspectRatio: "16:9",
+    width: 832,
+    height: 480,
+    durationSeconds: 5,
+    brief: { prompt: "A cinematic sunrise over the ocean", modality: "video", aspect_ratio: "16:9" }
+  }));
+  assert.equal(video.durationSeconds, 5);
+  assert.throws(() => normalizeQueueAction(createAction({
+    modality: "video", aspectRatio: "16:9", width: 832, height: 480, durationSeconds: 121,
+    brief: { prompt: "A sunrise", modality: "video", aspect_ratio: "16:9" }
+  })), TypeError);
 });
 
 test("normalizes status, cancel, and asset URL actions with UUIDs", () => {
@@ -105,6 +123,7 @@ test("create forwards only normalized fields and keeps both credentials server-s
   assert.equal(forwarded.model_id, "astra-image-test");
   assert.equal(forwarded.user_id, undefined);
   assert.equal(forwarded.idempotency_key, "request-00000001");
+  assert.equal(forwarded.duration_seconds, null);
 });
 
 test("status, cancel, and signed asset retrieval use fixed server routes", async () => {
