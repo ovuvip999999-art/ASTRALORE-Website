@@ -1,0 +1,15 @@
+# Direct model-runtime dependencies are pinned; PyTorch/CUDA are supplied by the
+# separately digest-pinned PyTorch base image in Dockerfile.runtime.
+diffusers==0.32.2
+transformers==4.46.3
+accelerate==1.2.1
+huggingface-hub==0.27.0
+safetensors==0.4.5
+tokenizers==0.20.3
+numpy==1.26.4
+Pillow==11.0.0
+sentencepiece==0.2.0
+protobuf==5.29.2
+imageio==2.36.1
+imageio-ffmpeg==0.5.1
+ftfy==6.3.1
