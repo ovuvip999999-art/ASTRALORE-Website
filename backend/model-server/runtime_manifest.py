@@ -73,7 +73,7 @@ def load_manifest_json(raw: str) -> list[dict[str, Any]]:
         raise RuntimeManifestError("Runtime manifest contains too many model entries.")
 
     required = {
-        "model_id", "revision", "modality", "files", "max_vram_mb",
+        "model_id", "revision", "modality", "files", "min_vram_mb",
         "max_width", "max_height", "max_pixels", "runtime", "allow_remote_code",
         "license_id", "license_reviewed_by_owner",
     }
@@ -140,7 +140,7 @@ def load_manifest_json(raw: str) -> list[dict[str, Any]]:
             "revision": revision,
             "modality": item["modality"],
             "files": normalized_files,
-            "max_vram_mb": _positive_int(item["max_vram_mb"], minimum=1024, maximum=131072, label="max_vram_mb"),
+            "min_vram_mb": _positive_int(item["min_vram_mb"], minimum=1024, maximum=131072, label="min_vram_mb"),
             "max_width": max_width,
             "max_height": max_height,
             "max_pixels": max_pixels,
