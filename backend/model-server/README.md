@@ -221,7 +221,7 @@ Before any inference adapter can be registered:
 
 - Review `MODEL-CANDIDATE-REVIEW.md` for the initial image/video candidates, primary-source license notes, and upstream hardware claims.
 - `runtime_manifest.py` accepts only exact model revisions (40-character commit SHA or SHA-256 revision), explicit modality/runtime, bounded capabilities, and an explicit list of artifact paths, sizes and SHA-256 hashes.
-- Remote model code execution is forbidden. Model files must already exist under a dedicated model root; every file is checked for path traversal, symlinks, exact size and checksum.
+- Remote model code execution is forbidden. Model files must already exist under a dedicated model root; every file is checked for path traversal, symlinks (including parent-directory links), exact size and checksum. Verification opens each path component relative to no-follow directory descriptors and hashes the opened file descriptor, reducing symlink/path-swap races during startup.
 - Limits: 50 GiB per artifact, 100 GiB total per model, at most 1,000 files, and at most 50 model entries in one manifest.
 - This is preflight verification only. It does not download, load, execute, or enable a model. No runtime manifest is configured by default.
 
