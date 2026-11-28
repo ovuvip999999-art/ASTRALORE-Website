@@ -3,8 +3,6 @@ from __future__ import annotations
 
 import hmac
 import os
-from typing import Literal
-
 from fastapi import APIRouter, Header, HTTPException
 from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt, StrictStr
 
