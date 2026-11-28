@@ -27,20 +27,20 @@ class ModelReadinessTests(unittest.TestCase):
         components = (
             {
                 "scheduler": ("scheduler_config.json",),
-                "text_encoder": ("config.json", "model.safetensors"),
-                "text_encoder_2": ("config.json", "model.safetensors"),
-                "text_encoder_3": ("config.json", "model.safetensors"),
+                "text_encoder": ("config.json",),
+                "text_encoder_2": ("config.json",),
+                "text_encoder_3": ("config.json",),
                 "tokenizer": ("tokenizer_config.json",),
                 "tokenizer_2": ("tokenizer_config.json",),
                 "tokenizer_3": ("tokenizer_config.json",),
-                "transformer": ("config.json", "diffusion_pytorch_model.safetensors"),
-                "vae": ("config.json", "diffusion_pytorch_model.safetensors"),
+                "transformer": ("config.json",),
+                "vae": ("config.json",),
             } if is_image else {
                 "scheduler": ("scheduler_config.json",),
-                "text_encoder": ("config.json", "model.safetensors"),
+                "text_encoder": ("config.json",),
                 "tokenizer": ("tokenizer_config.json",),
-                "transformer": ("config.json", "diffusion_pytorch_model.safetensors"),
-                "vae": ("config.json", "diffusion_pytorch_model.safetensors"),
+                "transformer": ("config.json",),
+                "vae": ("config.json",),
             }
         )
         write_json(root / "model_index.json", {"_class_name": pipeline})
@@ -53,6 +53,9 @@ class ModelReadinessTests(unittest.TestCase):
                 else:
                     path.parent.mkdir(parents=True, exist_ok=True)
                     path.write_bytes(b"fixture-safetensors-data")
+        weight_components = ("text_encoder", "text_encoder_2", "text_encoder_3", "transformer", "vae") if is_image else ("text_encoder", "transformer", "vae")
+        for component in weight_components:
+            (root / component / "model-00001-of-00001.safetensors").write_bytes(b"fixture-safetensors-data")
         for path in sorted(p for p in root.rglob("*") if p.is_file()):
             relative = path.relative_to(root).as_posix()
             files.append({
@@ -100,6 +103,16 @@ class ModelReadinessTests(unittest.TestCase):
             model = self.build_package(root, WAN_ID, reviewed=True)
             (root / "vae" / "config.json").unlink()
             with self.assertRaises(ModelReadinessError):
+                inspect_model_package(model, model_root=root)
+
+    def test_accepts_sharded_safetensors_and_requires_every_shard_in_manifest(self):
+        with tempfile.TemporaryDirectory() as temp:
+            root = Path(temp)
+            model = self.build_package(root, WAN_ID, reviewed=True)
+            transformer = root / "transformer"
+            (transformer / "model-00002-of-00002.safetensors").write_bytes(b"second-shard-data")
+            # The new shard is deliberately absent from the manifest.
+            with self.assertRaisesRegex(ModelReadinessError, "MODEL_WEIGHT_FILE_NOT_IN_MANIFEST"):
                 inspect_model_package(model, model_root=root)
 
     def test_rejects_wrong_pipeline_class(self):
