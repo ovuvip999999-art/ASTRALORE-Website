@@ -14,7 +14,7 @@ test("enabled skills are retrieved only for the authenticated owner", async () =
 
   assert.match(loader, /user_id:\s*"eq\."\s*\+\s*userId/);
   assert.match(loader, /enabled:\s*"eq\.true"/);
-  assert.match(loader, /Authorization:\s*authorization/);
+  assert.match(loader, /"Authorization":\s*authorization/);
   assert.match(loader, /limit:\s*"5"/);
   assert.match(worker, /loadEnabledSkills\(env, authorization, authenticatedUser\.id\)/);
 });
@@ -57,11 +57,13 @@ test("creative endpoints fail closed and enforce per-account quotas", async () =
 test("creative prompts are validated before generation and model failures release quota", async () => {
   const worker = await read("./worker.js");
   const studio = await read("../astra-creative-studio.js");
+  const html = await read("../astra.html");
 
   assert.match(worker, /generate-image/);
   assert.match(worker, /generate-video/);
   assert.match(worker, /ASTRA video generation failed/);
   assert.match(worker, /ASTRA image generation failed/);
-  assert.match(studio, /I understand/i);
+  assert.match(html, /I understand image generation uses Cloudflare AI usage/i);
+  assert.match(html, /I understand this video request may create a US\\$0\\.25 AI charge/i);
   assert.match(studio, /prompt/i);
 });
