@@ -212,3 +212,41 @@ After the executor is verified, continue with host capability/preflight, model-l
 2. Wire sandbox adapter as the only production bootstrap path; ensure no in-process model factories can be selected by production worker.
 3. Add GPU runtime Dockerfile and pinned dependencies, then run static image build checks only. Do not pull weights or run GPU inference.
 4. Add worker integration tests proving lease-loss/cancellation stops the sandbox process and no output is uploaded after lease loss.
+
+
+
+## 13. Supervised sandbox worker integration and executor hardening — 2026-11-28
+
+### Commits
+- `8fcd1d5ff4df7c09ba01e2859c07db77da837f70`: Docker control commands now report exit status; failed `docker cp` is rejected even if a partial file appears in the destination; successful execution requires confirmed container removal.
+- `d23bd9b321447026570fcf3461e4a9328c36f738`: regression test for failed Docker copy with a partial output file.
+- `881894482b57e8da2ce1fb616ce1b88c5f6d0e86`: corrected the Wan runtime entrypoint to call the actual code-owned `make_wan_factory`.
+- `81b918058ddaf9a43aaed2b346d0808d32a1ee25`: regression test for Wan factory binding.
+- `15e5e9db40363f9f41929a7b2c27e4b9db203a7a`: added `build_sandbox_adapter_registry`, binding verified exact model revisions only to the supervised Docker adapter and checking verified files remain under the configured model root.
+- `73eb59c2de1ac65e7eead3f0f297453de8d4c859` and `aeb803eff9c975cc7d4ababf1eeca80c61ae904b`: worker bootstrap now requires a `DockerSandboxExecutor`, verifies the sandbox model mount exactly matches the host-verified model root, and registers sandbox adapters instead of loading model adapters in the worker process.
+- `bcf73a98aa5710d384ad54bb1d51b6631c1f9557`: updated bootstrap tests for the supervised sandbox path.
+- `c7f31c6c502f8e0d5ea6f917c1b6b90a38901849`: model container payload now excludes user IDs, lease tokens, storage paths and unrecognized request fields; only model-required generation fields cross the boundary.
+- `54abb391a000e843668892783ddd147d197b41c6`: regression test verifies worker secrets and control-plane fields do not enter the container payload.
+- `ed093cdfb7621ac00e164fca971f389d5926f283`: clarified the sandbox-only bootstrap test.
+- Current branch head at this update: `ed093cdfb7621ac00e164fca971f389d5926f283`. PR #20 remains OPEN, DRAFT, NOT MERGED, base `feature/astra-cloud-memory`.
+
+### Implemented
+- Worker bootstrap no longer accepts arbitrary in-process model factories. The supported production route is a sandbox-backed adapter registry.
+- Heartbeat cancellation and lease-loss events already feed the same cancellation event observed by the executor; the executor polls it and kills/removes the named container.
+- The model container receives a minimal generation job, not the worker's lease token, owner ID or storage/control-plane metadata.
+- Docker copy failures and successful cleanup failures are no longer silently treated as successful inference.
+- Fixed a Wan runtime factory name mismatch that would have prevented the video runtime from initializing.
+
+### Verification status
+- GitHub Actions run `46148819094` was observed in progress at commit `54abb391a000e843668892783ddd147d197b41c6`; syntax checks had passed, while model-server tests were still running. A fresh workflow run for the latest head `ed093cdfb7621ac00e164fca971f389d5926f283` must be inspected before claiming the complete batch is green.
+- No Docker host integration test, image build, GPU inference, model weight acquisition, moderation provider, deployment, migration application or generation activation has occurred.
+
+### Remaining blockers before actual image/video generation
+1. Finish bounded entrypoint result protocol: capture and validate the structured filename response and match it to the one copied output.
+2. Add a separate GPU runtime Dockerfile and fully pinned compatible runtime dependencies; keep model weights out of the image.
+3. Add lease-loss and cancellation integration tests that assert the Docker container is terminated before worker cleanup returns and no upload occurs after lease loss.
+4. Run Docker host preflight on an authorized GPU host; verify the immutable runtime image digest and actual device/resource limits.
+5. Have an adult account owner review/accept any gated model license and approve any compute/storage/bandwidth costs before acquiring weights or provisioning infrastructure.
+6. Install a real reviewed moderation provider, run image and video quality/VRAM benchmarks, then perform one controlled image smoke test followed by one short-video smoke test.
+7. Keep Cloudflare generation guard, queue flags, migrations 0010/0011, secrets and deployment unchanged until separately approved.
+
