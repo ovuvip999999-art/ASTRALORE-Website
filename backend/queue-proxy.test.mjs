@@ -26,6 +26,7 @@ function createAction(overrides = {}) {
 function enabledEnv(overrides = {}) {
   return {
     ASTRA_QUEUE_API_ENABLED: "true",
+    ASTRA_PUBLIC_QUEUE_API_ENABLED: "true",
     ASTRA_MODEL_RUNTIME_READY: "true",
     ASTRA_MODERATION_READY: "true",
     ASTRA_WORKER_PROCESS_READY: "true",
@@ -82,6 +83,17 @@ test("queue proxy remains disabled by default and never contacts model server", 
     env: enabledEnv({ ASTRA_QUEUE_API_ENABLED: "false" }),
     authorization: AUTH,
     fetchImpl: async () => { calls += 1; throw new Error("must not call"); }
+  });
+  assert.equal(result.status, 503);
+  assert.equal(calls, 0);
+});
+
+test("public queue proxy remains independently disabled by default", async () => {
+  let calls = 0;
+  const result = await forwardQueueAction(createAction(), {
+    env: enabledEnv({ ASTRA_PUBLIC_QUEUE_API_ENABLED: "false" }),
+    authorization: AUTH,
+    fetchImpl: async () => { calls += 1; return new Response("{}"); }
   });
   assert.equal(result.status, 503);
   assert.equal(calls, 0);
