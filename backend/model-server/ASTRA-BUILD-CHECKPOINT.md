@@ -220,3 +220,14 @@ When resuming, fetch PR #20 and this checkpoint first, inspect the latest CI sta
 - Latest code head at this checkpoint: `03da72783dc5c629af2b4192fa210ad7d7e9270d`.
 - CI runs #738/#739 are in progress; confirm both syntax and model-server jobs before treating this head as verified.
 - PR #20 remains open/draft/unmerged. Migrations 0010/0011 are unapplied. Queue API and worker API are disabled by default. Generation remains blocked.
+
+## Fail-closed worker orchestration milestone
+
+- Added `worker_client.py` with HTTPS-only (loopback exception for local tests), separate worker-token auth, bounded claim/lease calls, strict response validation, and distinct handling for confirmed HTTP 409 lease loss.
+- Added `worker_runner.py` as an injectable orchestration library. It only claims jobs when an exact-revision adapter map is explicitly supplied; an empty map returns without touching the queue.
+- Runner flow: exact model ID + immutable revision lookup, heartbeat thread, cooperative cancellation, generated-file validation, requested-dimension check, private streaming upload, and lease-scoped completion/failure.
+- On confirmed lost lease after upload, removes the uncommitted object. On ambiguous completion transport failure, deliberately retains the object because the database may already have committed; a future orphan reconciler is needed.
+- Added tests with mocked model adapters for fail-closed no-adapter behavior, exact revision selection, successful local image pipeline, dimensions, cancellation, safe errors, and lease-loss cleanup.
+- No inference adapter exists or is registered. No model weights, GPU runtime, worker daemon, resource-limited container, or deployment exists. Generation remains blocked.
+- Latest worker orchestration CI coverage is pending.
+
