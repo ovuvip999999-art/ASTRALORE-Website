@@ -121,5 +121,5 @@ class ModelReadinessTests(unittest.TestCase):
         self.assertFalse(reports[0]["inference_performed"])
 
 
-if __ = "__main__":
+if __name__ == "__main__":
     unittest.main()
