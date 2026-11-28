@@ -122,3 +122,14 @@ This is a pure contract and validator, not a durable queue or API endpoint. Prod
 ## HTTP integration tests
 
 Install test dependencies with `pip install -r requirements-dev.txt`. The CI suite uses FastAPI's TestClient to exercise actual HTTP routing, bearer authentication, brief compilation, model-catalog routing, schema rejection, health output, and the intentionally disabled image/video inference endpoints. The generation endpoints are expected to return HTTP 503 until reviewed runtimes are installed.
+
+### Run the checks on Windows
+
+From PowerShell, inside `backend/model-server`:
+
+```powershell
+Set-ExecutionPolicy -Scope Process Bypass
+.\run-tests.ps1
+```
+
+The script creates a local `.venv`, installs only the API/test dependencies, compiles the modules, and runs the complete unit/HTTP suite. It does not download model weights, use a GPU, call a paid API, or enable generation.
