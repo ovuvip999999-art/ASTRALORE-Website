@@ -62,10 +62,10 @@ def normalize_brief(raw: dict[str, Any]) -> dict[str, Any]:
         raise BriefValidationError("unknown brief fields: " + ", ".join(sorted(unknown)))
 
     modality = raw.get("modality", "image")
-    if modality not in ALLOWED_MODALITIES:
+    if not isinstance(modality, str) or modality not in ALLOWED_MODALITIES:
         raise BriefValidationError("modality must be image or video")
     ratio = raw.get("aspect_ratio", "16:9")
-    if ratio not in ALLOWED_RATIOS:
+    if not isinstance(ratio, str) or ratio not in ALLOWED_RATIOS:
         raise BriefValidationError("aspect_ratio must be 1:1, 9:16, or 16:9")
 
     normalized: dict[str, Any] = {
