@@ -13,6 +13,7 @@ from typing import Any, Protocol
 
 from asset_store import AssetStoreError, SupabasePrivateAssetStore
 from media_validation import MediaValidationError, inspect_media_file
+from safety_gate import SafetyGate, SafetyGateError
 from worker_client import PrivateWorkerClient, WorkerClientError, WorkerLeaseLost
 
 ERROR_RE = re.compile(r"^[A-Z][A-Z0-9_]{1,63}$")
@@ -48,6 +49,7 @@ class GenerationWorker:
         client: PrivateWorkerClient,
         asset_store: SupabasePrivateAssetStore,
         adapters: dict[tuple[str, str], GenerationAdapter],
+        safety_gate: SafetyGate | None = None,
         worker_id: str,
         output_root: str | Path,
         batch_size: int = 1,
@@ -82,6 +84,7 @@ class GenerationWorker:
         self.client = client
         self.asset_store = asset_store
         self.adapters = dict(adapters)
+        self.safety_gate = safety_gate
         self.worker_id = worker_id.strip()
         self.output_root = root
         self.batch_size = batch_size
@@ -91,7 +94,7 @@ class GenerationWorker:
     def run_once(self) -> int:
         # Crucial fail-closed rule: do not even claim jobs until at least one
         # explicitly registered, exact-revision inference adapter exists.
-        if not self.adapters:
+        if not self.adapters or self.safety_gate is None:
             return 0
         jobs = self.client.claim(
             worker_id=self.worker_id,
@@ -157,6 +160,13 @@ class GenerationWorker:
             self._record_failure(job_id, lease_token, "CANCELLED_BY_USER", False)
             return
 
+        prompt = request.get("compiled_prompt") or request.get("prompt")
+        try:
+            self.safety_gate.check_prompt(prompt, job.get("modality"))
+        except SafetyGateError as exc:
+            self._record_failure(job_id, lease_token, exc.error_code, exc.retryable)
+            return
+
         cancel_event = threading.Event()
         stop_event = threading.Event()
         lease_lost_event = threading.Event()
@@ -200,6 +210,7 @@ class GenerationWorker:
                 ):
                     raise GenerationError("OUTPUT_DIMENSION_MISMATCH", retryable=False)
 
+                self.safety_gate.check_output(output_path, modality)
                 uploaded = self.asset_store.upload_validated_file(
                     output_path,
                     work_dir=output_dir,
@@ -227,6 +238,9 @@ class GenerationWorker:
                     # deliberately do not delete, since the DB may have committed.
                     self.asset_store.delete_object(uploaded_path)
                     return
+            except SafetyGateError as exc:
+                if not lease_lost_event.is_set():
+                    self._record_failure(job_id, lease_token, exc.error_code, exc.retryable)
             except GenerationError as exc:
                 if not lease_lost_event.is_set():
                     self._record_failure(job_id, lease_token, exc.error_code, exc.retryable)
