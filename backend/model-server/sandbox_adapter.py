@@ -78,10 +78,31 @@ class SandboxGenerationAdapter:
         if cancel_event.is_set():
             raise GenerationError("CANCELLED_BY_USER", retryable=False)
 
+        # Never forward lease tokens, owner IDs, storage metadata, or other
+        # control-plane fields into the model container. The runtime receives
+        # only the generation fields its code-owned adapters consume.
+        allowed_request_fields = {
+            "compiled_prompt", "prompt", "negative_prompt", "width", "height",
+            "duration_seconds", "num_inference_steps", "guidance_scale", "seed",
+        }
+        request = job["request"]
+        safe_request = {
+            key: request[key]
+            for key in allowed_request_fields
+            if key in request
+        }
+        job_id = job.get("id")
+        if not isinstance(job_id, str) or not 1 <= len(job_id) <= 128:
+            raise GenerationError("INVALID_JOB_REQUEST", retryable=False)
         payload = {
             "model_id": self.model_id,
             "model_revision": self.revision,
-            "job": job,
+            "job": {
+                "id": job_id,
+                "model_id": self.model_id,
+                "modality": self.modality,
+                "request": safe_request,
+            },
             "manifest": {"models": [self.manifest_entry]},
         }
         try:
