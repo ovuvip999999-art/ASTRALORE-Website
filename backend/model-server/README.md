@@ -183,3 +183,14 @@ ASTRA now has a server-only storage path for future validated generation outputs
 - Unit tests cover streaming, private headers/path, file mutation, digest mismatch cleanup, path traversal, and conflict safety. PostgreSQL CI simulates a broad permissive Storage policy and verifies the restrictive rule still blocks this bucket.
 
 Migrations 0010 and 0011 are source files only and have NOT been applied to Supabase. There is no worker, Worker integration, signed-download endpoint, or generation runtime yet. Generation remains disabled.
+
+## Private worker control plane
+
+The model server now mounts a separate internal worker API:
+
+- `POST /internal/v1/worker/claim`: atomically claims a bounded batch and returns job data plus lease tokens.
+- `POST /internal/v1/worker/heartbeat`: renews a lease and reports cooperative cancellation.
+- `POST /internal/v1/worker/complete`: completes only with the current lease and output metadata; the database validates the owner/job-scoped private storage path.
+- `POST /internal/v1/worker/fail`: records a safe machine-readable error code and bounded retry decision.
+
+Every route requires `ASTRA_WORKER_API_ENABLED=true` and a separate `ASTRA_WORKER_TOKEN` of at least 32 characters, compared in constant time. The worker token is distinct from the Worker-to-server token. The API is disabled by default and is intended for private server-to-server traffic only; it is not a browser API. There is still no polling worker process, inference runtime, or deployed private network. Never enable this flag on a publicly reachable server.
