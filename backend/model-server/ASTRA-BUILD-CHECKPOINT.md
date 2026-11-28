@@ -69,3 +69,6 @@ When resuming, fetch PR #20 and this checkpoint first, inspect the latest CI sta
 - Catalog is server-configured via `ASTRA_MODEL_CATALOG_JSON`; no model entries are enabled or weights installed by default.
 - Runtime VRAM still must be measured by the eventual inference worker immediately before execution; catalog metadata alone is not a GPU availability check.
 - Added unit tests for catalog validation, malformed types, dimensions, modality, ratio, disabled models, and API behavior.
+
+- CI run #499 (`46137260906`) passed both `syntax` and `model-server` jobs on commit `912a1e5e288cdf8e9ce28cce0abbe8b254baf740`.
+- After that green run, API request models were further hardened to reject unknown top-level fields (commit `7dc0e9fed21952c655c85d3f1e84eba1717b9251`); a fresh CI run for the new head must be checked before treating that final hardening as verified.
