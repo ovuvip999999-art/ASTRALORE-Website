@@ -63,6 +63,43 @@ class PrivateAssetStoreTests(unittest.TestCase):
         self.assertNotIn("public_url", result)
         self.assertNotIn("signed_url", result)
 
+    def test_signed_url_is_short_lived_and_uses_private_object_path(self):
+        path = f"{USER_ID}/{JOB_ID}/{self.asset['asset_id']}.png"
+        def handler(request):
+            self.assertEqual(request.method, "POST")
+            self.assertEqual(
+                request.url.path,
+                f"/storage/v1/object/sign/astra-generated-private/{path}",
+            )
+            self.assertEqual(request.headers["authorization"], "Bearer " + SERVICE)
+            self.assertEqual(__import__("json").loads(request.content), {"expiresIn": 60})
+            return httpx.Response(200, json={
+                "signedURL": f"/object/sign/astra-generated-private/{path}?token=opaque-token"
+            })
+        store = SupabasePrivateAssetStore(self.config(), transport=httpx.MockTransport(handler))
+        url = store.create_signed_url(path, expires_in=60)
+        self.assertEqual(
+            url,
+            f"https://example.supabase.co/storage/v1/object/sign/astra-generated-private/{path}?token=opaque-token",
+        )
+
+    def test_signed_url_rejects_untrusted_paths_responses_and_lifetimes(self):
+        store = SupabasePrivateAssetStore(
+            self.config(),
+            transport=httpx.MockTransport(lambda request: httpx.Response(200, json={
+                "signedURL": "https://attacker.invalid/steal?token=opaque"
+            })),
+        )
+        with self.assertRaises(AssetStoreError):
+            store.create_signed_url("other-user/job/file.png")
+        path = f"{USER_ID}/{JOB_ID}/{self.asset['asset_id']}.png"
+        with self.assertRaises(AssetStoreError):
+            store.create_signed_url(path, expires_in=3600)
+        with self.assertRaises(AssetStoreError):
+            store.create_signed_url(path, expires_in=True)
+        with self.assertRaises(AssetStoreError):
+            store.create_signed_url(path)
+
     def test_digest_mismatch_triggers_private_object_cleanup(self):
         calls = []
         wrong = dict(self.asset)
