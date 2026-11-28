@@ -555,3 +555,9 @@ After the executor is verified, continue with host capability/preflight, model-l
 - The Cloudflare queue proxy now uses only `/v1/public/jobs` for create/status/cancel/asset retrieval. The internal legacy routes are not selected by the browser-facing Worker.
 
 - Route-hardening correction: removed the legacy path decorators so origin cannot be overridden through a query parameter. Internal callers must use the explicit `/v1/internal/jobs` family; the Worker uses only `/v1/public/jobs`.
+
+### Access-mode CI verification — passed
+- Latest CI run `46159841216` passed both `syntax` and `model-server` jobs on commit `a5d5d7b4524d41cce802f672bbc1eeddf361b7eb`.
+- Python model-server suite: 259 tests passed; one expected opt-in real Docker/GPU test skipped. PostgreSQL 16 integration executed migration 0012 and passed the new separate-origin quota/idempotency test.
+- Worker proxy syntax and Node tests passed, including the public-route forwarding and public kill-switch checks.
+- These are code/ephemeral-PostgreSQL tests only. Migration 0012 remains unapplied to Supabase; public/internal API flags remain unset in production; no generation, deployment, or merge occurred.
