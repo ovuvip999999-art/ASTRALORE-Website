@@ -76,6 +76,7 @@ class QueueApiTests(unittest.TestCase):
         self.asset_store = FakeAssetStore()
         self.env = patch.dict(os.environ, {
             "ASTRA_QUEUE_API_ENABLED": "true",
+            "ASTRA_INTERNAL_QUEUE_API_ENABLED": "true",
             "ASTRA_MODEL_RUNTIME_READY": "true",
             "ASTRA_MODERATION_READY": "true",
             "ASTRA_WORKER_API_ENABLED": "true",
@@ -194,14 +195,21 @@ class QueueApiTests(unittest.TestCase):
         self.assertEqual(self.store.enqueued[0].get("request_origin", "internal"), "internal")
 
     def test_public_route_sets_public_origin_server_side(self):
-        response = self.client.post("/v1/public/jobs", json=self.body(), headers=self.headers())
+        with patch.dict(os.environ, {"ASTRA_PUBLIC_QUEUE_API_ENABLED": "true"}):
+            response = self.client.post("/v1/public/jobs", json=self.body(), headers=self.headers())
         self.assertEqual(response.status_code, 202)
         self.assertEqual(self.store.enqueued[0]["request_origin"], "public")
+
+    def test_public_route_is_disabled_by_default(self):
+        response = self.client.post("/v1/public/jobs", json=self.body(), headers=self.headers())
+        self.assertEqual(response.status_code, 503)
+        self.assertEqual(self.store.enqueued, [])
 
     def test_public_origin_cannot_be_overridden_in_request_json(self):
         body = self.body()
         body["request_origin"] = "internal"
-        response = self.client.post("/v1/public/jobs", json=body, headers=self.headers())
+        with patch.dict(os.environ, {"ASTRA_PUBLIC_QUEUE_API_ENABLED": "true"}):
+            response = self.client.post("/v1/public/jobs", json=body, headers=self.headers())
         self.assertEqual(response.status_code, 422)
         self.assertEqual(self.store.enqueued, [])
 
