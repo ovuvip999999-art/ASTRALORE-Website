@@ -67,7 +67,8 @@ class FakeAssetStore:
     def upload_validated_file(self, path, *, work_dir, user_id, job_id, validated_asset):
         self.uploads.append((Path(path), user_id, job_id, validated_asset))
         result = dict(validated_asset)
-        result["storage_path"] = f"{user_id}/{job_id}/{validated_asset['asset_id']}.png"
+        extension = {"image/png": "png", "video/mp4": "mp4", "video/webm": "webm"}[validated_asset["mime_type"]]
+        result["storage_path"] = f"{user_id}/{job_id}/{validated_asset['asset_id']}.{extension}"
         return result
 
     def delete_object(self, object_path):
@@ -114,6 +115,13 @@ class PngAdapter:
         Image.new("RGB", self.dimensions, (10, 30, 60)).save(path, format="PNG")
         if self.cancel:
             cancel_event.set()
+        return path
+
+
+class FakeVideoAdapter:
+    def generate(self, job, *, output_dir, cancel_event):
+        path = output_dir / "generated.mp4"
+        path.write_bytes(b"mocked mp4 container")
         return path
 
 
@@ -188,6 +196,78 @@ class WorkerRunnerTests(unittest.TestCase):
             self.assertEqual(output["height"], 24)
             self.assertEqual(output["storage_path"], f"{USER_ID}/{JOB_ID}/{output['asset_id']}.png")
             self.assertEqual(client.failures, [])
+
+    def test_video_job_requires_matching_actual_duration_before_upload(self):
+        job = make_job()
+        job["modality"] = "video"
+        job["model_id"] = "astra-video-test"
+        job["request"].update({
+            "width": 832,
+            "height": 480,
+            "duration_seconds": 5,
+            "model_revision": "wan-revision",
+        })
+        client = FakeClient([job])
+        assets = FakeAssetStore()
+        with tempfile.TemporaryDirectory() as root:
+            worker = GenerationWorker(
+                client=client,
+                asset_store=assets,
+                adapters={("astra-video-test", "wan-revision"): FakeVideoAdapter()},
+                safety_gate=FakeSafetyGate(),
+                worker_id="video-worker",
+                output_root=root,
+                heartbeat_interval=1,
+            )
+            with patch("worker_runner.inspect_media_file", return_value={
+                "asset_id": "44444444-4444-4444-8444-444444444444",
+                "sha256": "a" * 64,
+                "mime_type": "video/mp4",
+                "size_bytes": 1024,
+                "width": 832,
+                "height": 480,
+                "duration_ms": 5063,
+            }):
+                worker.run_once()
+        self.assertEqual(len(client.completed), 1)
+        self.assertEqual(client.completed[0]["output_asset"]["mime_type"], "video/mp4")
+        self.assertTrue(client.completed[0]["output_asset"]["storage_path"].endswith(".mp4"))
+
+    def test_video_duration_mismatch_fails_before_private_upload(self):
+        job = make_job()
+        job["modality"] = "video"
+        job["model_id"] = "astra-video-test"
+        job["request"].update({
+            "width": 832,
+            "height": 480,
+            "duration_seconds": 5,
+            "model_revision": "wan-revision",
+        })
+        client = FakeClient([job])
+        assets = FakeAssetStore()
+        with tempfile.TemporaryDirectory() as root:
+            worker = GenerationWorker(
+                client=client,
+                asset_store=assets,
+                adapters={("astra-video-test", "wan-revision"): FakeVideoAdapter()},
+                safety_gate=FakeSafetyGate(),
+                worker_id="video-worker",
+                output_root=root,
+                heartbeat_interval=1,
+            )
+            with patch("worker_runner.inspect_media_file", return_value={
+                "asset_id": "44444444-4444-4444-8444-444444444444",
+                "sha256": "a" * 64,
+                "mime_type": "video/mp4",
+                "size_bytes": 1024,
+                "width": 832,
+                "height": 480,
+                "duration_ms": 9000,
+            }):
+                worker.run_once()
+        self.assertEqual(client.failures[0]["error_code"], "OUTPUT_DURATION_MISMATCH")
+        self.assertEqual(assets.uploads, [])
+        self.assertEqual(client.completed, [])
 
     def test_missing_exact_model_revision_fails_without_fallback(self):
         job = make_job()
