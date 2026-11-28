@@ -528,3 +528,10 @@ After the executor is verified, continue with host capability/preflight, model-l
 - Profit is not guaranteed by a zero-budget build; compute, storage, bandwidth, moderation, support, and compliance costs must be measured before any commercial launch.
 - During CI review, found a test bug: the manifest-inspection test serialized verifier-enriched file records (which contain internal resolved-path fields) as raw manifest entries. Corrected the fixture to serialize only the three schema fields path, sha256, and size_bytes. CI run #1258 passed both jobs; the current roadmap/checkpoint head was also verified by run #1262, with 251 Python tests passing and one expected opt-in GPU test skipped.
 - No real model weights, GPU host, moderation classifier, inference, public service, paid service, deployment, or merge has been activated.
+
+
+### Model readiness fixture correction — CI verified
+- CI run `46158830839` passed both `syntax` and `model-server` jobs on commit `e9557ae6f14be12069128c3004910b0d0100bdbe`.
+- The initial run exposed one test-fixture issue: the fixture serialized verifier-enriched top-level model fields into the strict public manifest. The test now serializes only the exact manifest schema fields, including the exact `path`, `sha256`, and `size_bytes` file records.
+- Python model-server suite: 251 tests passed; one expected opt-in GPU test skipped. The model-readiness checksum/structure test passed.
+- This verifies synthetic fixtures only. No real model packages, weights, GPU inference, moderation classifier, deployment, or public generation were provisioned.
