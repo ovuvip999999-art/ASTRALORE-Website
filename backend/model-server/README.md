@@ -158,3 +158,14 @@ The private FastAPI server now mounts these routes:
 - `POST /v1/jobs/{job_id}/cancel`: calls the owner-checked cancellation RPC using the user's own access token.
 
 All three routes require `ASTRA_QUEUE_API_ENABLED=true`, a server-only `ASTRA_MODEL_SERVER_TOKEN` of at least 32 characters, and a valid user session. The queue API flag is unset/false by default. The private API is not yet wired to the Cloudflare Worker, and no queue worker is running. There are intentionally no public worker-claim or completion endpoints yet.
+
+## Actual media-byte validation foundation
+
+- `media_validation.py` inspects only local files inside a worker-owned output directory; it never fetches URLs and never invokes a shell.
+- Images are identified from their actual bytes, structurally verified, and fully decoded with Pillow (PNG/JPEG/WebP only).
+- Videos are inspected with local `ffprobe`, restricted to `file,pipe` protocols, with a timeout and bounded JSON output (MP4/WebM only).
+- Both modalities get a SHA-256 computed from the actual file bytes. File identity/size/mtime are compared before and after inspection to detect mutation during validation.
+- Worker inspection limits: 512 MiB file size, 16K maximum side, 40 megapixels, and 120 seconds for video. The 40 MP worker ceiling is intentionally stricter than the database's 100 MP metadata ceiling to limit decode memory.
+- Unit tests use real generated PNG/JPEG/WebP fixtures and mocked ffprobe results/failures.
+
+This validator is not yet called by a generation worker because no worker or model runtime exists. The future worker must run media inspection in a restricted process/container, then upload validated bytes to private storage, and only then call the database completion RPC. No model generation or deployment is enabled.
