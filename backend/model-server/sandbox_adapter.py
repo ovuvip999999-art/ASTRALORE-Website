@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any
 
 from sandbox_executor import DockerSandboxExecutor, SandboxExecutionError
-from worker_runner import GenerationError
+from runtime_errors import GenerationError
 
 
 class SandboxGenerationAdapter:
