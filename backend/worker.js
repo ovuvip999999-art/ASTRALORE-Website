@@ -350,11 +350,14 @@ export default {
     }
     if (creativeAction && (
       typeof env.ASTRA_CREATIVE_OWNER_USER_ID !== "string" ||
-      !env.ASTRA_CREATIVE_OWNER_USER_ID.trim() ||
-      authenticatedUser.id !== env.ASTRA_CREATIVE_OWNER_USER_ID.trim()
+      !env.ASTRA_CREATIVE_OWNER_USER_ID.trim()
     )) {
-      return json({ error: "Creative generation is restricted to the configured ASTRALORE account owner." }, 403, origin);
+      return json({ error: "Creative generation is not configured. The account owner must configure the owner ID first." }, 503, origin);
     }
+    const isCreativeOwner = Boolean(
+      creativeAction &&
+      authenticatedUser.id === env.ASTRA_CREATIVE_OWNER_USER_ID.trim()
+    );
     const suppliedStoragePaths = [document?.storagePath, documentToSave?.storagePath]
       .filter(path => typeof path === "string");
     if (suppliedStoragePaths.some(path => path.split("/")[0] !== authenticatedUser.id)) {
@@ -373,7 +376,7 @@ export default {
         console.error("ASTRA video quota check failed", String(error?.message || error).slice(0, 140));
         return json({ error: "ASTRA could not verify today's video allowance. Apply the video quota migration and retry." }, 503, origin);
       }
-      if (!quota.allowed) return json({ error: "Daily video limit reached. You can generate one 5-second video per account each day." }, 429, origin);
+      if (!quota.allowed) return json({ error: "Your 10-video allowance for the last 24 hours has been used. Try again after your oldest generation is more than 24 hours old." }, 429, origin);
       try {
         const result = await env.AI.run("xai/grok-imagine-video", {
           prompt: creativeAction.prompt.trim(),
@@ -392,7 +395,8 @@ export default {
           durationSeconds: 5,
           resolution: "480p",
           estimatedCostUsd: 0.25,
-          remainingToday: quota.remaining
+          remainingToday: quota.remaining,
+          unlimited: false
         }, 200, origin);
       } catch (error) {
         console.error("ASTRA video generation failed", String(error?.message || error).slice(0, 180));
@@ -406,13 +410,17 @@ export default {
       }
       if (!env.AI) return json({ error: "ASTRA image generation is not configured on this Worker." }, 503, origin);
       let quota;
-      try {
-        quota = await reserveCreativeUsage(env, authorization, authenticatedUser.id, "image");
-      } catch (error) {
-        console.error("ASTRA image quota check failed", String(error?.message || error).slice(0, 140));
-        return json({ error: "ASTRA could not verify today's image allowance. Apply the image quota migration and retry." }, 503, origin);
+      if (isCreativeOwner) {
+        quota = { allowed: true, remaining: -1, unlimited: true };
+      } else {
+        try {
+          quota = await reserveCreativeUsage(env, authorization, authenticatedUser.id, "image");
+        } catch (error) {
+          console.error("ASTRA image quota check failed", String(error?.message || error).slice(0, 140));
+          return json({ error: "ASTRA could not verify your image allowance. The account plan migration may be missing." }, 503, origin);
+        }
       }
-      if (!quota.allowed) return json({ error: "Daily image limit reached. You can generate up to 3 images per account each day." }, 429, origin);
+      if (!quota.allowed) return json({ error: "Your 10-image allowance for the last 24 hours has been used. Try again after your oldest generation is more than 24 hours old, or upgrade to Premium for unlimited images." }, 429, origin);
 
       const dimensions = {
         "1:1": [1024, 1024],
@@ -439,7 +447,8 @@ export default {
           image: result.image,
           mimeType: "image/png",
           model: "@cf/black-forest-labs/flux-2-klein-4b",
-          remainingToday: quota.remaining
+          remainingToday: quota.remaining >= 0 ? quota.remaining : null,
+          unlimited: quota.unlimited === true
         }, 200, origin);
       } catch (error) {
         console.error("ASTRA image generation failed", String(error?.message || error).slice(0, 180));
