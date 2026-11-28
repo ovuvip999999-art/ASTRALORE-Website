@@ -155,17 +155,17 @@ export async function forwardQueueAction(action, {
     if (new TextEncoder().encode(raw).length > 65536) {
       return { status: 502, body: { error: "ASTRA's private queue returned an oversized response." } };
     }
-    let payload;
-    try {
-      payload = raw ? JSON.parse(raw) : {};
-    } catch {
-      return { status: 502, body: { error: "ASTRA's private queue returned an invalid response." } };
-    }
     if (!response.ok) {
       return {
         status: response.status >= 400 && response.status <= 599 ? response.status : 502,
         body: { error: "ASTRA's private queue could not complete that request." }
       };
+    }
+    let payload;
+    try {
+      payload = raw ? JSON.parse(raw) : {};
+    } catch {
+      return { status: 502, body: { error: "ASTRA's private queue returned an invalid response." } };
     }
     return { status: response.status, body: payload };
   } catch {
