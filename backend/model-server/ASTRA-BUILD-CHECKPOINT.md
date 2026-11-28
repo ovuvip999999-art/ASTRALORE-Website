@@ -292,3 +292,13 @@ When resuming, fetch PR #20 and this checkpoint first, inspect the latest CI sta
 
 
 - Cost flag naming clarified to `ASTRA_COST_POLICY_APPROVED`: this is not a claim that self-hosted infrastructure is free; actual GPU/hosting/storage/bandwidth costs must be reviewed by the account owner.
+
+## Verified CI — queue bridge and safety gates
+
+- CI run #864 passed both `syntax` and `model-server` jobs on head `2f7aa916afa2df1006e70b7038afc6fc036f8b94`.
+- Node suite passed all 33 tests, including the new queue proxy tests.
+- Python model-server suite passed all 157 tests, including PostgreSQL 16 queue/storage integration.
+- The Worker queue bridge is code-only and disabled by default. The direct creativeAction generation path remains fail-closed.
+- No environment flags or secrets were configured, no migrations 0010/0011 applied, no frontend queue integration, and no Worker/model server deployment occurred.
+- PR #20 remains open/draft/unmerged; production and PR #19 remain untouched.
+
