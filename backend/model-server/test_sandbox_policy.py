@@ -4,7 +4,7 @@ from pathlib import Path
 
 from sandbox_policy import (
     SandboxConfig, SandboxLimits, SandboxPolicyError,
-    build_docker_command, validate_config,
+    build_docker_command, build_execution_plan, validate_config,
 )
 
 IMAGE = "registry.example/astra/runtime@sha256:" + "a" * 64
@@ -39,7 +39,8 @@ class SandboxPolicyTests(unittest.TestCase):
         self.assertIn("--cpus", command)
         self.assertIn("--gpus", command)
         self.assertIn("no-new-privileges:true", command)
-        self.assertTrue(any(item.startswith("/outputs:rw,noexec,nosuid,nodev,size=") for item in command if item.startswith("/outputs:")))
+        self.assertTrue(any(item.startswith("/outputs:rw,noexec,nosuid,nodev,size=") and "uid=10001" in item and "mode=0700" in item for item in command if item.startswith("/outputs:")))
+        self.assertTrue(any(item.startswith("/tmp:rw,noexec,nosuid,nodev,size=") and "uid=10001" in item for item in command if item.startswith("/tmp:"))))
 
     def test_model_mount_is_read_only_and_command_has_no_shell(self):
         command = build_docker_command(self.config())
@@ -80,6 +81,12 @@ class SandboxPolicyTests(unittest.TestCase):
             self.skipTest("Symlinks are unavailable on this runner.")
         with self.assertRaises(SandboxPolicyError):
             build_docker_command(self.config(model_directory=link))
+
+    def test_execution_plan_exposes_supervisor_wall_clock_limit(self):
+        plan = build_execution_plan(self.config(limits=SandboxLimits(timeout_seconds=300)))
+        self.assertEqual(plan["timeout_seconds"], 300)
+        self.assertEqual(plan["output_bytes"], MAX_OUTPUT_PLUS_ONE - 1)
+        self.assertEqual(plan["memory_bytes"], 16 * 1024**3)
 
     def test_limits_reject_boolean_values(self):
         with self.assertRaises(SandboxPolicyError):
