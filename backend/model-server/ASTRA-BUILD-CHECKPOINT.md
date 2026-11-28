@@ -247,3 +247,13 @@ When resuming, fetch PR #20 and this checkpoint first, inspect the latest CI sta
 - Added unit tests and included manifest validation in CI and Windows runner. Verification pending.
 - This module does not download/load weights or activate inference. No runtime manifest or model adapter is configured. Generation remains disabled.
 
+
+## Strict model artifact and code-owned runtime registry
+
+- Added `runtime_manifest.py`: immutable model revision identifiers, exact schema, allowed runtime labels, explicit modality/capability bounds, no remote code, safe relative paths, per-file SHA-256/size checks, and a 100 GiB total model cap.
+- Added `runtime_registry.py`: only code-owned factories can create adapters from verified manifest entries. Manifest data cannot dynamically import modules or choose arbitrary entry points.
+- Models without an installed trusted factory are omitted from the worker adapter registry; with no factories installed, the registry is empty and the worker refuses to claim jobs.
+- Added tests for manifest schema, revision pinning, traversal/symlink/checksum/size rejection, runtime identity mismatch, missing factories and duplicate registrations.
+- Added tests to CI and Windows runner. Latest CI verification pending.
+- No model weights downloaded, no runtime factory installed, no GPU process or deployment. Generation remains disabled.
+
