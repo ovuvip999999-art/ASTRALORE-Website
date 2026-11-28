@@ -100,8 +100,8 @@ def build_docker_command(config: SandboxConfig) -> list[str]:
         "--memory-swap", str(limits.memory_bytes),
         "--cpus", str(limits.cpu_count),
         "--shm-size", str(limits.shm_bytes),
-        "--tmpfs", f"/tmp:rw,noexec,nosuid,nodev,size=268435456",
-        "--tmpfs", f"/outputs:rw,noexec,nosuid,nodev,size={limits.output_bytes}",
+        "--tmpfs", f"/tmp:rw,noexec,nosuid,nodev,size=268435456,uid=10001,gid=10001,mode=0700",
+        "--tmpfs", f"/outputs:rw,noexec,nosuid,nodev,size={limits.output_bytes},uid=10001,gid=10001,mode=0700",
         "--mount", f"type=bind,src={model_dir},dst=/models,readonly",
         "--gpus", f"device={config.gpu_device}",
         "--workdir", "/tmp",
@@ -109,3 +109,16 @@ def build_docker_command(config: SandboxConfig) -> list[str]:
         config.image,
         "-m", "astra_sandbox_entrypoint",
     ]
+
+
+def build_execution_plan(config: SandboxConfig) -> dict[str, object]:
+    """Return the container command plus limits a parent supervisor must enforce."""
+    _, limits = validate_config(config)
+    return {
+        "command": build_docker_command(config),
+        "timeout_seconds": limits.timeout_seconds,
+        "memory_bytes": limits.memory_bytes,
+        "output_bytes": limits.output_bytes,
+        "pids": limits.pids,
+        "cpu_count": limits.cpu_count,
+    }
