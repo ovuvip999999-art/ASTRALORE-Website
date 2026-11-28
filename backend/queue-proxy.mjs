@@ -99,7 +99,7 @@ export async function forwardQueueAction(action, {
     env.ASTRA_MODERATION_READY !== "true" ||
     env.ASTRA_WORKER_PROCESS_READY !== "true" ||
     env.ASTRA_CREATIVE_GENERATION_APPROVED !== "true" ||
-    env.ASTRA_ZERO_COST_APPROVED !== "true"
+    env.ASTRA_COST_POLICY_APPROVED !== "true"
   )) {
     return { status: 503, body: { error: "ASTRA generation is not ready. No job was submitted." } };
   }
