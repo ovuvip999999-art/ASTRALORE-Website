@@ -21,6 +21,7 @@ def build_adapter_registry(
         raise RuntimeRegistryError("Verified models and trusted factories must be supplied explicitly.")
 
     registry: dict[tuple[str, str], Any] = {}
+    seen_keys: set[tuple[str, str]] = set()
     for model in verified_models:
         if not isinstance(model, dict):
             raise RuntimeRegistryError("Verified model entry must be an object.")
@@ -37,8 +38,9 @@ def build_adapter_registry(
             raise RuntimeRegistryError("Model artifacts have not been verified on disk.")
 
         key = (model_id, revision)
-        if key in registry:
+        if key in seen_keys:
             raise RuntimeRegistryError("Duplicate model ID and revision in adapter registry.")
+        seen_keys.add(key)
 
         factory = factories.get(runtime)
         if factory is None:
