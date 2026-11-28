@@ -119,6 +119,63 @@ class SupabasePrivateAssetStore:
             # the public exception remains sanitized and contains no credential data.
             return
 
+    @staticmethod
+    def _validate_object_path(object_path: str) -> str:
+        if not isinstance(object_path, str):
+            raise AssetStoreError("Private asset path is invalid.")
+        parts = object_path.split("/")
+        if len(parts) != 3:
+            raise AssetStoreError("Private asset path is invalid.")
+        user_id = SupabasePrivateAssetStore._uuid(parts[0], "asset owner")
+        job_id = SupabasePrivateAssetStore._uuid(parts[1], "asset job")
+        filename = parts[2]
+        stem, separator, extension = filename.rpartition(".")
+        asset_id = SupabasePrivateAssetStore._uuid(stem, "asset id")
+        if not separator or extension not in set(EXTENSIONS.values()):
+            raise AssetStoreError("Private asset path is invalid.")
+        return f"{user_id}/{job_id}/{asset_id}.{extension}"
+
+    def create_signed_url(self, object_path: str, *, expires_in: int = 60) -> str:
+        """Create a short-lived URL only after the caller has verified job ownership."""
+        canonical_path = self._validate_object_path(object_path)
+        if isinstance(expires_in, bool) or not isinstance(expires_in, int) or not 30 <= expires_in <= 300:
+            raise AssetStoreError("Signed asset URL lifetime must be between 30 and 300 seconds.")
+        encoded = "/".join(quote(part, safe="") for part in canonical_path.split("/"))
+        url = f"{self.config.supabase_url}/storage/v1/object/sign/{BUCKET}/{encoded}"
+        try:
+            with httpx.Client(
+                timeout=self.timeout_seconds,
+                transport=self.transport,
+                follow_redirects=False,
+            ) as client:
+                response = client.post(
+                    url,
+                    headers={
+                        "apikey": self.config.service_role_key,
+                        "Authorization": "Bearer " + self.config.service_role_key,
+                        "Content-Type": "application/json",
+                        "Accept": "application/json",
+                    },
+                    json={"expiresIn": expires_in},
+                )
+            if response.status_code < 200 or response.status_code >= 300:
+                raise AssetStoreError("Private asset signing request was rejected.")
+            payload = response.json()
+        except AssetStoreError:
+            raise
+        except (httpx.HTTPError, ValueError, TypeError):
+            raise AssetStoreError("Private asset signing service is unavailable.") from None
+
+        signed_path = payload.get("signedURL") if isinstance(payload, dict) else None
+        expected_prefix = f"/object/sign/{BUCKET}/{canonical_path}?"
+        if not isinstance(signed_path, str) or not signed_path.startswith(expected_prefix):
+            raise AssetStoreError("Private asset signing service returned an invalid URL.")
+        from urllib.parse import urlsplit
+        parsed = urlsplit(signed_path)
+        if parsed.scheme or parsed.netloc or parsed.fragment or not parsed.query:
+            raise AssetStoreError("Private asset signing service returned an invalid URL.")
+        return self.config.supabase_url + "/storage/v1" + signed_path
+
     def upload_validated_file(
         self,
         path: str | Path,
