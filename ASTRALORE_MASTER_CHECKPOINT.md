@@ -516,3 +516,15 @@ After the executor is verified, continue with host capability/preflight, model-l
 - The new validator uses tiny synthetic fixtures. It has not inspected real SD3.5 or Wan weights, and its structural profiles must be checked against the exact immutable model revisions chosen by the owner before production staging.
 - A structurally valid report is not a substitute for actual model loading, CUDA inference, quality benchmarking, moderation, or deployment readiness.
 - Generation remains disabled. No model downloads, GPU hosting, registry push, paid service, migration, deployment, or PR merge occurred.
+
+
+## 26. Zero-budget dual-mode delivery plan — 2026-11-28
+
+- Confirmed product direction: ASTRA will support both internal ASTRALORE production and a future public generation mode, sharing the trusted worker/safety pipeline while separating permissions, identity, quotas, and access.
+- Added docs/ASTRA_ZERO_BUDGET_ROADMAP.md with staged rollout gates: offline architecture, internal-only inference experiment, public-mode readiness while disabled, and a limited public pilot only after stable permitted compute exists.
+- The roadmap explicitly treats free notebook GPUs as interactive development resources, not permanent production servers. It prohibits assuming free-tier uptime, unlimited capacity, paid services, or public notebook tunnels.
+- Model downloads and licence acceptance remain blocked pending owner review and an appropriate legal review. SD3.5 and Wan remain candidates pending exact immutable revision and package validation.
+- Moderation classifier evaluation, fail-closed behavior, separate public quotas, private assets, abuse controls, and a global kill switch are required before public activation.
+- Profit is not guaranteed by a zero-budget build; compute, storage, bandwidth, moderation, support, and compliance costs must be measured before any commercial launch.
+- During CI review, found a test bug: the manifest-inspection test serialized verifier-enriched file records (which contain internal resolved-path fields) as raw manifest entries. Corrected the fixture to serialize only the three schema fields path, sha256, and size_bytes. The fix was pushed; its CI run must finish before this checkpoint is considered fully verified.
+- No real model weights, GPU host, moderation classifier, inference, public service, paid service, deployment, or merge has been activated.
