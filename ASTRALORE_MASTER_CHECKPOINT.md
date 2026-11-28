@@ -250,3 +250,33 @@ After the executor is verified, continue with host capability/preflight, model-l
 6. Install a real reviewed moderation provider, run image and video quality/VRAM benchmarks, then perform one controlled image smoke test followed by one short-video smoke test.
 7. Keep Cloudflare generation guard, queue flags, migrations 0010/0011, secrets and deployment unchanged until separately approved.
 
+
+
+## 14. Sandbox-only bootstrap, bounded result IPC, and runtime image definition — 2026-11-28
+
+### Additional commits
+- `588e3dda46ea8e6ead6ee85042d50a3ddc02ea46` and `4b54830440880e67dbbacc1cbfce234315c385c3`: added a bounded 4 KiB JSON result protocol, drained concurrently to prevent stdout pipe backpressure, and required the reported filename to match the single file copied from `/outputs`.
+- `ed0e6ba694d7bffa45e84bf734d43e19b96dc81c`: tests for filename mismatch and oversized result records.
+- `46f27255492890861211442d5fe57cd8cfa5b94e`, `42ca0b75b1d6a1cf280c908175d3469f759cdef2`, `066664b4bd5af19d39f0e2fccaf204195db76b1e`, `39926c15a25865cb812866a9350c2153938c0e96`, `45e7b14ee48f2c14ce974ce3908bd63977be3474`: extracted a small standalone `runtime_errors.py` contract so the GPU runtime image does not need to import the entire API/worker dependency graph.
+- `aac3be6c7cf0a302bd940c99ff72c1c10da50dae`: added the standalone error module.
+- `a62609b06067836590b6a1fc8953fc3d2354741b` and `5d0484522c37e593364cca4cad5ff91dcedbd895`: added the runtime error module to CI compile coverage.
+- `ba5d671dc59e3e2113c200473cf252dfd25b1c0b`: added pinned direct runtime dependency requirements.
+- `ba933facc9a1a79dc317271463cde3512d31decb`: added a separate CUDA/PyTorch runtime Dockerfile that requires a digest-pinned base image, validates PyTorch/CUDA versions, installs dependencies, compiles trusted modules and imports runtime code. No weights are included.
+- `4db30927ee6bbf32e838138bb8a039c8a8a17ab9`: documented the isolated runtime build and approval boundaries.
+- `a6f78cf1784232d9f211791bd4f7c795ccc937cf`: clarified the sandbox-only bootstrap contract.
+- `ebbc5b8f648973cc0abba65c708b3164c7f2785f` and `ad999cd676ea576f40b61a60d1aebaccdd6cf906`: added tests for sandbox mount mismatch and runtime/modality mismatch.
+- Current PR head at this update: `ad999cd676ea576f40b61a60d1aebaccdd6cf906`. PR #20 remains OPEN, DRAFT, NOT MERGED, base `feature/astra-cloud-memory`.
+
+### Verification
+- CI run `46149196538` completed successfully on commit `ba933facc9a1a79dc317271463cde3512d31decb`: both syntax and model-server jobs passed; the model-server job ran 209 tests successfully, including the bounded result protocol, sandbox bootstrap integration and PostgreSQL 16 integration.
+- That run's compile command did not yet include `runtime_errors.py`; the workflow compile list was corrected in `5d0484522c37e593364cca4cad5ff91dcedbd895`. The two additional regression tests were added afterward. A fresh CI run for the latest head must be checked before claiming those final additions are green.
+- No Docker image build, Docker daemon host test, GPU execution, weights, model license acceptance, moderation provider, deployment or generation activation has occurred.
+
+### Remaining work
+1. Verify latest CI, including explicit compilation of `runtime_errors.py` and the newest sandbox registry tests.
+2. Run a real Docker host integration test on a controlled Linux GPU host, including timeout, process cancellation, container kill/removal and output collection.
+3. Verify the runtime Docker build against the selected immutable PyTorch/CUDA base digest; check exact Diffusers/PyTorch compatibility and the actual output codecs.
+4. Implement or install a real reviewed moderation provider and validate its coverage before any output can be stored.
+5. Add worker-level integration proving a heartbeat lease loss stops the running Docker container and prevents upload/completion.
+6. Only after adult account-owner license and infrastructure-cost review, acquire local model artifacts, measure VRAM/latency, run one image smoke test and then one short-video smoke test.
+7. Keep Worker generation guards, queue/worker flags, migrations 0010/0011, secrets, production and deployment untouched until explicit approval.
