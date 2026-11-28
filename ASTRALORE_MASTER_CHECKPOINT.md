@@ -320,3 +320,23 @@ After the executor is verified, continue with host capability/preflight, model-l
 - PR CI run `46149780292` completed successfully on commit `3b8f953e86d82e7fdf4636174a06a38937b1a684`: both syntax and model-server jobs passed. The model-server suite ran 213 tests successfully, with one expected skip for the opt-in real Docker/GPU host test.
 - This verifies the lease-loss cancellation contract with a fake Docker process; it is not a real Docker daemon/GPU host integration.
 - Current PR head at this test checkpoint: `3b8f953e86d82e7fdf4636174a06a38937b1a684`.
+
+
+## 17. Live host preflight enforced at worker startup — 2026-11-28
+
+### Commits
+- `c5021655dce24e2990e5fe971325086b3250f8d6`: added `host_preflight.py`, a read-only check for Docker daemon, exact local RepoDigest match, selected NVIDIA GPU, total VRAM and currently free VRAM.
+- `4ce01f21bad959d6c235ddb602c0928e205096b4`: added mocked tests for valid host, unavailable Docker, unverified image digest, missing GPU and insufficient free VRAM.
+- `ed66f696dfe31d0bcebbd7a87471441f4f1675d1`: added host preflight module/tests to CI compile and test discovery.
+- `5ce77d59bc191fe8611f96bd21c5844c48fd0981`: documented the read-only host preflight command.
+- `8a1ee9025a4406c4ddf5da50677bff07dcc0efc6`: worker bootstrap now runs host preflight before worker creation, using the highest minimum VRAM requirement among registered owner-reviewed models.
+- `81cd8ee3de1995727c19491b465d9702306b671e`: tests patch the host probe for deterministic bootstrap tests and verify startup refuses a failed host preflight.
+- `c391bc9deb68a8410f965a9ad63d351ef3c63135`: cleaned up test mock imports.
+- Current code/test head at this checkpoint: `81cd8ee3de1995727c19491b465d9702306b671e`.
+
+### Verification
+- CI run `46150005404` passed syntax and model-server jobs on `c391bc9deb68a8410f965a9ad63d351ef3c63135`: 218 tests passed, with one expected opt-in Docker/GPU host-test skip. This included all mocked host-preflight tests.
+- An intermediate run `46150069459` failed because the bootstrap success test had not yet mocked the newly required host preflight. The test was corrected in `81cd8ee3de1995727c19491b465d9702306b671e`.
+- PR CI run `46150085499` passed both jobs on `81cd8ee3de1995727c19491b465d9702306b671e`: 219 tests passed, one expected opt-in host-test skip.
+- Worker bootstrap now fails closed if Docker is unavailable, the exact digest-pinned runtime image is absent, the selected NVIDIA device is unavailable, or free VRAM is below the registered model's manifest requirement.
+- No actual GPU host preflight has been executed. CI uses mocks. No model weights, accepted licenses, moderation provider, deployment, production flags or database migrations have been added or enabled.
