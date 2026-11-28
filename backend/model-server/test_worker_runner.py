@@ -316,7 +316,7 @@ class WorkerRunnerTests(unittest.TestCase):
         self.assertTrue(client.failures[0]["retryable"])
         self.assertEqual(assets.uploads, [])
 
-    def test_lost_lease_terminates_supervised_container_before_upload(self):
+    def test_heartbeat_failure_terminates_supervised_container_before_upload(self):
         class FakeProcess:
             def __init__(self):
                 self.stdin = Mock()
@@ -385,7 +385,7 @@ class WorkerRunnerTests(unittest.TestCase):
             }
             adapter = SandboxGenerationAdapter(executor=executor, verified_model=model)
             client = FakeClient()
-            client.heartbeat_error = WorkerLeaseLost("lease expired")
+            client.heartbeat_error = RuntimeError("unexpected heartbeat transport failure")
             assets = FakeAssetStore()
             worker = GenerationWorker(
                 client=client,
