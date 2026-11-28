@@ -277,3 +277,16 @@ When resuming, fetch PR #20 and this checkpoint first, inspect the latest CI sta
 - No moderation provider/model is installed. This is an enforcement interface, not proof of effective moderation. A vetted provider, adversarial tests and escalation policy remain required before enabling generation.
 - CI verification pending.
 
+
+## Cloudflare Worker queue bridge milestone
+
+- Added `backend/queue-proxy.mjs` with strict create/status/cancel/asset-url validation and fixed model-server routes; no caller-controlled URL or owner UUID is accepted.
+- Updated `backend/worker.js` to forward queue actions only after Supabase user authentication. It forwards the user's original access token and the private server token held only in Worker environment.
+- Queue creation requires `costAcknowledged: true` and six explicit Worker flags: queue API, model runtime, moderation, worker process, generation approval, and zero-cost approval.
+- The model server has its own independent queue API flag, disabled by default.
+- The existing direct creativeAction generation route remains fail-closed before any provider call.
+- Added `backend/queue-proxy.test.mjs` for strict payload validation, disabled defaults, readiness flags, fixed routes, credentials, response bounds and sanitized errors. Added syntax/test coverage to GitHub Actions and the Windows runner.
+- No environment flags/secrets were configured and no Worker was deployed. The frontend does not yet submit queueAction requests.
+- Readiness flags are explicit deployment approvals, not automatic health checks; they must stay false until actual model, moderation and worker runtime checks pass.
+- CI verification for the Worker bridge is pending.
+
