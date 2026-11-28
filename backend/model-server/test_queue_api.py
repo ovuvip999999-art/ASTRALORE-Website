@@ -198,6 +198,13 @@ class QueueApiTests(unittest.TestCase):
         self.assertEqual(response.status_code, 202)
         self.assertEqual(self.store.enqueued[0]["request_origin"], "public")
 
+    def test_public_origin_cannot_be_overridden_in_request_json(self):
+        body = self.body()
+        body["request_origin"] = "internal"
+        response = self.client.post("/v1/public/jobs", json=body, headers=self.headers())
+        self.assertEqual(response.status_code, 422)
+        self.assertEqual(self.store.enqueued, [])
+
     def test_unknown_origin_route_is_not_available(self):
         response = self.client.post("/v1/admin/jobs", json=self.body(), headers=self.headers())
         self.assertEqual(response.status_code, 404)
