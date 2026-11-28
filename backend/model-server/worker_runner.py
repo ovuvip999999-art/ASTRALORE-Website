@@ -209,6 +209,13 @@ class GenerationWorker:
                     or asset["width"] != width or asset["height"] != height
                 ):
                     raise GenerationError("OUTPUT_DIMENSION_MISMATCH", retryable=False)
+                if modality == "video":
+                    duration_seconds = request.get("duration_seconds", 5)
+                    if type(duration_seconds) is not int or not 1 <= duration_seconds <= 120:
+                        raise GenerationError("INVALID_JOB_REQUEST", retryable=False)
+                    duration_ms = asset.get("duration_ms")
+                    if type(duration_ms) is not int or abs(duration_ms - duration_seconds * 1000) > 250:
+                        raise GenerationError("OUTPUT_DURATION_MISMATCH", retryable=False)
 
                 self.safety_gate.check_output(output_path, modality)
                 uploaded = self.asset_store.upload_validated_file(
