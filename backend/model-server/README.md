@@ -47,3 +47,22 @@ The server currently has no model dependencies or weights. Before adding them:
 6. Measure GPU hours, storage, and bandwidth. Self-hosting avoids a third-party generation API, not infrastructure costs.
 
 Do not configure the ASTRA Worker to call this server until it is deployed privately and the integration has passed end-to-end tests. The Worker-level generation pause remains active.
+
+
+## Quality benchmark harness
+
+ASTRA includes a deterministic, human-rating benchmark tool:
+
+- `benchmark_prompts.jsonl`: initial shared prompt pack for image and video tasks.
+- `quality_eval.py`: validates generation metadata and blinded reviewer scores, then calculates modality-specific weighted quality summaries.
+- `test_quality_eval.py`: unit tests for scoring, video-specific temporal criteria, duplicate ratings, unknown samples, and invalid metadata.
+
+Example (after producing benchmark outputs and collecting blinded reviewer ratings):
+
+```bash
+python quality_eval.py --runs runs.jsonl --ratings ratings.jsonl --output report.json
+```
+
+The run manifest and rating file are JSONL: one JSON object per line. Run metadata records the model revision, runtime version, seed, dimensions, generation time, peak VRAM, and output SHA-256. Ratings use a blind model label and integer scores from 1–5. Image and video use separate rubrics; video explicitly scores temporal coherence and motion quality.
+
+The evaluator does not generate media, anonymize files, or claim statistical significance. Keep the prompt set, generation settings, and review process consistent when comparing models. Do not put private media URLs, user secrets, or personal data in benchmark manifests.
