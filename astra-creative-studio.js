@@ -82,7 +82,7 @@
         videoPreview.hidden = false;
         videoOpenLink.href = data.videoUrl;
         videoOpenLink.hidden = false;
-        videoStatus.textContent = "Video ready · " + (Number.isInteger(data.remainingToday) ? data.remainingToday + " video generations left today" : "preview only");
+        videoStatus.textContent = "Video ready · " + (Number.isInteger(data.remainingToday) ? data.remainingToday + " video generations left in your 24-hour window" : "preview only");
       } catch (error) {
         videoStatus.textContent = error.message || "Video generation failed. Please try again.";
       } finally {
@@ -160,7 +160,7 @@
         link.click();
         link.remove();
       };
-      say("Image ready · " + (Number.isInteger(data.remainingToday) ? data.remainingToday + " generations left today" : "preview only"));
+      say(data.unlimited ? "Image ready · Unlimited image generation" : "Image ready · " + (Number.isInteger(data.remainingToday) ? data.remainingToday + " image generations left in your 24-hour window" : "preview only"));
     } catch (error) {
       say(error.message || "Image generation failed. Please try again.");
     } finally {
