@@ -46,7 +46,7 @@
         return;
       }
       if (!videoCostAck.checked) {
-        videoStatus.textContent = "Confirm the estimated US$0.25 model cost and account-owner permission first.";
+        videoStatus.textContent = "Confirm that video generation follows your ASTRA plan limit.";
         return;
       }
       if (!window.ASTRASupabase) {
@@ -111,7 +111,7 @@
       return;
     }
     if (!acknowledge.checked) {
-      say("Please confirm you understand AI generation uses your Cloudflare AI allowance.");
+      say("Confirm that image generation follows your ASTRA plan limit.");
       return;
     }
     if (!window.ASTRASupabase) {
