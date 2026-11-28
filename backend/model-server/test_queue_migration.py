@@ -11,6 +11,7 @@ class QueueMigrationContractTests(unittest.TestCase):
         cls.sql = MIGRATION.read_text(encoding="utf-8").lower()
         cls.storage_sql = (MIGRATION.parent / "0011_astra_private_generated_assets.sql").read_text(encoding="utf-8").lower()
         cls.access_sql = (MIGRATION.parent / "0012_astra_job_access_modes.sql").read_text(encoding="utf-8").lower()
+        cls.worker_claim_sql = (MIGRATION.parent / "0013_astra_origin_scoped_worker_claims.sql").read_text(encoding="utf-8").lower()
 
     def test_private_table_has_owner_scoped_rls(self):
         self.assertIn("alter table public.astra_generation_jobs enable row level security", self.sql)
@@ -65,6 +66,14 @@ class QueueMigrationContractTests(unittest.TestCase):
         self.assertIn("p_request_origin = 'public' then 1 else 2", self.access_sql)
         self.assertIn("from public, anon, authenticated", self.access_sql)
         self.assertIn("to service_role", self.access_sql)
+
+    def test_worker_claim_rpc_is_origin_scoped_and_replaces_global_claim(self):
+        self.assertIn("astra_claim_generation_jobs_v2", self.worker_claim_sql)
+        self.assertIn("p_request_origin text", self.worker_claim_sql)
+        self.assertIn("request_origin = p_request_origin", self.worker_claim_sql)
+        self.assertIn("from public, anon, authenticated", self.worker_claim_sql)
+        self.assertIn("to service_role", self.worker_claim_sql)
+        self.assertIn("drop function if exists public.astra_claim_generation_jobs", self.worker_claim_sql)
 
     def test_generated_asset_bucket_is_private_and_user_policies_are_restricted(self):
         self.assertIn("'astra-generated-private'", self.storage_sql)
