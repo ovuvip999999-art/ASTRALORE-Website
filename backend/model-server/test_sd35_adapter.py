@@ -72,7 +72,7 @@ class FakePipeline:
         self.call_options = kwargs
         if self.cancel_event is not None:
             self.cancel_event.set()
-        kwargs["callback_on_step_end"](self, 1, 0)
+        kwargs["callback_on_step_end"](self, 1, 0, {})
         if self.fail:
             raise RuntimeError("private model detail")
         return SimpleNamespace(images=[FakeImage()])
