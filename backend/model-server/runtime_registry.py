@@ -42,6 +42,11 @@ def build_adapter_registry(
             raise RuntimeRegistryError("Duplicate model ID and revision in adapter registry.")
         seen_keys.add(key)
 
+        # License terms must be reviewed and explicitly attested by the
+        # project owner before any adapter can be registered.
+        if model.get("license_reviewed_by_owner") is not True:
+            continue
+
         factory = factories.get(runtime)
         if factory is None:
             # An approved manifest without an installed code-owned adapter is
