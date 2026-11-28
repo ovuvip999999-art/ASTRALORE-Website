@@ -191,6 +191,7 @@ class QueueApiTests(unittest.TestCase):
         self.assertEqual(job["request"]["brief"]["prompt"], self.body()["brief"]["prompt"])
         self.assertIn("Lighting: soft sunrise", job["request"]["compiled_prompt"])
         self.assertEqual(job["request"]["model_revision"], CATALOG[0]["revision"])
+        self.assertEqual(self.store.enqueued[0].get("request_origin", "internal"), "internal")
 
     def test_create_rejects_brief_settings_mismatch(self):
         body = self.body()
