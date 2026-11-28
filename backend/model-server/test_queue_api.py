@@ -75,6 +75,12 @@ class QueueApiTests(unittest.TestCase):
         self.asset_store = FakeAssetStore()
         self.env = patch.dict(os.environ, {
             "ASTRA_QUEUE_API_ENABLED": "true",
+            "ASTRA_MODEL_RUNTIME_READY": "true",
+            "ASTRA_MODERATION_READY": "true",
+            "ASTRA_WORKER_API_ENABLED": "true",
+            "ASTRA_WORKER_PROCESS_READY": "true",
+            "ASTRA_CREATIVE_GENERATION_APPROVED": "true",
+            "ASTRA_COST_POLICY_APPROVED": "true",
             "ASTRA_MODEL_SERVER_TOKEN": INTERNAL,
             "ASTRA_MODEL_CATALOG_JSON": __import__("json").dumps(CATALOG),
         }, clear=True)
@@ -114,6 +120,20 @@ class QueueApiTests(unittest.TestCase):
             response = self.client.post("/v1/jobs", json=self.body(), headers=self.headers())
         self.assertEqual(response.status_code, 503)
         self.assertEqual(self.store.enqueued, [])
+
+    def test_create_requires_independent_server_readiness_and_owner_approvals(self):
+        for flag in (
+            "ASTRA_MODEL_RUNTIME_READY",
+            "ASTRA_MODERATION_READY",
+            "ASTRA_WORKER_API_ENABLED",
+            "ASTRA_WORKER_PROCESS_READY",
+            "ASTRA_CREATIVE_GENERATION_APPROVED",
+            "ASTRA_COST_POLICY_APPROVED",
+        ):
+            with self.subTest(flag=flag), patch.dict(os.environ, {flag: "false"}):
+                response = self.client.post("/v1/jobs", json=self.body(), headers=self.headers())
+                self.assertEqual(response.status_code, 503)
+                self.assertEqual(self.store.enqueued, [])
 
     def test_create_requires_private_server_secret(self):
         response = self.client.post("/v1/jobs", json=self.body(), headers=self.headers(internal="wrong"))
