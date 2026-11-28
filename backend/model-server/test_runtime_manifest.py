@@ -32,6 +32,8 @@ class RuntimeManifestTests(unittest.TestCase):
                 "max_pixels": 1048576,
                 "runtime": "diffusers",
                 "allow_remote_code": allow_remote_code,
+                "license_id": "apache-2.0",
+                "license_reviewed_by_owner": False,
             }]
         }
 
@@ -81,6 +83,16 @@ class RuntimeManifestTests(unittest.TestCase):
             {"path": f"part-{index}.bin", "sha256": "0" * 64, "size_bytes": 50 * 1024 * 1024 * 1024}
             for index in range(3)
         ]
+        with self.assertRaises(RuntimeManifestError):
+            load_manifest_json(json.dumps(payload))
+
+    def test_manifest_requires_license_identifier_and_boolean_owner_attestation(self):
+        payload = self.make_manifest()
+        del payload["models"][0]["license_id"]
+        with self.assertRaises(RuntimeManifestError):
+            load_manifest_json(json.dumps(payload))
+        payload = self.make_manifest()
+        payload["models"][0]["license_reviewed_by_owner"] = "yes"
         with self.assertRaises(RuntimeManifestError):
             load_manifest_json(json.dumps(payload))
 
