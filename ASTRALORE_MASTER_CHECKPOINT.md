@@ -542,7 +542,7 @@ After the executor is verified, continue with host capability/preflight, model-l
 ### Implemented on PR #20
 - Added unapplied migration `0012_astra_job_access_modes.sql`: existing rows default to `internal`; new rows carry a constrained `request_origin` of `internal` or `public`.
 - Added a service-role-only `astra_enqueue_generation_job_v2` RPC. It requires an explicit origin, includes origin in idempotency matching, enforces a separate per-user active-job cap (2 internal, 1 public), and retains the global 100-job ceiling.
-- Updated the queue-store adapter to call the v2 RPC with an explicit origin. The API's legacy `/v1/jobs` route remains internal; the new `/v1/public/jobs` route sets public origin from the server route, never from request JSON. Matching origin-specific status/cancel/asset URL routes are available under `/v1/public/jobs/{job_id}`; legacy routes remain internal.
+- Updated the queue-store adapter to call the v2 RPC with an explicit origin. The API exposes explicit `/v1/internal/jobs` and `/v1/public/jobs` route families; origin is taken only from the path segment, never from request JSON or a query parameter. Matching origin-specific status/cancel/asset URL routes are available under `/v1/public/jobs/{job_id}`; legacy routes remain internal.
 - User status and asset lookups now retrieve the persisted origin and reject cross-mode access as not found. Cancellation first checks the same owner-visible origin before invoking the existing owner-scoped cancellation RPC.
 - Added API, queue-store, migration-contract, and PostgreSQL integration coverage for origin stamping, origin mismatch, and the separate public active-job cap.
 
@@ -553,3 +553,5 @@ After the executor is verified, continue with host capability/preflight, model-l
 
 - Follow-up hardening: added independent `ASTRA_INTERNAL_QUEUE_API_ENABLED` and `ASTRA_PUBLIC_QUEUE_API_ENABLED` gates in addition to the global queue flag. Both origin modes remain disabled unless their own server-side flag is explicitly true; the public Worker proxy also fails closed unless its public-mode flag is enabled. Tests cover public-mode default-off behavior.
 - The Cloudflare queue proxy now uses only `/v1/public/jobs` for create/status/cancel/asset retrieval. The internal legacy routes are not selected by the browser-facing Worker.
+
+- Route-hardening correction: removed the legacy path decorators so origin cannot be overridden through a query parameter. Internal callers must use the explicit `/v1/internal/jobs` family; the Worker uses only `/v1/public/jobs`.
