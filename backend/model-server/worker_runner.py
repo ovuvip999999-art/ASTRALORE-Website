@@ -16,18 +16,7 @@ from media_validation import MediaValidationError, inspect_media_file
 from safety_gate import SafetyGate, SafetyGateError
 from worker_client import PrivateWorkerClient, WorkerClientError, WorkerLeaseLost
 
-ERROR_RE = re.compile(r"^[A-Z][A-Z0-9_]{1,63}$")
-
-
-class GenerationError(RuntimeError):
-    def __init__(self, error_code: str, *, retryable: bool = False):
-        if not isinstance(error_code, str) or not ERROR_RE.fullmatch(error_code):
-            raise ValueError("GenerationError requires a safe machine-readable code.")
-        if not isinstance(retryable, bool):
-            raise ValueError("retryable must be a boolean.")
-        self.error_code = error_code
-        self.retryable = retryable
-        super().__init__(error_code)
+from runtime_errors import GenerationError
 
 
 class GenerationAdapter(Protocol):
