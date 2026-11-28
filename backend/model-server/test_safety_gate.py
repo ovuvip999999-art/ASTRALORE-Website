@@ -71,6 +71,8 @@ class SafetyGateTests(unittest.TestCase):
         with self.assertRaises(ValueError):
             SafetyGate(None)
         with self.assertRaises(ValueError):
+            SafetyGate(object())
+        with self.assertRaises(ValueError):
             SafetyGate(FakeModerationProvider(), minimum_confidence=0.2)
 
 
