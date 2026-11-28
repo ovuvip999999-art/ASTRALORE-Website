@@ -254,3 +254,16 @@ Do not accept gated model licenses, download weights, or enable inference until 
 
 
 **Cost-policy clarification:** `ASTRA_COST_POLICY_APPROVED` is an explicit owner approval of a documented, measured cost policy. It does not mean self-hosted inference is inherently free; GPU hosting, storage, electricity and bandwidth may still cost money. Never enable it without an adult account owner's review of the actual budget.
+
+## First model-specific local adapter: SD 3.5 Medium
+
+- Added `sd35_adapter.py` using the built-in Diffusers `StableDiffusion3Pipeline` for the initial image candidate.
+- The loader accepts only the exact model ID, image modality, Diffusers runtime, owner-attested license review, and a fully enumerated local model directory whose files are rechecked for SHA-256, size, and mutation immediately before loading.
+- Loading uses `local_files_only=True`, `use_safetensors=True`, and required model CPU offload. It refuses to initialize without CUDA or the manifest-declared minimum free VRAM.
+- Generation is bounded to 256–1024 pixels per side, 1 MP total, 10–50 steps, one image, bounded guidance, and deterministic seeds. Cancellation is checked at denoising steps.
+- The adapter is available through a code-owned factory for the verified runtime registry. It is not automatically registered or enabled.
+- Tests use a mocked Diffusers pipeline and fake CUDA runtime; they do not download weights or run actual inference.
+
+The current Diffusers documentation describes three SD3 text encoders and notes that full-pipeline execution can be challenging below 24 GB VRAM; CPU offload is recommended. Treat the manifest's `min_vram_mb` as a host-specific gate that must be set after measurement, not as a universal upstream guarantee.
+
+No SD3.5 license has been accepted, no weights have been downloaded, and no PyTorch/Diffusers GPU environment is installed. A gated license must be reviewed by an adult account owner before acceptance.
