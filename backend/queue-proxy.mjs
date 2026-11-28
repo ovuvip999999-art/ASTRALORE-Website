@@ -99,7 +99,7 @@ export async function forwardQueueAction(action, {
     return { status: 400, body: { error: error.message || "Invalid queue action." } };
   }
 
-  if (env.ASTRA_QUEUE_API_ENABLED !== "true") {
+  if (env.ASTRA_QUEUE_API_ENABLED !== "true" || env.ASTRA_PUBLIC_QUEUE_API_ENABLED !== "true") {
     return { status: 503, body: { error: "ASTRA's private generation queue is not enabled." } };
   }
   if (normalized.operation === "create" && (
