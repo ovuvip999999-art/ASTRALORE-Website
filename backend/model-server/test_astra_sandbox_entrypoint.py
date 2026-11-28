@@ -35,6 +35,14 @@ class EntrypointProtocolTests(unittest.TestCase):
             with self.assertRaises(entrypoint.EntrypointError):
                 entrypoint._read_request()
 
+    def test_wan_factory_uses_code_owned_factory_name(self):
+        expected = object()
+        model = {"runtime": "wan-video"}
+        with patch.object(entrypoint, "_model_directory", return_value=Path("/models/wan")), \
+             patch.object(entrypoint, "make_wan_factory", return_value=lambda _model: expected) as factory:
+            self.assertIs(entrypoint._factory("wan-video", model), expected)
+        factory.assert_called_once_with(model_dir=Path("/models/wan"))
+
     def test_model_directory_must_remain_inside_model_root(self):
         with tempfile.TemporaryDirectory() as root, tempfile.TemporaryDirectory() as outside:
             root_path = Path(root)
