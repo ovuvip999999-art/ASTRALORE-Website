@@ -41,14 +41,18 @@ class FailRequest(BaseModel):
     retryable: StrictBool = False
 
 
-def _worker_auth(value: str | None) -> None:
+def _worker_auth(value: str | None) -> str:
     if os.environ.get("ASTRA_WORKER_API_ENABLED", "").strip().lower() != "true":
         raise HTTPException(status_code=503, detail="ASTRA private worker API is disabled.")
-    expected = os.environ.get("ASTRA_WORKER_TOKEN", "")
-    if len(expected) < 32:
-        raise HTTPException(status_code=503, detail="ASTRA worker authentication is not configured.")
-    if not value or not hmac.compare_digest(value, expected):
-        raise HTTPException(status_code=401, detail="Unauthorized.")
+    internal = os.environ.get("ASTRA_INTERNAL_WORKER_TOKEN", "")
+    public = os.environ.get("ASTRA_PUBLIC_WORKER_TOKEN", "")
+    if len(internal) < 32 or len(public) < 32 or hmac.compare_digest(internal, public):
+        raise HTTPException(status_code=503, detail="ASTRA worker identities are not configured separately.")
+    if value and hmac.compare_digest(value, internal):
+        return "internal"
+    if value and hmac.compare_digest(value, public):
+        return "public"
+    raise HTTPException(status_code=401, detail="Unauthorized.")
 
 
 def _store():
@@ -85,10 +89,11 @@ def claim_jobs(
     body: ClaimRequest,
     x_astra_worker_token: str | None = Header(default=None),
 ):
-    _worker_auth(x_astra_worker_token)
+    request_origin = _worker_auth(x_astra_worker_token)
     try:
         rows = _store().claim_jobs(
             worker_id=body.worker_id,
+            request_origin=request_origin,
             batch_size=body.batch_size,
             lease_seconds=body.lease_seconds,
         )
