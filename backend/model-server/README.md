@@ -93,3 +93,15 @@ Example:
   }
 }
 ```
+
+## Explicit model capability registry
+
+ASTRA includes a server-configured model catalog and authenticated `POST /v1/models/route` preflight endpoint.
+
+- Configure `ASTRA_MODEL_CATALOG_JSON` only in the private model-server environment.
+- Each catalog entry declares a pinned model ID/revision, provider, supported modalities and aspect ratios, maximum dimensions/pixels, minimum VRAM declaration, and enabled state.
+- A route request must name an exact model ID. Unknown or disabled models are rejected; there is no automatic model fallback.
+- Modality, ratio, dimensions, and pixel bounds are validated before a route descriptor is returned.
+- The response exposes only capability metadata, not local paths or credentials.
+
+This is a capability/preflight decision, not proof that a GPU is available. The eventual inference worker must measure actual free VRAM and enforce concurrency/resource limits immediately before loading or running a model. No model is enabled by default, and no weights are installed by this registry.
