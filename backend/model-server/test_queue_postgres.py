@@ -17,7 +17,7 @@ ASSET_ID = "33333333-3333-4333-8333-333333333333"
 MIGRATIONS = [
     Path(__file__).resolve().parents[1] / "migrations" / "0010_astra_generation_jobs.sql",
     Path(__file__).resolve().parents[1] / "migrations" / "0011_astra_private_generated_assets.sql",
-]"
+]
 
 
 @unittest.skipUnless(DSN, "ASTRA_TEST_DATABASE_URL is not configured; PostgreSQL integration tests run in CI.")
@@ -46,6 +46,12 @@ class QueuePostgresIntegrationTests(unittest.TestCase):
                   name text not null
                 );
                 alter table storage.objects enable row level security;
+                grant usage on schema storage to anon, authenticated, service_role;
+                grant select, insert, update, delete on storage.objects to anon, authenticated, service_role;
+                drop policy if exists "test broad permissive storage policy" on storage.objects;
+                create policy "test broad permissive storage policy"
+                  on storage.objects for all to authenticated
+                  using (true) with check (true);
                 create table if not exists auth.users (
                   id uuid primary key,
                   email text unique
@@ -70,6 +76,7 @@ class QueuePostgresIntegrationTests(unittest.TestCase):
     def setUp(self):
         with psycopg.connect(DSN, autocommit=True) as conn:
             conn.execute("delete from public.astra_generation_jobs")
+            conn.execute("delete from storage.objects")
 
     def connect(self, role=None, user_id=None):
         conn = psycopg.connect(DSN, autocommit=True, row_factory=dict_row)
@@ -92,6 +99,28 @@ class QueuePostgresIntegrationTests(unittest.TestCase):
             "select * from public.astra_claim_generation_jobs(%s, 1, 90)",
             (worker,),
         ).fetchone()
+
+    def test_private_storage_bucket_is_nonpublic_and_restricts_broad_user_policies(self):
+        with self.connect("service_role") as conn:
+            bucket = conn.execute(
+                "select public, file_size_limit, allowed_mime_types from storage.buckets where id = 'astra-generated-private'"
+            ).fetchone()
+            self.assertFalse(bucket["public"])
+            self.assertEqual(bucket["file_size_limit"], 536870912)
+            self.assertEqual(
+                set(bucket["allowed_mime_types"]),
+                {"image/png", "image/jpeg", "image/webp", "video/mp4", "video/webm"},
+            )
+            conn.execute(
+                "insert into storage.objects (bucket_id, name) values ('astra-generated-private', 'private/test.png'), ('other-bucket', 'public/test.png')"
+            )
+        with self.connect("authenticated", USER_A) as conn:
+            rows = conn.execute("select bucket_id, name from storage.objects order by bucket_id").fetchall()
+            self.assertEqual([(row["bucket_id"], row["name"]) for row in rows], [("other-bucket", "public/test.png")])
+            with self.assertRaises(psycopg.Error):
+                conn.execute(
+                    "insert into storage.objects (bucket_id, name) values ('astra-generated-private', 'attempt/escape.png')"
+                )
 
     def test_idempotency_returns_same_job_and_rejects_different_payload(self):
         with self.connect("service_role") as conn:
