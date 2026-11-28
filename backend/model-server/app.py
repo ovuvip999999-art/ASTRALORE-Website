@@ -7,8 +7,10 @@ from pydantic import BaseModel, ConfigDict, Field, StrictInt, StrictStr
 
 from creative_brief import BriefValidationError, compile_brief
 from model_registry import ModelRegistryError, load_catalog_json, route_model
+from queue_api import router as queue_router
 
 app = FastAPI(title="ASTRA Private Model Server", version="0.1.0")
+app.include_router(queue_router)
 
 
 class BriefCompileRequest(BaseModel):
