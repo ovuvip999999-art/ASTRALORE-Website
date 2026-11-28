@@ -177,6 +177,29 @@ class SupabasePrivateAssetStore:
             raise AssetStoreError("Private asset signing service returned an invalid URL.")
         return self.config.supabase_url + "/storage/v1" + signed_path
 
+    def delete_object(self, object_path: str) -> None:
+        """Delete only a canonical object path inside ASTRA's private bucket."""
+        canonical_path = self._validate_object_path(object_path)
+        try:
+            with httpx.Client(
+                timeout=self.timeout_seconds,
+                transport=self.transport,
+                follow_redirects=False,
+            ) as client:
+                response = client.delete(
+                    self._url(canonical_path),
+                    headers={
+                        "apikey": self.config.service_role_key,
+                        "Authorization": "Bearer " + self.config.service_role_key,
+                    },
+                )
+            if response.status_code not in {200, 202, 204, 404}:
+                raise AssetStoreError("Private asset cleanup was rejected.")
+        except AssetStoreError:
+            raise
+        except httpx.HTTPError:
+            raise AssetStoreError("Private asset cleanup service is unavailable.") from None
+
     def upload_validated_file(
         self,
         path: str | Path,
