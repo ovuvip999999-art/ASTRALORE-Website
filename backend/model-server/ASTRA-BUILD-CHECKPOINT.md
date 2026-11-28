@@ -72,3 +72,5 @@ When resuming, fetch PR #20 and this checkpoint first, inspect the latest CI sta
 
 - CI run #499 (`46137260906`) passed both `syntax` and `model-server` jobs on commit `912a1e5e288cdf8e9ce28cce0abbe8b254baf740`.
 - After that green run, API request models were further hardened to reject unknown top-level fields (commit `7dc0e9fed21952c655c85d3f1e84eba1717b9251`); a fresh CI run for the new head must be checked before treating that final hardening as verified.
+
+- CI run #503 (`46137314116`) passed both `syntax` and `model-server` jobs on commit `fd15e06a12e89ce9bd63ab686c08b6434914d588`, including the strict API request-schema hardening.
