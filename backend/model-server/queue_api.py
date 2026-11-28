@@ -45,6 +45,19 @@ def _require_enabled() -> None:
         raise HTTPException(status_code=503, detail="ASTRA queue API is disabled.")
 
 
+def _require_generation_ready() -> None:
+    required_flags = (
+        "ASTRA_MODEL_RUNTIME_READY",
+        "ASTRA_MODERATION_READY",
+        "ASTRA_WORKER_API_ENABLED",
+        "ASTRA_WORKER_PROCESS_READY",
+        "ASTRA_CREATIVE_GENERATION_APPROVED",
+        "ASTRA_COST_POLICY_APPROVED",
+    )
+    if any(os.environ.get(flag, "").strip().lower() != "true" for flag in required_flags):
+        raise HTTPException(status_code=503, detail="ASTRA generation readiness and owner approvals are incomplete.")
+
+
 def _verify_internal_secret(value: str | None) -> None:
     expected = os.environ.get("ASTRA_MODEL_SERVER_TOKEN", "")
     if len(expected) < 32:
@@ -87,6 +100,7 @@ def create_generation_job(
     authorization: str | None = Header(default=None),
 ):
     store, user_id, _ = _authenticated_store(x_astra_server_token, authorization)
+    _require_generation_ready()
 
     try:
         compiled = compile_brief(body.brief)
