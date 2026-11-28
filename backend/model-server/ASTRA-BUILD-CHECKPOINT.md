@@ -211,3 +211,12 @@ When resuming, fetch PR #20 and this checkpoint first, inspect the latest CI sta
 - The bucket remains private; signed URLs are bearer links and must not be logged. The queue API remains disabled by default.
 - CI verification for the newest signed-URL and worker API tests is pending.
 
+
+## Latest code update after private asset retrieval
+
+- Hardened signed URL validation to require a non-empty token query parameter and a relative URL for the exact private object.
+- Hardened streaming upload cleanup if the file disappears or cannot be stat'ed after transfer.
+- Added tests for owner-authorized asset URL creation and malformed/external signing responses.
+- Latest code head at this checkpoint: `03da72783dc5c629af2b4192fa210ad7d7e9270d`.
+- CI runs #738/#739 are in progress; confirm both syntax and model-server jobs before treating this head as verified.
+- PR #20 remains open/draft/unmerged. Migrations 0010/0011 are unapplied. Queue API and worker API are disabled by default. Generation remains blocked.
